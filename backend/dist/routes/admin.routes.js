@@ -1,0 +1,20 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const admin_controller_1 = require("../controllers/admin.controller");
+const auth_middleware_1 = require("../middleware/auth.middleware");
+const validator_1 = require("../middleware/validator");
+const router = (0, express_1.Router)();
+// Protect all admin routes
+router.use(auth_middleware_1.authenticate, auth_middleware_1.requireAdmin);
+router.get('/stats', admin_controller_1.AdminController.getStats);
+router.get('/users', admin_controller_1.AdminController.getAllUsers);
+router.post('/users/balance', admin_controller_1.AdminController.adjustUserBalance);
+router.post('/users/status', admin_controller_1.AdminController.toggleUserStatus);
+router.get('/orders', admin_controller_1.AdminController.getAllOrders);
+router.put('/services/:id', (0, validator_1.validateBody)(validator_1.updateIndividualServiceSchema), admin_controller_1.AdminController.updateService);
+router.post('/services/markup', (0, validator_1.validateBody)(validator_1.updateServiceMarkupSchema), admin_controller_1.AdminController.batchUpdateMarkup);
+router.get('/settings', admin_controller_1.AdminController.getSettings);
+router.post('/settings', (0, validator_1.validateBody)(validator_1.updateProviderSettingsSchema), admin_controller_1.AdminController.updateSettings);
+router.get('/audit-logs', admin_controller_1.AdminController.getAuditLogs);
+exports.default = router;

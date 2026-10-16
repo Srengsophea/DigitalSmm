@@ -1,0 +1,15 @@
+{
+  "name": "digitalsmm-workspace",
+  "version": "1.0.0",
+  "description": "DigitalSMM Full-Stack Social Media Marketing Platform powered by SMMFollows",
+  "scripts": {
+    "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"blue,cyan\" \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "build": "npm run build --prefix backend && npm run build --prefix frontend",
+    "start": "npm run start --prefix backend",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

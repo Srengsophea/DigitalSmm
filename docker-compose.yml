@@ -1,0 +1,47 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: digitalsmm_backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - JWT_SECRET=digitalsmm_jwt_production_master_secret_2026_x7a9c
+      - JWT_EXPIRES_IN=7d
+      - ENCRYPTION_KEY=d7a9f8e4c2b1a03958e7d6c5b4a3928172615049382716059483726150493827
+      - SMMFOLLOWS_API_KEY=8ce4373a1a1602790e0bef11a65707ba
+      - SMMFOLLOWS_API_URL=https://smmfollows.com/api/v2
+      - DEFAULT_MARKUP_PERCENT=30
+      - ADMIN_EMAIL=admin@digitalsmm.com
+      - ADMIN_PASSWORD=Admin@DigitalSMM2026!
+      - CORS_ORIGIN=http://localhost:3000,http://localhost:5173
+      - DATA_DIR=/app/data
+    volumes:
+      - digitalsmm_data:/app/data
+    networks:
+      - digitalsmm_net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: digitalsmm_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - digitalsmm_net
+
+volumes:
+  digitalsmm_data:
+    driver: local
+
+networks:
+  digitalsmm_net:
+    driver: bridge
