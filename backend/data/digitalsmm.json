@@ -17,12 +17,12 @@
       "username": "demouser",
       "email": "user@digitalsmm.com",
       "passwordHash": "$2b$12$.QM5pFzLc7yssEQsAbBWjutKPPdvbtSvMedOiMxJMFxhpYKFtOxJe",
-      "balance": 130,
+      "balance": 131,
       "role": "USER",
       "status": "active",
       "apiKey": "ds_usr_3f7f52668a476eb3c6271ce5cac8ea66f647ca00c4d4c88e",
       "createdAt": "2026-10-16T15:11:12.145Z",
-      "updatedAt": "2026-10-16T19:02:40.285Z"
+      "updatedAt": "2026-10-17T12:11:03.897Z"
     },
     {
       "username": "davidlorn",
@@ -52,13 +52,13 @@
       "username": "test_nobonus_99",
       "email": "test_nobonus_99@example.com",
       "passwordHash": "$2b$12$fYoSvXWVr61AoGUONr4WruP2SZpRIfdic0DxJy87YTgGZp8.kSDcm",
-      "balance": 5,
+      "balance": 15,
       "role": "USER",
       "status": "active",
       "id": "d2c395b5-3569-4199-98c1-70ed813961a6",
       "apiKey": "ds_usr_9611085973f955955234205ae24c0b324fdea4bf80f28541",
       "createdAt": "2026-10-17T05:14:00.729Z",
-      "updatedAt": "2026-10-17T05:16:13.284Z"
+      "updatedAt": "2026-10-17T12:11:43.317Z"
     }
   ],
   "services": [
@@ -136310,6 +136310,28 @@
     }
   ],
   "transactions": [
+    {
+      "id": "94fdd64b-122a-409d-903c-209a3a833e48",
+      "userId": "d2c395b5-3569-4199-98c1-70ed813961a6",
+      "type": "DEPOSIT",
+      "amount": 10,
+      "balanceBefore": 5,
+      "balanceAfter": 15,
+      "referenceId": "khqr_1792239099251_afmlmr",
+      "description": "Bakong KHQR Payment (Ref: khqr_17922)",
+      "createdAt": "2026-10-17T12:11:43.317Z"
+    },
+    {
+      "id": "bebd59ab-96a4-4eb6-97bd-afabec3a8a11",
+      "userId": "ccae8c6d-074e-447c-8d22-7796940df2a2",
+      "type": "DEPOSIT",
+      "amount": 1,
+      "balanceBefore": 130,
+      "balanceAfter": 131,
+      "referenceId": "khqr_1792239059942_p614do",
+      "description": "Bakong KHQR Payment (Ref: khqr_17922)",
+      "createdAt": "2026-10-17T12:11:03.897Z"
+    },
     {
       "id": "f9afa7b1-9975-4448-b6d5-35990fb7a8ad",
       "userId": "d2c395b5-3569-4199-98c1-70ed813961a6",

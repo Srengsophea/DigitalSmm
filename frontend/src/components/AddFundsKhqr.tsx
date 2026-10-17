@@ -7,7 +7,7 @@ export const AddFundsKhqr: React.FC = () => {
   const { user, refreshProfile, showToast } = useAuth();
   const [amount, setAmount] = useState<number>(10);
   const [customAmount, setCustomAmount] = useState<string>('10');
-  const [currency, setCurrency] = useState<'USD' | 'KHR'>('USD');
+  const currency = 'USD';
   const [isLoading, setIsLoading] = useState(false);
   const [khqrData, setKhqrData] = useState<any>(null);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -21,7 +21,7 @@ export const AddFundsKhqr: React.FC = () => {
     if (e) e.preventDefault();
     const num = parseFloat(customAmount);
     if (isNaN(num) || num < 1) {
-      showToast('Minimum deposit is $1.00 USD (or 4,000 KHR)', 'error');
+      showToast('Minimum deposit is $1.00 USD', 'error');
       return;
     }
 
@@ -137,7 +137,7 @@ export const AddFundsKhqr: React.FC = () => {
 
             {/* Custom Amount */}
             <div className="form-group">
-              <label className="form-label">Deposit Amount ({currency})</label>
+              <label className="form-label">Deposit Amount (USD $)</label>
               <input
                 type="number"
                 step="0.01"
@@ -150,27 +150,6 @@ export const AddFundsKhqr: React.FC = () => {
                 }}
                 required
               />
-            </div>
-
-            {/* Currency Choice */}
-            <div className="form-group">
-              <label className="form-label">Currency</label>
-              <div style={{ display: 'flex', gap: 12 }}>
-                <button
-                  type="button"
-                  className={`btn ${currency === 'USD' ? 'btn-primary' : 'btn-secondary'} btn-sm`}
-                  onClick={() => setCurrency('USD')}
-                >
-                  USD ($)
-                </button>
-                <button
-                  type="button"
-                  className={`btn ${currency === 'KHR' ? 'btn-primary' : 'btn-secondary'} btn-sm`}
-                  onClick={() => setCurrency('KHR')}
-                >
-                  KHR (៛ Riel)
-                </button>
-              </div>
             </div>
 
             {/* Generate KHQR button */}
@@ -237,11 +216,8 @@ export const AddFundsKhqr: React.FC = () => {
                   </div>
 
                   {/* Amount Display */}
-                  <div className="khqr-amount-text">
+                  <div className="khqr-amount-text" style={{ marginBottom: 14 }}>
                     ${khqrData.amount.toFixed(2)} USD
-                  </div>
-                  <div style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: 12 }}>
-                    ≈ {(khqrData.amount * 4100).toLocaleString()} KHR
                   </div>
 
                   {/* Countdown Timer */}

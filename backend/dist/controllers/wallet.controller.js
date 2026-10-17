@@ -71,7 +71,7 @@ class WalletController {
         const { amount, currency = 'USD' } = req.body;
         const numAmount = parseFloat(amount);
         if (isNaN(numAmount) || numAmount < 1) {
-            res.status(400).json({ success: false, error: 'Minimum deposit is $1.00 (or 4000 KHR)' });
+            res.status(400).json({ success: false, error: 'Minimum deposit is $1.00 USD' });
             return;
         }
         const bakong = bakong_service_1.BakongService.getInstance();

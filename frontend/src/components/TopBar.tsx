@@ -5,6 +5,8 @@ import {
   Star,
   Banknote,
   Landmark,
+  Wallet,
+  Plus,
   Settings,
   Sun,
   Power,
@@ -49,49 +51,70 @@ export const TopBar: React.FC<TopBarProps> = ({ openAuthModal, openDepositModal,
 
   return (
     <header className="topbar">
-      {/* Top Bar Left Stats matching SMMFollows screenshot */}
+      {/* Top Bar Left Stats - Modern Card Pills */}
       <div className="topbar-stats">
         {/* Status */}
-        <div className="stat-item">
-          <div className="stat-icon-wrapper">
-            <User size={16} />
+        <div className="topbar-stat-card stat-card-status">
+          <div className="stat-card-icon status-icon-bg">
+            <User size={15} />
+            <span className="status-online-dot" />
           </div>
-          <span>Status</span>
-          <span className="stat-value">{isAdmin ? 'VIP Admin' : isAuthenticated ? 'Active User' : 'Guest'}</span>
+          <div className="stat-card-text">
+            <span className="stat-card-label">Status</span>
+            <span className="stat-card-val status-val">
+              {isAdmin ? 'VIP Admin' : isAuthenticated ? 'Active User' : 'Guest'}
+            </span>
+          </div>
         </div>
 
         {/* Account Points */}
-        <div className="stat-item">
-          <div className="stat-icon-wrapper">
-            <Star size={16} />
+        <div className="topbar-stat-card stat-card-points">
+          <div className="stat-card-icon points-icon-bg">
+            <Star size={15} fill="#f59e0b" />
           </div>
-          <span>Account Points</span>
-          <span className="stat-value">0 = 0.00$</span>
+          <div className="stat-card-text">
+            <span className="stat-card-label">Account Points</span>
+            <span className="stat-card-val">0 = 0.00$</span>
+          </div>
         </div>
 
         {/* Account Spending */}
-        <div className="stat-item">
-          <div className="stat-icon-wrapper">
-            <Banknote size={16} />
+        <div className="topbar-stat-card stat-card-spending">
+          <div className="stat-card-icon spending-icon-bg">
+            <Banknote size={15} />
           </div>
-          <span>Account Spending</span>
-          <span className="stat-value">$0</span>
+          <div className="stat-card-text">
+            <span className="stat-card-label">Account Spending</span>
+            <span className="stat-card-val">$0</span>
+          </div>
         </div>
 
-        {/* Account Balance */}
+        {/* Account Balance (Interactive Card) */}
         <div
-          className="stat-item"
-          style={{ cursor: 'pointer' }}
+          className="topbar-stat-card stat-card-balance"
           onClick={openDepositModal}
-          title="Click to Add Funds (KHQR Bakong)"
+          title="Click to Add Funds via Bakong KHQR"
+          role="button"
+          tabIndex={0}
         >
-          <div className="stat-icon-wrapper">
-            <Landmark size={16} />
+          <div className="stat-card-icon balance-icon-bg">
+            <Wallet size={15} />
           </div>
-          <span>Account Balance</span>
-          <span className="stat-value" style={{ color: '#162399', fontSize: '0.92rem' }}>
-            ${balance.toFixed(2)}
-          </span>
+          <div className="stat-card-text">
+            <span className="stat-card-label">Account Balance</span>
+            <span className="stat-card-val balance-val">${balance.toFixed(2)}</span>
+          </div>
+          <button
+            type="button"
+            className="stat-card-topup-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              openDepositModal();
+            }}
+          >
+            <Plus size={12} strokeWidth={3} />
+            <span>Top-up</span>
+          </button>
         </div>
       </div>
 
