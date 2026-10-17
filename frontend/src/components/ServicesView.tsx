@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ServiceItem } from './ServicesTable';
 import { Star, Eye, Info, Search, Filter } from 'lucide-react';
 import { PlatformPillsBar } from './PlatformPillsBar';
+import { ServiceDetailModal } from './ServiceDetailModal';
 
 interface ServicesViewProps {
   services: ServiceItem[];
@@ -21,6 +22,7 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [activeSearch, setActiveSearch] = useState<string>('');
+  const [selectedDetailService, setSelectedDetailService] = useState<ServiceItem | null>(null);
 
   // Filtering
   const filteredServices = services.filter((s) => {
@@ -166,8 +168,8 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
                       <td>
                         <button
                           className="action-view-btn"
-                          title="Order Service"
-                          onClick={() => onSelectService(service)}
+                          title="View Service Details"
+                          onClick={() => setSelectedDetailService(service)}
                         >
                           <Eye size={16} />
                         </button>
@@ -194,7 +196,7 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
 
                       {/* Average Completion Time */}
                       <td style={{ textAlign: 'right', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-                        <span>Not enough data</span>
+                        <span>Fast Automated</span>
                       </td>
                     </tr>
                   ))}
@@ -204,6 +206,18 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
           </tbody>
         </table>
       </div>
+
+      {/* Service Details Modal */}
+      <ServiceDetailModal
+        service={selectedDetailService}
+        isOpen={!!selectedDetailService}
+        onClose={() => setSelectedDetailService(null)}
+        onOrderNow={(srv) => {
+          setSelectedDetailService(null);
+          onSelectService(srv);
+        }}
+        isAuthenticated={true}
+      />
     </div>
   );
 };

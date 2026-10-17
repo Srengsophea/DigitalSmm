@@ -17,12 +17,12 @@
       "username": "demouser",
       "email": "user@digitalsmm.com",
       "passwordHash": "$2b$12$.QM5pFzLc7yssEQsAbBWjutKPPdvbtSvMedOiMxJMFxhpYKFtOxJe",
-      "balance": 120,
+      "balance": 130,
       "role": "USER",
       "status": "active",
       "apiKey": "ds_usr_3f7f52668a476eb3c6271ce5cac8ea66f647ca00c4d4c88e",
       "createdAt": "2026-10-16T15:11:12.145Z",
-      "updatedAt": "2026-10-16T16:23:33.964Z"
+      "updatedAt": "2026-10-16T19:02:40.285Z"
     },
     {
       "username": "davidlorn",
@@ -35,6 +35,18 @@
       "apiKey": "ds_usr_9e2dce30727f4020f43cc728c0843d2224cc8e8697a16c74",
       "createdAt": "2026-10-16T17:50:49.269Z",
       "updatedAt": "2026-10-16T17:50:49.311Z"
+    },
+    {
+      "username": "alexcreator",
+      "email": "creator@gmail.com",
+      "passwordHash": "$2b$12$j2/25z5OcQyHRSdwTdthK.diUPPh0Dp5TgYjIoS7r7FKv2zYMr3Mm",
+      "balance": 20,
+      "role": "USER",
+      "status": "active",
+      "id": "1891cf37-331b-4b4c-8004-c924332f881a",
+      "apiKey": "ds_usr_2340e9b0b7f774de7ff220e338f955183032a0f2eec5d067",
+      "createdAt": "2026-10-16T19:06:51.327Z",
+      "updatedAt": "2026-10-16T19:06:51.373Z"
     }
   ],
   "services": [
@@ -136287,6 +136299,28 @@
   ],
   "transactions": [
     {
+      "id": "a14ba1da-2185-4c1b-897b-5cf4351d5065",
+      "userId": "1891cf37-331b-4b4c-8004-c924332f881a",
+      "type": "DEPOSIT",
+      "amount": 10,
+      "balanceBefore": 10,
+      "balanceAfter": 20,
+      "referenceId": "GOOGLE_WELCOME",
+      "description": "Welcome bonus credit of $10.00 for Google / Gmail signup",
+      "createdAt": "2026-10-16T19:06:51.373Z"
+    },
+    {
+      "id": "925d6a11-9a75-4f57-9ad6-23c80612adbe",
+      "userId": "ccae8c6d-074e-447c-8d22-7796940df2a2",
+      "type": "DEPOSIT",
+      "amount": 10,
+      "balanceBefore": 120,
+      "balanceAfter": 130,
+      "referenceId": "khqr_1792177356569_g160kx",
+      "description": "Bakong KHQR Payment (Ref: khqr_17921)",
+      "createdAt": "2026-10-16T19:02:40.285Z"
+    },
+    {
       "id": "18e41ee7-3d9a-4cc4-ab2f-acfd6fe4f9db",
       "userId": "b91f8451-c804-47f3-93ed-f620066540f1",
       "type": "DEPOSIT",
@@ -136389,6 +136423,33 @@
     }
   },
   "auditLogs": [
+    {
+      "id": "40f43634-e6ec-4d2d-bae4-782d9339012e",
+      "userId": "1891cf37-331b-4b4c-8004-c924332f881a",
+      "username": "alexcreator",
+      "action": "GOOGLE_REGISTER",
+      "details": "User registered with Google: alexcreator (creator@gmail.com)",
+      "ip": "::1",
+      "createdAt": "2026-10-16T19:06:51.411Z"
+    },
+    {
+      "id": "2ec0272f-86a5-40a8-b18f-5551ba3a99fc",
+      "userId": "ccae8c6d-074e-447c-8d22-7796940df2a2",
+      "username": "demouser",
+      "action": "USER_LOGIN",
+      "details": "User signed in: demouser",
+      "ip": "::1",
+      "createdAt": "2026-10-16T19:06:04.556Z"
+    },
+    {
+      "id": "7884ea54-6670-4e52-b95a-2e02ca81e30e",
+      "userId": "ccae8c6d-074e-447c-8d22-7796940df2a2",
+      "username": "demouser",
+      "action": "USER_LOGIN",
+      "details": "User signed in: demouser",
+      "ip": "::1",
+      "createdAt": "2026-10-16T19:02:09.694Z"
+    },
     {
       "id": "3c41466a-1e28-4871-8c71-02c0ccda90de",
       "userId": "2e6db9fd-a647-4f48-bc95-c4accd254767",

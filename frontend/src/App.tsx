@@ -16,12 +16,20 @@ import { TicketModal } from './components/TicketModal';
 import { AuthPage } from './components/AuthPage';
 import { AdminLoginPage } from './components/AdminLoginPage';
 import { NotificationToast } from './components/NotificationToast';
+import { PublicNavbar } from './components/PublicNavbar';
+import { PublicHomeView } from './components/PublicHomeView';
+import { PublicServicesView } from './components/PublicServicesView';
 import { api } from './services/api';
 import { ServiceItem } from './components/ServicesTable';
 import { Bell } from 'lucide-react';
 import './styles/index.css';
 import './styles/components.css';
+import './styles/public.css';
+import './styles/admin.css';
 
+// =========================================================================
+// 1. AUTHENTICATED USER DASHBOARD LAYOUT (Image 2 - ONLY FOR LOGGED IN USERS)
+// =========================================================================
 interface MainLayoutProps {
   initialPage?: string;
   activePageProp?: string;
@@ -29,11 +37,11 @@ interface MainLayoutProps {
 }
 
 const MainLayout: React.FC<MainLayoutProps> = ({
-  initialPage = 'services',
+  initialPage = 'new-order',
   activePageProp,
   onNavigate,
 }) => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, logout } = useAuth();
   const [activePage, setActivePage] = useState<string>(activePageProp || initialPage);
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
@@ -198,11 +206,109 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   );
 };
 
+// =========================================================================
+// 2. PUBLIC STOREFRONT LAYOUT (FOR GUESTS / VISITORS NOT LOGGED IN)
+// =========================================================================
+interface PublicLayoutProps {
+  currentPath: string;
+  onNavigate: (path: string) => void;
+}
+
+const PublicLayout: React.FC<PublicLayoutProps> = ({ currentPath, onNavigate }) => {
+  const [services, setServices] = useState<ServiceItem[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [platforms, setPlatforms] = useState<string[]>([]);
+  const [isLoadingServices, setIsLoadingServices] = useState(true);
+  const [selectedPlatform, setSelectedPlatform] = useState<string>('All');
+
+  const fetchServices = async () => {
+    setIsLoadingServices(true);
+    try {
+      const data = await api.services.getServices();
+      if (data.success) {
+        setServices(data.services || []);
+        if (data.categories) setCategories(data.categories);
+        if (data.platforms) setPlatforms(data.platforms);
+      }
+    } catch (err) {
+      console.error('Failed to load services:', err);
+    } finally {
+      setIsLoadingServices(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchServices();
+  }, []);
+
+  const activePage = currentPath.replace(/^\//, '') || 'home';
+
+  return (
+    <div className="public-layout-root">
+      {/* 1. Top Public Navbar with Home, Services, API, FAQ, Terms, Sign In, Sign Up */}
+      <PublicNavbar activePage={activePage} onNavigate={onNavigate} />
+
+      {/* 2. Main Public Content Body */}
+      <main className="public-main-content">
+        {(activePage === 'home' || activePage === '') && (
+          <PublicHomeView
+            onExploreServices={() => onNavigate('/services')}
+            onSignUp={() => onNavigate('/signup')}
+            onSelectPlatform={(plat) => {
+              setSelectedPlatform(plat);
+              onNavigate('/services');
+            }}
+            selectedPlatform={selectedPlatform}
+          />
+        )}
+
+        {activePage === 'services' && (
+          <PublicServicesView
+            services={services}
+            categories={categories}
+            platforms={platforms}
+            isLoading={isLoadingServices}
+            onSignUp={() => onNavigate('/signup')}
+            onSignIn={() => onNavigate('/login')}
+          />
+        )}
+
+        {activePage === 'api' && (
+          <div style={{ maxWidth: 1200, margin: '30px auto', padding: '0 24px' }}>
+            <ApiDocs />
+          </div>
+        )}
+
+        {activePage === 'faq' && (
+          <div style={{ maxWidth: 1000, margin: '30px auto', padding: '0 24px' }}>
+            <FAQView />
+          </div>
+        )}
+
+        {activePage === 'terms' && (
+          <div style={{ maxWidth: 1000, margin: '30px auto', padding: '0 24px' }}>
+            <TermsView />
+          </div>
+        )}
+      </main>
+
+      {/* 3. Public Footer */}
+      <FooterBanner onOpenTicket={() => onNavigate('/login')} />
+
+      {/* Global Notifications */}
+      <NotificationToast />
+    </div>
+  );
+};
+
+// =========================================================================
+// 3. MAIN ROUTER APP
+// =========================================================================
 const RouterApp: React.FC = () => {
-  const { isAdmin } = useAuth();
+  const { isAuthenticated, isAdmin } = useAuth();
   const [currentPath, setCurrentPath] = useState<string>(() => {
     const p = window.location.pathname;
-    return p && p !== '/' ? p : '/services';
+    return p && p !== '/' ? p : '/';
   });
 
   const navigate = useCallback((targetPath: string) => {
@@ -217,23 +323,29 @@ const RouterApp: React.FC = () => {
   useEffect(() => {
     const handlePopState = () => {
       const p = window.location.pathname;
-      setCurrentPath(p && p !== '/' ? p : '/services');
+      setCurrentPath(p || '/');
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // 1. Dedicated User Login Page
+  // 1. Dedicated User Login Page (Redesigned SMM panel style)
   if (currentPath === '/login') {
+    if (isAuthenticated) {
+      return <MainLayout initialPage="new-order" onNavigate={navigate} />;
+    }
     return <AuthPage initialMode="login" onNavigate={navigate} />;
   }
 
-  // 2. Dedicated User Signup Page
+  // 2. Dedicated User Signup Page (Redesigned SMM panel style)
   if (currentPath === '/signup') {
+    if (isAuthenticated) {
+      return <MainLayout initialPage="new-order" onNavigate={navigate} />;
+    }
     return <AuthPage initialMode="signup" onNavigate={navigate} />;
   }
 
-  // 3. Dedicated Admin Login Portal (Different access from user)
+  // 3. Dedicated Admin Login Portal
   if (currentPath === '/admin/login') {
     return <AdminLoginPage onNavigate={navigate} />;
   }
@@ -241,15 +353,27 @@ const RouterApp: React.FC = () => {
   // 4. Admin Dashboard Route Protection
   if (currentPath === '/admin') {
     if (!isAdmin) {
-      // Redirect unauthenticated or non-admin users to the Admin Login Portal
       return <AdminLoginPage onNavigate={navigate} />;
     }
     return <MainLayout activePageProp="admin" onNavigate={navigate} />;
   }
 
-  // 5. General Storefront & SMM Routes
-  const pageFromPath = currentPath.replace(/^\//, '') || 'services';
-  return <MainLayout initialPage={pageFromPath} onNavigate={navigate} />;
+  // 5. If User IS Authenticated (Logged In) -> Show Full User Dashboard with Sidebar
+  if (isAuthenticated) {
+    const pageFromPath = currentPath.replace(/^\//, '') || 'new-order';
+    return <MainLayout initialPage={pageFromPath} onNavigate={navigate} />;
+  }
+
+  // 6. If User is NOT Logged In (Guest) -> Show Public Storefront with Public Navbar (NO sidebar)
+  const validPublicPaths = ['/', '/home', '/services', '/api', '/faq', '/terms'];
+  const cleanPath = currentPath === '/' ? '/home' : currentPath;
+
+  if (validPublicPaths.includes(currentPath) || currentPath === '/') {
+    return <PublicLayout currentPath={cleanPath} onNavigate={navigate} />;
+  }
+
+  // If unauthenticated guest attempts to access user-only routes (/new-order, /orders, /add-funds, etc.)
+  return <AuthPage initialMode="login" onNavigate={navigate} />;
 };
 
 export default function App() {
