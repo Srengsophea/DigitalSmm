@@ -71,6 +71,38 @@ export const api = {
       });
       return handleResponse<any>(res);
     },
+    async changeEmail(email: string) {
+      const res = await fetch(`${API_BASE}/auth/change-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        body: JSON.stringify({ email }),
+      });
+      return handleResponse<any>(res);
+    },
+    async changePassword(currentPassword: string, newPassword: string) {
+      const res = await fetch(`${API_BASE}/auth/change-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      return handleResponse<any>(res);
+    },
+    async toggle2FA(enabled?: boolean) {
+      const res = await fetch(`${API_BASE}/auth/toggle-2fa`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        body: JSON.stringify({ enabled }),
+      });
+      return handleResponse<any>(res);
+    },
+    async updateTimezone(timezone: string) {
+      const res = await fetch(`${API_BASE}/auth/update-timezone`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        body: JSON.stringify({ timezone }),
+      });
+      return handleResponse<any>(res);
+    },
     async regenerateApiKey() {
       const res = await fetch(`${API_BASE}/auth/api-key/regenerate`, {
         method: 'POST',

@@ -9,6 +9,9 @@ export interface User {
   role: UserRole;
   status: 'active' | 'suspended';
   apiKey: string;
+  twoFactorEnabled?: boolean;
+  timezone?: string;
+  apiKeyCreatedAt?: string;
   createdAt: string;
   updatedAt: string;
 }

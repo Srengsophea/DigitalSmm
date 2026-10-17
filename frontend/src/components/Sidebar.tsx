@@ -13,6 +13,7 @@ import {
   DollarSign,
   ChevronLeft,
   ShieldCheck,
+  Settings,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -204,6 +205,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <DollarSign size={18} color={activePage === 'affiliates' ? '#ffffff' : '#64748b'} />
           <span>Affiliates(Earn money with digitalsmm)</span>
+        </button>
+
+        {/* Settings */}
+        <button
+          className={`nav-item ${activePage === 'settings' ? 'active' : ''}`}
+          onClick={() => handleNav('settings', '/settings')}
+        >
+          <Settings size={18} color={activePage === 'settings' ? '#ffffff' : '#64748b'} />
+          <span>Settings</span>
         </button>
 
         {/* Admin Center (ONLY for authorized admins) */}

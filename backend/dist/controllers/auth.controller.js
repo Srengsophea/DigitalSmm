@@ -251,12 +251,142 @@ class AuthController {
         const db = db_service_1.DatabaseService.getInstance();
         const prefix = req.user.role === 'ADMIN' ? 'ds_adm_' : 'ds_usr_';
         const newApiKey = encryption_service_1.EncryptionService.generateApiKey(prefix);
-        await db.updateUser(req.user.id, { apiKey: newApiKey });
+        const nowIso = new Date().toISOString();
+        await db.updateUser(req.user.id, {
+            apiKey: newApiKey,
+            apiKeyCreatedAt: nowIso,
+        });
         await db.logAudit('API_KEY_ROTATED', `API key rotated for user: ${req.user.username}`, req.ip || '127.0.0.1', req.user.id, req.user.username);
         res.json({
             success: true,
             message: 'New API key generated successfully',
             apiKey: newApiKey,
+            apiKeyCreatedAt: nowIso,
+        });
+    }
+    /**
+     * Change User Email Address
+     */
+    static async changeEmail(req, res) {
+        if (!req.user) {
+            res.status(401).json({ success: false, error: 'Not authenticated' });
+            return;
+        }
+        const db = db_service_1.DatabaseService.getInstance();
+        const { email } = req.body;
+        if (!email || typeof email !== 'string') {
+            res.status(400).json({ success: false, error: 'Valid email address is required' });
+            return;
+        }
+        const cleanEmail = email.trim().toLowerCase();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(cleanEmail)) {
+            res.status(400).json({ success: false, error: 'Invalid email address format' });
+            return;
+        }
+        const existingUser = db.getUserByEmail(cleanEmail);
+        if (existingUser && existingUser.id !== req.user.id) {
+            res.status(409).json({ success: false, error: 'This email is already in use by another account' });
+            return;
+        }
+        const updated = await db.updateUser(req.user.id, { email: cleanEmail });
+        if (!updated) {
+            res.status(500).json({ success: false, error: 'Failed to update email address' });
+            return;
+        }
+        await db.logAudit('EMAIL_CHANGED', `User ${req.user.username} updated email from ${req.user.email} to ${cleanEmail}`, req.ip || '127.0.0.1', req.user.id, req.user.username);
+        const { passwordHash: _, ...safeUser } = updated;
+        res.json({
+            success: true,
+            message: 'Email address updated successfully',
+            user: safeUser,
+        });
+    }
+    /**
+     * Change User Password
+     */
+    static async changePassword(req, res) {
+        if (!req.user) {
+            res.status(401).json({ success: false, error: 'Not authenticated' });
+            return;
+        }
+        const db = db_service_1.DatabaseService.getInstance();
+        const { currentPassword, newPassword } = req.body;
+        if (!currentPassword || !newPassword) {
+            res.status(400).json({ success: false, error: 'Current password and new password are required' });
+            return;
+        }
+        if (typeof newPassword !== 'string' || newPassword.length < 6) {
+            res.status(400).json({ success: false, error: 'New password must be at least 6 characters' });
+            return;
+        }
+        const freshUser = db.getUserById(req.user.id);
+        if (!freshUser) {
+            res.status(404).json({ success: false, error: 'User not found' });
+            return;
+        }
+        const isMatch = await bcryptjs_1.default.compare(currentPassword, freshUser.passwordHash);
+        if (!isMatch) {
+            res.status(400).json({ success: false, error: 'Current password does not match' });
+            return;
+        }
+        const salt = await bcryptjs_1.default.genSalt(12);
+        const newHash = await bcryptjs_1.default.hash(newPassword, salt);
+        await db.updateUser(req.user.id, { passwordHash: newHash });
+        await db.logAudit('PASSWORD_CHANGED', `Password changed for user: ${req.user.username}`, req.ip || '127.0.0.1', req.user.id, req.user.username);
+        res.json({
+            success: true,
+            message: 'Password changed successfully',
+        });
+    }
+    /**
+     * Toggle Two-Factor Authentication (Email 2FA)
+     */
+    static async toggle2FA(req, res) {
+        if (!req.user) {
+            res.status(401).json({ success: false, error: 'Not authenticated' });
+            return;
+        }
+        const db = db_service_1.DatabaseService.getInstance();
+        const { enabled } = req.body;
+        const freshUser = db.getUserById(req.user.id);
+        if (!freshUser) {
+            res.status(404).json({ success: false, error: 'User not found' });
+            return;
+        }
+        const newState = enabled !== undefined ? Boolean(enabled) : !freshUser.twoFactorEnabled;
+        const updated = await db.updateUser(req.user.id, { twoFactorEnabled: newState });
+        await db.logAudit('TWO_FACTOR_TOGGLED', `2FA ${newState ? 'enabled' : 'disabled'} for user: ${req.user.username}`, req.ip || '127.0.0.1', req.user.id, req.user.username);
+        const { passwordHash: _, ...safeUser } = updated || freshUser;
+        res.json({
+            success: true,
+            twoFactorEnabled: newState,
+            message: newState ? 'Two-factor authentication enabled successfully' : 'Two-factor authentication disabled',
+            user: safeUser,
+        });
+    }
+    /**
+     * Update User Timezone
+     */
+    static async updateTimezone(req, res) {
+        if (!req.user) {
+            res.status(401).json({ success: false, error: 'Not authenticated' });
+            return;
+        }
+        const db = db_service_1.DatabaseService.getInstance();
+        const { timezone } = req.body;
+        if (!timezone || typeof timezone !== 'string') {
+            res.status(400).json({ success: false, error: 'Timezone is required' });
+            return;
+        }
+        const updated = await db.updateUser(req.user.id, { timezone: timezone.trim() });
+        await db.logAudit('TIMEZONE_UPDATED', `Timezone updated for ${req.user.username}: ${timezone}`, req.ip || '127.0.0.1', req.user.id, req.user.username);
+        const { passwordHash: _, ...safeUser } = updated || req.user;
+        res.json({
+            success: true,
+            timezone: timezone.trim(),
+            message: 'Timezone preference saved successfully',
+            user: safeUser,
         });
     }
     /**

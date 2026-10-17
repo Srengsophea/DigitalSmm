@@ -23,6 +23,10 @@ router.post('/register', authLimiter, validateBody(registerSchema), AuthControll
 router.post('/login', authLimiter, validateBody(loginSchema), AuthController.login);
 router.post('/google', authLimiter, AuthController.googleAuth);
 router.get('/profile', authenticate, AuthController.getProfile);
+router.post('/change-email', authenticate, AuthController.changeEmail);
+router.post('/change-password', authenticate, AuthController.changePassword);
+router.post('/toggle-2fa', authenticate, AuthController.toggle2FA);
+router.post('/update-timezone', authenticate, AuthController.updateTimezone);
 router.post('/api-key/regenerate', authenticate, AuthController.regenerateApiKey);
 
 export default router;

@@ -9,7 +9,8 @@ import { AddFundsKhqr } from './components/AddFundsKhqr';
 import { AdminDashboard } from './components/AdminDashboard';
 import { ApiDocs } from './components/ApiDocs';
 import { TicketsPage } from './components/TicketsPage';
-import { FAQView, TermsView, AffiliatesView } from './components/InfoViews';
+import { TermsView, FAQView, AffiliatesView } from './components/InfoViews';
+import { UserSettingsView } from './components/UserSettingsView';
 import { FooterBanner } from './components/FooterBanner';
 import { OrderModal } from './components/OrderModal';
 import { TicketModal } from './components/TicketModal';
@@ -160,6 +161,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({
 
           {/* Affiliates */}
           {activePage === 'affiliates' && <AffiliatesView />}
+
+          {/* Account Settings */}
+          {activePage === 'settings' && <UserSettingsView />}
 
           {/* Admin Control Center */}
           {activePage === 'admin' && isAdmin && <AdminDashboard />}
@@ -355,7 +359,12 @@ const RouterApp: React.FC = () => {
     return <MainLayout activePageProp="admin" onNavigate={navigate} />;
   }
 
-  // 5. If User IS Authenticated (Logged In) -> Show Full User Dashboard with Sidebar
+  // 5. User Settings route protection
+  if (currentPath === '/settings' && !isAuthenticated) {
+    return <AuthPage initialMode="login" onNavigate={navigate} />;
+  }
+
+  // 6. If User IS Authenticated (Logged In) -> Show Full User Dashboard with Sidebar
   if (isAuthenticated) {
     const pageFromPath = currentPath.replace(/^\//, '') || 'new-order';
     return <MainLayout initialPage={pageFromPath} onNavigate={navigate} />;

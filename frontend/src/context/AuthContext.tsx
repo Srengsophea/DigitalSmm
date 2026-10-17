@@ -9,6 +9,10 @@ export interface User {
   role: 'USER' | 'ADMIN';
   status: 'active' | 'suspended';
   apiKey: string;
+  twoFactorEnabled?: boolean;
+  timezone?: string;
+  apiKeyCreatedAt?: string;
+  createdAt?: string;
 }
 
 export interface ToastMessage {

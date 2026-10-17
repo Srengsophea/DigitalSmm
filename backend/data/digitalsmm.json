@@ -46,7 +46,8 @@
       "id": "fd8dfec8-5007-415f-9d2c-b148c21a7a61",
       "apiKey": "ds_usr_3372edff22d6e8390eeeb773f55dc5f4c95ec405f287a758",
       "createdAt": "2026-10-17T12:58:59.344Z",
-      "updatedAt": "2026-10-17T13:31:45.035Z"
+      "updatedAt": "2026-10-17T13:45:20.865Z",
+      "twoFactorEnabled": false
     }
   ],
   "services": [],
@@ -131,6 +132,24 @@
     }
   },
   "auditLogs": [
+    {
+      "id": "05ab38a3-b55b-4dde-af56-294e01b22b70",
+      "userId": "fd8dfec8-5007-415f-9d2c-b148c21a7a61",
+      "username": "an0ntester",
+      "action": "TWO_FACTOR_TOGGLED",
+      "details": "2FA disabled for user: an0ntester",
+      "ip": "::1",
+      "createdAt": "2026-10-17T13:45:20.868Z"
+    },
+    {
+      "id": "398601a8-19a9-46de-b21d-7f9c4bdcf152",
+      "userId": "fd8dfec8-5007-415f-9d2c-b148c21a7a61",
+      "username": "an0ntester",
+      "action": "TWO_FACTOR_TOGGLED",
+      "details": "2FA enabled for user: an0ntester",
+      "ip": "::1",
+      "createdAt": "2026-10-17T13:45:19.385Z"
+    },
     {
       "id": "e8e9639e-c8fd-414f-9557-810aa3322a3e",
       "userId": "fd8dfec8-5007-415f-9d2c-b148c21a7a61",

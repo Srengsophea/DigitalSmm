@@ -144,6 +144,18 @@ export const TopBar: React.FC<TopBarProps> = ({ openAuthModal, openDepositModal,
           </button>
         )}
 
+        {/* Account Settings */}
+        {isAuthenticated && (
+          <button
+            className="topbar-circle-btn"
+            title="Settings"
+            onClick={() => onNavigate && onNavigate('/settings')}
+            style={{ color: '#475569' }}
+          >
+            <Settings size={15} />
+          </button>
+        )}
+
         {/* Theme Light / Dark */}
         <button className="topbar-circle-btn" title="Toggle Theme">
           <Sun size={15} />
