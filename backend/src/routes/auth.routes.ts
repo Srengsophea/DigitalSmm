@@ -23,10 +23,20 @@ router.post('/register', authLimiter, validateBody(registerSchema), AuthControll
 router.post('/login', authLimiter, validateBody(loginSchema), AuthController.login);
 router.post('/google', authLimiter, AuthController.googleAuth);
 router.get('/profile', authenticate, AuthController.getProfile);
-router.post('/change-email', authenticate, AuthController.changeEmail);
+
+// Multi-Step Secure Email Change
+router.post('/email/request-change', authenticate, AuthController.requestEmailChange);
+router.post('/email/verify-old', authenticate, AuthController.verifyOldEmailChange);
+router.post('/email/verify-new', authenticate, AuthController.verifyNewEmailChange);
+
+// Password & Settings
 router.post('/change-password', authenticate, AuthController.changePassword);
-router.post('/toggle-2fa', authenticate, AuthController.toggle2FA);
 router.post('/update-timezone', authenticate, AuthController.updateTimezone);
 router.post('/api-key/regenerate', authenticate, AuthController.regenerateApiKey);
+
+// RFC 6238 TOTP Two-Factor Authentication
+router.post('/2fa/setup', authenticate, AuthController.setup2FA);
+router.post('/2fa/verify-and-enable', authenticate, AuthController.verifyAndEnable2FA);
+router.post('/2fa/disable', authenticate, AuthController.disable2FA);
 
 export default router;

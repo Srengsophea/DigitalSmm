@@ -71,11 +71,28 @@ export const api = {
       });
       return handleResponse<any>(res);
     },
-    async changeEmail(email: string) {
-      const res = await fetch(`${API_BASE}/auth/change-email`, {
+    // Multi-Step Secure Email Change
+    async requestEmailChange(currentPassword: string, newEmail: string) {
+      const res = await fetch(`${API_BASE}/auth/email/request-change`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ currentPassword, newEmail }),
+      });
+      return handleResponse<any>(res);
+    },
+    async verifyOldEmailChange(code: string) {
+      const res = await fetch(`${API_BASE}/auth/email/verify-old`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        body: JSON.stringify({ code }),
+      });
+      return handleResponse<any>(res);
+    },
+    async verifyNewEmailChange(code: string) {
+      const res = await fetch(`${API_BASE}/auth/email/verify-new`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        body: JSON.stringify({ code }),
       });
       return handleResponse<any>(res);
     },
@@ -87,11 +104,27 @@ export const api = {
       });
       return handleResponse<any>(res);
     },
-    async toggle2FA(enabled?: boolean) {
-      const res = await fetch(`${API_BASE}/auth/toggle-2fa`, {
+    // RFC 6238 TOTP Two-Factor Authentication
+    async setup2FA() {
+      const res = await fetch(`${API_BASE}/auth/2fa/setup`, {
+        method: 'POST',
+        headers: { ...getAuthHeader() },
+      });
+      return handleResponse<any>(res);
+    },
+    async verifyAndEnable2FA(code: string) {
+      const res = await fetch(`${API_BASE}/auth/2fa/verify-and-enable`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-        body: JSON.stringify({ enabled }),
+        body: JSON.stringify({ code }),
+      });
+      return handleResponse<any>(res);
+    },
+    async disable2FA(payload: { password?: string; code?: string }) {
+      const res = await fetch(`${API_BASE}/auth/2fa/disable`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        body: JSON.stringify(payload),
       });
       return handleResponse<any>(res);
     },

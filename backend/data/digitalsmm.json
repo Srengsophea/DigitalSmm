@@ -46,8 +46,9 @@
       "id": "fd8dfec8-5007-415f-9d2c-b148c21a7a61",
       "apiKey": "ds_usr_3372edff22d6e8390eeeb773f55dc5f4c95ec405f287a758",
       "createdAt": "2026-10-17T12:58:59.344Z",
-      "updatedAt": "2026-10-17T13:45:20.865Z",
-      "twoFactorEnabled": false
+      "updatedAt": "2026-10-17T14:01:40.395Z",
+      "twoFactorEnabled": true,
+      "twoFactorSecret": "6S42HQCYRPJBXTQZ"
     }
   ],
   "services": [],
@@ -132,6 +133,29 @@
     }
   },
   "auditLogs": [
+    {
+      "id": "dbcab803-a8f8-4a8d-9f9c-9b51f13bfafd",
+      "userId": "fd8dfec8-5007-415f-9d2c-b148c21a7a61",
+      "username": "an0ntester",
+      "action": "TWO_FACTOR_ENABLED",
+      "details": "Two-factor authentication enabled for user: an0ntester",
+      "ip": "::1",
+      "createdAt": "2026-10-17T14:01:40.396Z"
+    },
+    {
+      "id": "50adde74-9287-4473-af71-208f4eea18ae",
+      "action": "SIGNUP_OTP_DISPATCHED",
+      "details": "Signup verification code dispatched to testuser99 (testuser99@example.com) via console",
+      "ip": "::1",
+      "createdAt": "2026-10-17T13:58:34.183Z"
+    },
+    {
+      "id": "996bdc34-f7cc-4d48-8455-57c8e91079d1",
+      "action": "SIGNUP_OTP_DISPATCHED",
+      "details": "Signup verification code dispatched to captainnew (captainnew@example.com) via console",
+      "ip": "::1",
+      "createdAt": "2026-10-17T13:58:25.172Z"
+    },
     {
       "id": "05ab38a3-b55b-4dde-af56-294e01b22b70",
       "userId": "fd8dfec8-5007-415f-9d2c-b148c21a7a61",

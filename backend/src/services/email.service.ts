@@ -122,4 +122,102 @@ export class EmailService {
 
     return { success: true, deliveryMethod: 'console' };
   }
+
+  /**
+   * Send a branded security verification code for account settings (change email, etc.)
+   */
+  public async sendSecurityOtp(
+    email: string,
+    username: string,
+    otp: string,
+    title: string,
+    actionDescription: string
+  ): Promise<{ success: boolean; deliveryMethod: 'smtp' | 'console'; error?: string }> {
+    const db = DatabaseService.getInstance();
+
+    const host = db.getSettingValue('smtp_host') || process.env.SMTP_HOST;
+    const port = parseInt(db.getSettingValue('smtp_port') || process.env.SMTP_PORT || '587', 10);
+    const user = db.getSettingValue('smtp_user') || process.env.SMTP_USER;
+    const pass = db.getSettingValue('smtp_pass') || process.env.SMTP_PASS;
+    const from =
+      db.getSettingValue('smtp_from') ||
+      process.env.SMTP_FROM ||
+      `"DigitalSMM Security" <security@${host || 'digitalsmm.com'}>`;
+    const secure = port === 465 || db.getSettingValue('smtp_secure') === 'true';
+
+    console.log('\n===========================================================================');
+    console.log(`🔒 [DIGITALSMM SECURITY CODE: ${title.toUpperCase()}]`);
+    console.log(`   To User:     ${username} <${email}>`);
+    console.log(`   Action:      ${actionDescription}`);
+    console.log(`   Verify Code: ${otp}`);
+    console.log(`   Valid For:   10 minutes`);
+    console.log('===========================================================================\n');
+
+    if (host && user && pass) {
+      try {
+        const transporter = nodemailer.createTransport({
+          host,
+          port,
+          secure,
+          auth: { user, pass },
+          tls: { rejectUnauthorized: false },
+        });
+
+        const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${title}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f1f5f9; padding: 30px 15px;">
+    <tr>
+      <td align="center">
+        <table width="540" border="0" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06);">
+          <tr>
+            <td style="background-color: #162399; padding: 24px; text-align: center;">
+              <span style="color: #ffffff; font-size: 24px; font-weight: 900; letter-spacing: 0.5px;">DIGITALSMM</span>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 32px 28px;">
+              <h2 style="color: #0f172a; margin-top: 0; margin-bottom: 8px; font-size: 20px;">${title}</h2>
+              <p style="color: #475569; font-size: 14px; line-height: 1.6; margin-bottom: 24px;">
+                Hello <strong>${username}</strong>,<br>
+                ${actionDescription}
+              </p>
+              <div style="background-color: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 10px; padding: 18px; text-align: center; margin-bottom: 24px;">
+                <span style="font-family: monospace; font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #162399;">${otp}</span>
+              </div>
+              <p style="color: #64748b; font-size: 13px; line-height: 1.5; margin-bottom: 0;">
+                ⏱️ This verification code is valid for <strong>10 minutes</strong>. If you did not request this change, please change your password immediately.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+        await transporter.sendMail({
+          from,
+          to: email,
+          subject: `DigitalSMM Security Code: ${otp}`,
+          text: `${title}: Your code is ${otp}. Valid for 10 minutes.`,
+          html,
+        });
+
+        console.log(`✅ Security email dispatched via SMTP to ${email}`);
+        return { success: true, deliveryMethod: 'smtp' };
+      } catch (err: any) {
+        console.error('❌ Failed to dispatch security email via SMTP:', err.message);
+        return { success: true, deliveryMethod: 'console', error: err.message };
+      }
+    }
+
+    return { success: true, deliveryMethod: 'console' };
+  }
 }

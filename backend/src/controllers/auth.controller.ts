@@ -6,17 +6,48 @@ import { EmailService } from '../services/email.service';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { ENV } from '../config/env';
 import { EncryptionService } from '../services/encryption.service';
+import { TotpService } from '../services/totp.service';
 import { PendingSignup } from '../models/types';
 
 // Thread-safe in-memory store for pending email OTP signups (key: normalized lowercase email)
 const pendingSignups = new Map<string, PendingSignup>();
 
-// Clean expired registrations periodically
+// Thread-safe in-memory store for pending email changes (key: userId)
+interface PendingEmailChange {
+  userId: string;
+  currentEmail: string;
+  newEmail: string;
+  oldEmailOtp: string;
+  newEmailOtp: string;
+  oldEmailVerified: boolean;
+  expiresAt: number;
+}
+const pendingEmailChanges = new Map<string, PendingEmailChange>();
+
+// Thread-safe in-memory store for pending 2FA setups (key: userId)
+interface Pending2FASetup {
+  userId: string;
+  secret: string;
+  expiresAt: number;
+}
+const pending2FASetups = new Map<string, Pending2FASetup>();
+
+// Clean expired registrations and pending security requests periodically
 setInterval(() => {
   const now = Date.now();
   for (const [email, pending] of pendingSignups.entries()) {
     if (now > pending.expiresAt) {
       pendingSignups.delete(email);
+    }
+  }
+  for (const [uid, pending] of pendingEmailChanges.entries()) {
+    if (now > pending.expiresAt) {
+      pendingEmailChanges.delete(uid);
+    }
+  }
+  for (const [uid, pending] of pending2FASetups.entries()) {
+    if (now > pending.expiresAt) {
+      pending2FASetups.delete(uid);
     }
   }
 }, 5 * 60 * 1000);
@@ -346,53 +377,199 @@ export class AuthController {
   }
 
   /**
-   * Change User Email Address
+   * STEP 1: Request Email Change
+   * Requires current password & new email.
+   * Generates OTPs, dispatches first OTP to the OLD email.
    */
-  public static async changeEmail(req: AuthenticatedRequest, res: Response): Promise<void> {
+  public static async requestEmailChange(req: AuthenticatedRequest, res: Response): Promise<void> {
     if (!req.user) {
       res.status(401).json({ success: false, error: 'Not authenticated' });
       return;
     }
 
     const db = DatabaseService.getInstance();
-    const { email } = req.body;
+    const emailService = EmailService.getInstance();
+    const { currentPassword, newEmail } = req.body;
 
-    if (!email || typeof email !== 'string') {
-      res.status(400).json({ success: false, error: 'Valid email address is required' });
+    if (!currentPassword || !newEmail) {
+      res.status(400).json({ success: false, error: 'Current password and new email address are required' });
       return;
     }
 
-    const cleanEmail = email.trim().toLowerCase();
+    const freshUser = db.getUserById(req.user.id);
+    if (!freshUser) {
+      res.status(404).json({ success: false, error: 'User account not found' });
+      return;
+    }
+
+    // Verify current password
+    const isPasswordValid = await bcrypt.compare(currentPassword, freshUser.passwordHash);
+    if (!isPasswordValid) {
+      res.status(400).json({ success: false, error: 'Current password does not match' });
+      return;
+    }
+
+    const cleanNewEmail = newEmail.trim().toLowerCase();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(cleanEmail)) {
-      res.status(400).json({ success: false, error: 'Invalid email address format' });
+    if (!emailRegex.test(cleanNewEmail)) {
+      res.status(400).json({ success: false, error: 'Please enter a valid email address format' });
       return;
     }
 
-    const existingUser = db.getUserByEmail(cleanEmail);
+    if (cleanNewEmail === freshUser.email.toLowerCase()) {
+      res.status(400).json({ success: false, error: 'New email cannot be the same as your current email' });
+      return;
+    }
+
+    const existingUser = db.getUserByEmail(cleanNewEmail);
     if (existingUser && existingUser.id !== req.user.id) {
+      res.status(409).json({ success: false, error: 'This email is already registered to another account' });
+      return;
+    }
+
+    // Generate two separate 6-digit OTP codes: one for old email, one for new email
+    const oldEmailOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const newEmailOtp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    pendingEmailChanges.set(freshUser.id, {
+      userId: freshUser.id,
+      currentEmail: freshUser.email,
+      newEmail: cleanNewEmail,
+      oldEmailOtp,
+      newEmailOtp,
+      oldEmailVerified: false,
+      expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
+    });
+
+    // Send code to the CURRENT (old) email address
+    await emailService.sendSecurityOtp(
+      freshUser.email,
+      freshUser.username,
+      oldEmailOtp,
+      'Email Change Request (Step 1/2)',
+      `We received a request to update your account email to <strong>${cleanNewEmail}</strong>. Please enter the 6-digit code below to confirm authorization from your current email:`
+    );
+
+    res.json({
+      success: true,
+      step: 'VERIFY_OLD',
+      currentEmail: freshUser.email,
+      newEmail: cleanNewEmail,
+      message: `Verification code sent to your current email (${freshUser.email}). Please enter it to continue.`,
+    });
+  }
+
+  /**
+   * STEP 2: Verify Code from Current (OLD) Email
+   * Once confirmed, dispatches the second OTP to the NEW email.
+   */
+  public static async verifyOldEmailChange(req: AuthenticatedRequest, res: Response): Promise<void> {
+    if (!req.user) {
+      res.status(401).json({ success: false, error: 'Not authenticated' });
+      return;
+    }
+
+    const emailService = EmailService.getInstance();
+    const { code } = req.body;
+
+    if (!code || typeof code !== 'string') {
+      res.status(400).json({ success: false, error: 'Verification code is required' });
+      return;
+    }
+
+    const pending = pendingEmailChanges.get(req.user.id);
+    if (!pending) {
+      res.status(400).json({ success: false, error: 'No pending email change request found. Please start over.' });
+      return;
+    }
+
+    if (Date.now() > pending.expiresAt) {
+      pendingEmailChanges.delete(req.user.id);
+      res.status(400).json({ success: false, error: 'Verification code expired. Please request a new email change.' });
+      return;
+    }
+
+    if (pending.oldEmailOtp !== code.trim()) {
+      res.status(400).json({ success: false, error: 'Invalid verification code for your current email' });
+      return;
+    }
+
+    // Mark current email as verified
+    pending.oldEmailVerified = true;
+
+    // Dispatch second code to the NEW email address
+    await emailService.sendSecurityOtp(
+      pending.newEmail,
+      req.user.username,
+      pending.newEmailOtp,
+      'Confirm Your New Email (Step 2/2)',
+      `You are confirming <strong>${pending.newEmail}</strong> as your new email address for DigitalSMM. Enter this 6-digit code to complete the update:`
+    );
+
+    res.json({
+      success: true,
+      step: 'VERIFY_NEW',
+      newEmail: pending.newEmail,
+      message: `Current email verified! A verification code has now been sent to your new email (${pending.newEmail}).`,
+    });
+  }
+
+  /**
+   * STEP 3: Verify Code from NEW Email & Finalize Update
+   */
+  public static async verifyNewEmailChange(req: AuthenticatedRequest, res: Response): Promise<void> {
+    if (!req.user) {
+      res.status(401).json({ success: false, error: 'Not authenticated' });
+      return;
+    }
+
+    const db = DatabaseService.getInstance();
+    const { code } = req.body;
+
+    if (!code || typeof code !== 'string') {
+      res.status(400).json({ success: false, error: 'Verification code is required' });
+      return;
+    }
+
+    const pending = pendingEmailChanges.get(req.user.id);
+    if (!pending || !pending.oldEmailVerified) {
+      res.status(400).json({ success: false, error: 'Please verify authorization from your current email first' });
+      return;
+    }
+
+    if (Date.now() > pending.expiresAt) {
+      pendingEmailChanges.delete(req.user.id);
+      res.status(400).json({ success: false, error: 'Verification session expired. Please start over.' });
+      return;
+    }
+
+    if (pending.newEmailOtp !== code.trim()) {
+      res.status(400).json({ success: false, error: 'Invalid verification code for your new email' });
+      return;
+    }
+
+    // Double check email collision before finalizing
+    const collision = db.getUserByEmail(pending.newEmail);
+    if (collision && collision.id !== req.user.id) {
       res.status(409).json({ success: false, error: 'This email is already in use by another account' });
       return;
     }
 
-    const updated = await db.updateUser(req.user.id, { email: cleanEmail });
-    if (!updated) {
-      res.status(500).json({ success: false, error: 'Failed to update email address' });
-      return;
-    }
+    const updated = await db.updateUser(req.user.id, { email: pending.newEmail });
+    pendingEmailChanges.delete(req.user.id);
 
     await db.logAudit(
       'EMAIL_CHANGED',
-      `User ${req.user.username} updated email from ${req.user.email} to ${cleanEmail}`,
+      `User ${req.user.username} successfully updated email from ${pending.currentEmail} to ${pending.newEmail}`,
       req.ip || '127.0.0.1',
       req.user.id,
       req.user.username
     );
 
-    const { passwordHash: _, ...safeUser } = updated;
+    const { passwordHash: _, ...safeUser } = updated || req.user;
     res.json({
       success: true,
-      message: 'Email address updated successfully',
+      message: 'Email address successfully verified and updated!',
       user: safeUser,
     });
   }
@@ -451,16 +628,112 @@ export class AuthController {
   }
 
   /**
-   * Toggle Two-Factor Authentication (Email 2FA)
+   * 2FA STEP 1: Generate Authenticator App Setup (Secret Key + QR Code)
    */
-  public static async toggle2FA(req: AuthenticatedRequest, res: Response): Promise<void> {
+  public static async setup2FA(req: AuthenticatedRequest, res: Response): Promise<void> {
     if (!req.user) {
       res.status(401).json({ success: false, error: 'Not authenticated' });
       return;
     }
 
     const db = DatabaseService.getInstance();
-    const { enabled } = req.body;
+    const freshUser = db.getUserById(req.user.id);
+    if (!freshUser) {
+      res.status(404).json({ success: false, error: 'User not found' });
+      return;
+    }
+
+    // Generate random RFC 6238 Base32 secret (16 characters)
+    const secret = TotpService.generateSecret(16);
+    const otpAuthUrl = TotpService.getOtpAuthUrl(freshUser.username, secret);
+    const qrCode = await TotpService.generateQrCodeDataUrl(otpAuthUrl);
+
+    // Save into pending 2FA setups
+    pending2FASetups.set(freshUser.id, {
+      userId: freshUser.id,
+      secret,
+      expiresAt: Date.now() + 15 * 60 * 1000, // 15 minutes
+    });
+
+    res.json({
+      success: true,
+      secret,
+      qrCode,
+      otpAuthUrl,
+      message: 'Scan the QR code or enter the key into your authenticator app, then enter the 6-digit code below.',
+    });
+  }
+
+  /**
+   * 2FA STEP 2: Verify TOTP Code & Officially Enable 2FA
+   */
+  public static async verifyAndEnable2FA(req: AuthenticatedRequest, res: Response): Promise<void> {
+    if (!req.user) {
+      res.status(401).json({ success: false, error: 'Not authenticated' });
+      return;
+    }
+
+    const db = DatabaseService.getInstance();
+    const { code } = req.body;
+
+    if (!code || typeof code !== 'string') {
+      res.status(400).json({ success: false, error: '6-digit authenticator code is required' });
+      return;
+    }
+
+    const pending = pending2FASetups.get(req.user.id);
+    if (!pending) {
+      res.status(400).json({ success: false, error: 'No pending 2FA setup found. Please click Enable again.' });
+      return;
+    }
+
+    if (Date.now() > pending.expiresAt) {
+      pending2FASetups.delete(req.user.id);
+      res.status(400).json({ success: false, error: 'Setup session expired. Please click Enable to generate a new key.' });
+      return;
+    }
+
+    // Verify TOTP code against the secret using RFC 6238 with +/- 30s tolerance
+    const isValid = TotpService.verifyToken(code.trim(), pending.secret, 1);
+    if (!isValid) {
+      res.status(400).json({ success: false, error: 'Invalid 6-digit code. Please check your authenticator app time and try again.' });
+      return;
+    }
+
+    const updated = await db.updateUser(req.user.id, {
+      twoFactorEnabled: true,
+      twoFactorSecret: pending.secret,
+    });
+    pending2FASetups.delete(req.user.id);
+
+    await db.logAudit(
+      'TWO_FACTOR_ENABLED',
+      `Two-factor authentication enabled for user: ${req.user.username}`,
+      req.ip || '127.0.0.1',
+      req.user.id,
+      req.user.username
+    );
+
+    const { passwordHash: _, ...safeUser } = updated || req.user;
+    res.json({
+      success: true,
+      twoFactorEnabled: true,
+      message: 'Two-factor authentication successfully enabled!',
+      user: safeUser,
+    });
+  }
+
+  /**
+   * Disable Two-Factor Authentication
+   */
+  public static async disable2FA(req: AuthenticatedRequest, res: Response): Promise<void> {
+    if (!req.user) {
+      res.status(401).json({ success: false, error: 'Not authenticated' });
+      return;
+    }
+
+    const db = DatabaseService.getInstance();
+    const { password, code } = req.body;
 
     const freshUser = db.getUserById(req.user.id);
     if (!freshUser) {
@@ -468,23 +741,42 @@ export class AuthController {
       return;
     }
 
-    const newState = enabled !== undefined ? Boolean(enabled) : !freshUser.twoFactorEnabled;
+    if (!freshUser.twoFactorEnabled) {
+      res.status(400).json({ success: false, error: 'Two-factor authentication is not currently enabled' });
+      return;
+    }
 
-    const updated = await db.updateUser(req.user.id, { twoFactorEnabled: newState });
+    // Check authorization: either valid account password OR valid 2FA TOTP code
+    let authorized = false;
+    if (password && typeof password === 'string') {
+      authorized = await bcrypt.compare(password, freshUser.passwordHash);
+    } else if (code && typeof code === 'string' && freshUser.twoFactorSecret) {
+      authorized = TotpService.verifyToken(code.trim(), freshUser.twoFactorSecret, 1);
+    }
+
+    if (!authorized) {
+      res.status(400).json({ success: false, error: 'Please provide your account password or current 2FA code to disable' });
+      return;
+    }
+
+    const updated = await db.updateUser(req.user.id, {
+      twoFactorEnabled: false,
+      twoFactorSecret: undefined,
+    });
 
     await db.logAudit(
-      'TWO_FACTOR_TOGGLED',
-      `2FA ${newState ? 'enabled' : 'disabled'} for user: ${req.user.username}`,
+      'TWO_FACTOR_DISABLED',
+      `Two-factor authentication disabled for user: ${req.user.username}`,
       req.ip || '127.0.0.1',
       req.user.id,
       req.user.username
     );
 
-    const { passwordHash: _, ...safeUser } = updated || freshUser;
+    const { passwordHash: _, ...safeUser } = updated || req.user;
     res.json({
       success: true,
-      twoFactorEnabled: newState,
-      message: newState ? 'Two-factor authentication enabled successfully' : 'Two-factor authentication disabled',
+      twoFactorEnabled: false,
+      message: 'Two-factor authentication has been disabled',
       user: safeUser,
     });
   }

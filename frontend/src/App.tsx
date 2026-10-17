@@ -54,10 +54,11 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
 
   useEffect(() => {
-    if (activePageProp) {
-      setActivePage(activePageProp);
+    const target = activePageProp || initialPage;
+    if (target) {
+      setActivePage(target);
     }
-  }, [activePageProp]);
+  }, [activePageProp, initialPage]);
 
   const fetchServices = async () => {
     setIsLoadingServices(true);
@@ -98,8 +99,13 @@ const MainLayout: React.FC<MainLayoutProps> = ({
       <div className="main-wrapper">
         {/* Top Stats Bar with User Profile & Portal Navigation */}
         <TopBar
+          activePage={activePage}
           openDepositModal={() => handleNavPage('add-funds')}
-          onNavigate={onNavigate}
+          onNavigate={(path) => {
+            const page = path.replace(/^\//, '') || 'new-order';
+            handleNavPage(page);
+          }}
+          onNavigatePage={(page) => handleNavPage(page)}
         />
 
         {/* Content Body */}

@@ -10,6 +10,7 @@ export interface User {
   status: 'active' | 'suspended';
   apiKey: string;
   twoFactorEnabled?: boolean;
+  twoFactorSecret?: string;
   timezone?: string;
   apiKeyCreatedAt?: string;
   createdAt: string;

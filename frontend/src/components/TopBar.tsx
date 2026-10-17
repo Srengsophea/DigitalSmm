@@ -14,12 +14,20 @@ import {
 } from 'lucide-react';
 
 interface TopBarProps {
+  activePage?: string;
   openAuthModal?: () => void;
   openDepositModal: () => void;
   onNavigate?: (path: string) => void;
+  onNavigatePage?: (page: string, path?: string) => void;
 }
 
-export const TopBar: React.FC<TopBarProps> = ({ openAuthModal, openDepositModal, onNavigate }) => {
+export const TopBar: React.FC<TopBarProps> = ({
+  activePage,
+  openAuthModal,
+  openDepositModal,
+  onNavigate,
+  onNavigatePage,
+}) => {
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const balance = user?.balance ?? 0;
 
@@ -40,7 +48,13 @@ export const TopBar: React.FC<TopBarProps> = ({ openAuthModal, openDepositModal,
   };
 
   const handleAdminClick = () => {
-    if (onNavigate) {
+    if (onNavigatePage) {
+      if (isAdmin) {
+        onNavigatePage('admin', '/admin');
+      } else {
+        onNavigatePage('admin-login', '/admin/login');
+      }
+    } else if (onNavigate) {
       if (isAdmin) {
         onNavigate('/admin');
       } else {
@@ -147,10 +161,19 @@ export const TopBar: React.FC<TopBarProps> = ({ openAuthModal, openDepositModal,
         {/* Account Settings */}
         {isAuthenticated && (
           <button
-            className="topbar-circle-btn"
+            className={`topbar-circle-btn ${activePage === 'settings' ? 'active' : ''}`}
             title="Settings"
-            onClick={() => onNavigate && onNavigate('/settings')}
-            style={{ color: '#475569' }}
+            onClick={() => {
+              if (onNavigatePage) {
+                onNavigatePage('settings', '/settings');
+              } else if (onNavigate) {
+                onNavigate('/settings');
+              }
+            }}
+            style={{
+              color: activePage === 'settings' ? '#162399' : '#475569',
+              background: activePage === 'settings' ? '#e0e7ff' : undefined,
+            }}
           >
             <Settings size={15} />
           </button>

@@ -15,9 +15,16 @@ router.post('/register', rateLimiter_1.authLimiter, (0, validator_1.validateBody
 router.post('/login', rateLimiter_1.authLimiter, (0, validator_1.validateBody)(validator_1.loginSchema), auth_controller_1.AuthController.login);
 router.post('/google', rateLimiter_1.authLimiter, auth_controller_1.AuthController.googleAuth);
 router.get('/profile', auth_middleware_1.authenticate, auth_controller_1.AuthController.getProfile);
-router.post('/change-email', auth_middleware_1.authenticate, auth_controller_1.AuthController.changeEmail);
+// Multi-Step Secure Email Change
+router.post('/email/request-change', auth_middleware_1.authenticate, auth_controller_1.AuthController.requestEmailChange);
+router.post('/email/verify-old', auth_middleware_1.authenticate, auth_controller_1.AuthController.verifyOldEmailChange);
+router.post('/email/verify-new', auth_middleware_1.authenticate, auth_controller_1.AuthController.verifyNewEmailChange);
+// Password & Settings
 router.post('/change-password', auth_middleware_1.authenticate, auth_controller_1.AuthController.changePassword);
-router.post('/toggle-2fa', auth_middleware_1.authenticate, auth_controller_1.AuthController.toggle2FA);
 router.post('/update-timezone', auth_middleware_1.authenticate, auth_controller_1.AuthController.updateTimezone);
 router.post('/api-key/regenerate', auth_middleware_1.authenticate, auth_controller_1.AuthController.regenerateApiKey);
+// RFC 6238 TOTP Two-Factor Authentication
+router.post('/2fa/setup', auth_middleware_1.authenticate, auth_controller_1.AuthController.setup2FA);
+router.post('/2fa/verify-and-enable', auth_middleware_1.authenticate, auth_controller_1.AuthController.verifyAndEnable2FA);
+router.post('/2fa/disable', auth_middleware_1.authenticate, auth_controller_1.AuthController.disable2FA);
 exports.default = router;

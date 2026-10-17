@@ -1,14 +1,32 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
-import { Copy, Check, ShieldCheck, KeyRound, Globe, Lock, Mail, User as UserIcon } from 'lucide-react';
+import {
+  Copy,
+  Check,
+  ShieldCheck,
+  ShieldAlert,
+  KeyRound,
+  QrCode,
+  ArrowRight,
+  AlertCircle,
+  RefreshCw,
+  X,
+} from 'lucide-react';
 
 export const UserSettingsView: React.FC = () => {
   const { user, refreshProfile, showToast } = useAuth();
 
-  // 1. Email State
-  const [emailInput, setEmailInput] = useState(user?.email || '');
-  const [isChangingEmail, setIsChangingEmail] = useState(false);
+  // 1. Email State & Flow
+  // Step: 'idle' | 'verify_old' | 'verify_new'
+  const [emailStep, setEmailStep] = useState<'idle' | 'verify_old' | 'verify_new'>('idle');
+  const [currentEmailPassword, setCurrentEmailPassword] = useState('');
+  const [newEmailInput, setNewEmailInput] = useState('');
+  const [pendingOldEmail, setPendingOldEmail] = useState('');
+  const [pendingNewEmail, setPendingNewEmail] = useState('');
+  const [oldEmailCode, setOldEmailCode] = useState('');
+  const [newEmailCode, setNewEmailCode] = useState('');
+  const [isEmailLoading, setIsEmailLoading] = useState(false);
 
   // 2. Password State
   const [currentPassword, setCurrentPassword] = useState('');
@@ -16,9 +34,16 @@ export const UserSettingsView: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-  // 3. 2FA State
+  // 3. 2FA State & Flow
+  // Step: 'idle' | 'setup' | 'disable_confirm'
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(Boolean(user?.twoFactorEnabled));
-  const [isToggling2FA, setIsToggling2FA] = useState(false);
+  const [twoFactorStep, setTwoFactorStep] = useState<'idle' | 'setup' | 'disable_confirm'>('idle');
+  const [twoFactorSecret, setTwoFactorSecret] = useState('');
+  const [twoFactorQrCode, setTwoFactorQrCode] = useState('');
+  const [twoFactorVerifyCode, setTwoFactorVerifyCode] = useState('');
+  const [disablePasswordInput, setDisablePasswordInput] = useState('');
+  const [is2FALoading, setIs2FALoading] = useState(false);
+  const [copiedSecret, setCopiedSecret] = useState(false);
 
   // 4. Timezone State
   const [selectedTimezone, setSelectedTimezone] = useState(
@@ -52,34 +77,103 @@ export const UserSettingsView: React.FC = () => {
     formatDate(user?.apiKeyCreatedAt || user?.createdAt)
   );
 
-  // Handlers
-  const handleChangeEmail = async (e: React.FormEvent) => {
+  // ==========================================
+  // HANDLERS: EMAIL CHANGE (2-STEP VERIFY)
+  // ==========================================
+  const handleRequestEmailChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!emailInput || !emailInput.includes('@')) {
-      showToast('Please enter a valid email address', 'error');
+    if (!currentEmailPassword) {
+      showToast('Please enter your current account password', 'error');
       return;
     }
-    if (emailInput.trim().toLowerCase() === user?.email.toLowerCase()) {
-      showToast('Email address is unchanged', 'info');
+    if (!newEmailInput || !newEmailInput.includes('@')) {
+      showToast('Please enter a valid new email address', 'error');
+      return;
+    }
+    if (newEmailInput.trim().toLowerCase() === user?.email.toLowerCase()) {
+      showToast('New email cannot be the same as your current email', 'error');
       return;
     }
 
-    setIsChangingEmail(true);
+    setIsEmailLoading(true);
     try {
-      const res = await api.auth.changeEmail(emailInput.trim());
+      const res = await api.auth.requestEmailChange(currentEmailPassword, newEmailInput.trim());
       if (res.success) {
-        showToast('Email address updated successfully!', 'success');
-        await refreshProfile();
+        setPendingOldEmail(res.currentEmail || user?.email || '');
+        setPendingNewEmail(res.newEmail || newEmailInput.trim());
+        setEmailStep('verify_old');
+        showToast(res.message || 'Verification code sent to your current email address', 'info');
       } else {
-        showToast(res.error || 'Failed to update email', 'error');
+        showToast(res.error || 'Failed to request email change', 'error');
       }
     } catch (err: any) {
-      showToast(err.message || 'Error updating email address', 'error');
+      showToast(err.message || 'Error initiating email change', 'error');
     } finally {
-      setIsChangingEmail(false);
+      setIsEmailLoading(false);
     }
   };
 
+  const handleVerifyOldEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!oldEmailCode || oldEmailCode.trim().length !== 6) {
+      showToast('Please enter the 6-digit code sent to your current email', 'error');
+      return;
+    }
+
+    setIsEmailLoading(true);
+    try {
+      const res = await api.auth.verifyOldEmailChange(oldEmailCode.trim());
+      if (res.success) {
+        setEmailStep('verify_new');
+        showToast(res.message || 'Current email verified! Now verify your new email.', 'success');
+      } else {
+        showToast(res.error || 'Invalid code for current email', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Verification failed', 'error');
+    } finally {
+      setIsEmailLoading(false);
+    }
+  };
+
+  const handleVerifyNewEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newEmailCode || newEmailCode.trim().length !== 6) {
+      showToast('Please enter the 6-digit code sent to your new email', 'error');
+      return;
+    }
+
+    setIsEmailLoading(true);
+    try {
+      const res = await api.auth.verifyNewEmailChange(newEmailCode.trim());
+      if (res.success) {
+        showToast(res.message || 'Email address successfully updated!', 'success');
+        setEmailStep('idle');
+        setCurrentEmailPassword('');
+        setNewEmailInput('');
+        setOldEmailCode('');
+        setNewEmailCode('');
+        await refreshProfile();
+      } else {
+        showToast(res.error || 'Invalid code for new email', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Failed to finalize email update', 'error');
+    } finally {
+      setIsEmailLoading(false);
+    }
+  };
+
+  const handleCancelEmailChange = () => {
+    setEmailStep('idle');
+    setOldEmailCode('');
+    setNewEmailCode('');
+    setCurrentEmailPassword('');
+  };
+
+  // ==========================================
+  // HANDLERS: CHANGE PASSWORD
+  // ==========================================
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentPassword) {
@@ -113,25 +207,91 @@ export const UserSettingsView: React.FC = () => {
     }
   };
 
-  const handleToggle2FA = async () => {
-    setIsToggling2FA(true);
+  // ==========================================
+  // HANDLERS: 2FA TOTP AUTHENTICATOR APP
+  // ==========================================
+  const handleStart2FASetup = async () => {
+    setIs2FALoading(true);
     try {
-      const nextState = !twoFactorEnabled;
-      const res = await api.auth.toggle2FA(nextState);
-      if (res.success) {
-        setTwoFactorEnabled(res.twoFactorEnabled);
-        showToast(res.message || `2FA ${res.twoFactorEnabled ? 'enabled' : 'disabled'}`, 'success');
-        await refreshProfile();
+      const res = await api.auth.setup2FA();
+      if (res.success && res.secret) {
+        setTwoFactorSecret(res.secret);
+        setTwoFactorQrCode(res.qrCode);
+        setTwoFactorStep('setup');
+        setTwoFactorVerifyCode('');
       } else {
-        showToast(res.error || 'Failed to update 2FA status', 'error');
+        showToast(res.error || 'Failed to initialize 2FA setup', 'error');
       }
     } catch (err: any) {
-      showToast(err.message || 'Error updating 2FA', 'error');
+      showToast(err.message || 'Error starting 2FA setup', 'error');
     } finally {
-      setIsToggling2FA(false);
+      setIs2FALoading(false);
     }
   };
 
+  const handleConfirm2FA = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!twoFactorVerifyCode || twoFactorVerifyCode.trim().length !== 6) {
+      showToast('Please enter the 6-digit code from your authenticator app', 'error');
+      return;
+    }
+
+    setIs2FALoading(true);
+    try {
+      const res = await api.auth.verifyAndEnable2FA(twoFactorVerifyCode.trim());
+      if (res.success) {
+        setTwoFactorEnabled(true);
+        setTwoFactorStep('idle');
+        setTwoFactorVerifyCode('');
+        showToast('Two-factor authentication successfully enabled!', 'success');
+        await refreshProfile();
+      } else {
+        showToast(res.error || 'Invalid 6-digit authenticator code', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Verification failed', 'error');
+    } finally {
+      setIs2FALoading(false);
+    }
+  };
+
+  const handleDisable2FA = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!disablePasswordInput) {
+      showToast('Please enter your account password to confirm disabling 2FA', 'error');
+      return;
+    }
+
+    setIs2FALoading(true);
+    try {
+      const res = await api.auth.disable2FA({ password: disablePasswordInput });
+      if (res.success) {
+        setTwoFactorEnabled(false);
+        setTwoFactorStep('idle');
+        setDisablePasswordInput('');
+        showToast('Two-factor authentication has been disabled', 'success');
+        await refreshProfile();
+      } else {
+        showToast(res.error || 'Failed to disable 2FA', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Error disabling 2FA', 'error');
+    } finally {
+      setIs2FALoading(false);
+    }
+  };
+
+  const copy2FASecret = () => {
+    if (!twoFactorSecret) return;
+    navigator.clipboard.writeText(twoFactorSecret);
+    setCopiedSecret(true);
+    showToast('Secret key copied to clipboard!', 'success');
+    setTimeout(() => setCopiedSecret(false), 2000);
+  };
+
+  // ==========================================
+  // HANDLERS: TIMEZONE & API KEY
+  // ==========================================
   const handleSaveTimezone = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSavingTimezone(true);
@@ -193,6 +353,7 @@ export const UserSettingsView: React.FC = () => {
     '(UTC -8:00) Los Angeles, San Francisco, Vancouver',
   ];
 
+  // Base styles matching Image 2
   const cardStyle: React.CSSProperties = {
     background: '#ffffff',
     borderRadius: 14,
@@ -239,45 +400,206 @@ export const UserSettingsView: React.FC = () => {
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    transition: 'background-color 0.2s ease, transform 0.1s ease',
+    transition: 'background-color 0.2s ease',
   };
 
   return (
     <div style={{ maxWidth: 960, margin: '0 auto', padding: '16px 20px 48px' }}>
       {/* 1. Account / Email Card */}
       <div style={cardStyle}>
-        <form onSubmit={handleChangeEmail}>
-          <div style={{ marginBottom: 16 }}>
-            <label style={labelStyle}>Username</label>
-            <input
-              type="text"
-              style={{ ...inputStyle, background: '#f1f5f9', cursor: 'not-allowed', color: '#64748b' }}
-              value={user?.username || ''}
-              readOnly
-              disabled
-            />
-          </div>
+        {emailStep === 'idle' && (
+          <form onSubmit={handleRequestEmailChange}>
+            <div style={{ marginBottom: 16 }}>
+              <label style={labelStyle}>Username</label>
+              <input
+                type="text"
+                style={{ ...inputStyle, background: '#f1f5f9', cursor: 'not-allowed', color: '#64748b' }}
+                value={user?.username || ''}
+                readOnly
+                disabled
+              />
+            </div>
 
-          <div>
-            <label style={labelStyle}>Email</label>
-            <input
-              type="email"
-              style={inputStyle}
-              value={emailInput}
-              onChange={(e) => setEmailInput(e.target.value)}
-              placeholder="name@example.com"
-              required
-            />
-          </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={labelStyle}>Current Email</label>
+              <input
+                type="email"
+                style={{ ...inputStyle, background: '#f1f5f9', cursor: 'not-allowed', color: '#64748b' }}
+                value={user?.email || ''}
+                readOnly
+                disabled
+              />
+            </div>
 
-          <button
-            type="submit"
-            style={primaryBtnStyle}
-            disabled={isChangingEmail}
-          >
-            {isChangingEmail ? 'Updating email...' : 'Change email'}
-          </button>
-        </form>
+            <div style={{ marginBottom: 16 }}>
+              <label style={labelStyle}>Current password (required to change email)</label>
+              <input
+                type="password"
+                style={inputStyle}
+                value={currentEmailPassword}
+                onChange={(e) => setCurrentEmailPassword(e.target.value)}
+                placeholder="Enter your current password"
+                required
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>New Email</label>
+              <input
+                type="email"
+                style={inputStyle}
+                value={newEmailInput}
+                onChange={(e) => setNewEmailInput(e.target.value)}
+                placeholder="new_email@example.com"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              style={primaryBtnStyle}
+              disabled={isEmailLoading}
+            >
+              {isEmailLoading ? 'Verifying...' : 'Change email'}
+            </button>
+          </form>
+        )}
+
+        {/* Step 1 Verification: Confirm Current Email */}
+        {emailStep === 'verify_old' && (
+          <form onSubmit={handleVerifyOldEmail}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#162399' }}>
+                Step 1 of 2: Authorize from Current Email
+              </div>
+              <button
+                type="button"
+                onClick={handleCancelEmailChange}
+                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 4 }}
+                title="Cancel"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '12px 14px', marginBottom: 16, fontSize: '0.82rem', color: '#166534' }}>
+              We sent a 6-digit confirmation code to your current email (<strong>{pendingOldEmail}</strong>). Please enter it below to confirm authorization:
+            </div>
+
+            <div>
+              <label style={labelStyle}>6-Digit Verification Code</label>
+              <input
+                type="text"
+                style={{
+                  ...inputStyle,
+                  fontFamily: 'var(--font-mono, monospace)',
+                  fontSize: '1.2rem',
+                  textAlign: 'center',
+                  letterSpacing: '6px',
+                  fontWeight: 700,
+                }}
+                maxLength={6}
+                value={oldEmailCode}
+                onChange={(e) => setOldEmailCode(e.target.value.replace(/\D/g, ''))}
+                placeholder="000000"
+                autoFocus
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              style={primaryBtnStyle}
+              disabled={isEmailLoading}
+            >
+              {isEmailLoading ? 'Confirming...' : 'Confirm Current Email Code'}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleCancelEmailChange}
+              style={{
+                width: '100%',
+                background: 'transparent',
+                border: 'none',
+                color: '#64748b',
+                fontSize: '0.82rem',
+                marginTop: 10,
+                cursor: 'pointer',
+              }}
+            >
+              Cancel and go back
+            </button>
+          </form>
+        )}
+
+        {/* Step 2 Verification: Confirm New Email */}
+        {emailStep === 'verify_new' && (
+          <form onSubmit={handleVerifyNewEmail}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#162399' }}>
+                Step 2 of 2: Verify Your New Email Address
+              </div>
+              <button
+                type="button"
+                onClick={handleCancelEmailChange}
+                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 4 }}
+                title="Cancel"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '12px 14px', marginBottom: 16, fontSize: '0.82rem', color: '#1e40af' }}>
+              Current email authorized! A 6-digit confirmation code has now been sent to your new email (<strong>{pendingNewEmail}</strong>). Please enter it to complete the update:
+            </div>
+
+            <div>
+              <label style={labelStyle}>6-Digit Verification Code</label>
+              <input
+                type="text"
+                style={{
+                  ...inputStyle,
+                  fontFamily: 'var(--font-mono, monospace)',
+                  fontSize: '1.2rem',
+                  textAlign: 'center',
+                  letterSpacing: '6px',
+                  fontWeight: 700,
+                }}
+                maxLength={6}
+                value={newEmailCode}
+                onChange={(e) => setNewEmailCode(e.target.value.replace(/\D/g, ''))}
+                placeholder="000000"
+                autoFocus
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              style={primaryBtnStyle}
+              disabled={isEmailLoading}
+            >
+              {isEmailLoading ? 'Finalizing update...' : 'Confirm New Email & Complete Update'}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleCancelEmailChange}
+              style={{
+                width: '100%',
+                background: 'transparent',
+                border: 'none',
+                color: '#64748b',
+                fontSize: '0.82rem',
+                marginTop: 10,
+                cursor: 'pointer',
+              }}
+            >
+              Cancel
+            </button>
+          </form>
+        )}
       </div>
 
       {/* 2. Change Password Card */}
@@ -339,29 +661,216 @@ export const UserSettingsView: React.FC = () => {
           </div>
           {twoFactorEnabled && (
             <span style={{ fontSize: '0.72rem', background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <ShieldCheck size={12} /> Enabled
+              <ShieldCheck size={12} /> Enabled & Active
             </span>
           )}
         </div>
         <p style={{ fontSize: '0.82rem', color: '#64748b', margin: '4px 0 0', lineHeight: 1.5 }}>
-          Email-based option to add an extra layer of protection to your account. When signing in you'll need to enter a code that will be sent to your email address.
+          Authenticator app (Google Authenticator, Authy, Microsoft Authenticator) option to add an extra layer of protection to your account. When enabled, signing in requires a 6-digit dynamic code generated by your app.
         </p>
 
-        <button
-          type="button"
-          style={{
-            ...primaryBtnStyle,
-            background: twoFactorEnabled ? '#dc2626' : '#162399',
-          }}
-          onClick={handleToggle2FA}
-          disabled={isToggling2FA}
-        >
-          {isToggling2FA
-            ? 'Updating...'
-            : twoFactorEnabled
-            ? 'Disable'
-            : 'Enable'}
-        </button>
+        {/* Normal Idle View */}
+        {twoFactorStep === 'idle' && (
+          <button
+            type="button"
+            style={{
+              ...primaryBtnStyle,
+              background: twoFactorEnabled ? '#dc2626' : '#162399',
+            }}
+            onClick={() => {
+              if (twoFactorEnabled) {
+                setTwoFactorStep('disable_confirm');
+              } else {
+                handleStart2FASetup();
+              }
+            }}
+            disabled={is2FALoading}
+          >
+            {is2FALoading ? 'Loading...' : twoFactorEnabled ? 'Disable' : 'Enable'}
+          </button>
+        )}
+
+        {/* 2FA Setup View: QR Code + Secret Key + 6-Digit Code Input */}
+        {twoFactorStep === 'setup' && (
+          <div style={{ marginTop: 20, paddingTop: 18, borderTop: '1px solid #f1f5f9' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ fontSize: '0.90rem', fontWeight: 700, color: '#0f172a' }}>
+                Set Up Authenticator App
+              </div>
+              <button
+                type="button"
+                onClick={() => setTwoFactorStep('idle')}
+                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 4 }}
+                title="Cancel"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+              {twoFactorQrCode && (
+                <div style={{ display: 'inline-block', padding: 8, background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                  <img
+                    src={twoFactorQrCode}
+                    alt="2FA QR Code"
+                    style={{ width: 180, height: 180, display: 'block' }}
+                  />
+                </div>
+              )}
+              <div style={{ fontSize: '0.80rem', color: '#64748b', marginTop: 8 }}>
+                Scan this QR code with <strong>Google Authenticator</strong>, <strong>Authy</strong>, or <strong>1Password</strong>
+              </div>
+            </div>
+
+            {/* Secret Key Display Box */}
+            <div style={{ marginBottom: 16 }}>
+              <label style={labelStyle}>Or enter this setup key manually into your app:</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="text"
+                  style={{
+                    ...inputStyle,
+                    fontFamily: 'var(--font-mono, monospace)',
+                    fontSize: '0.95rem',
+                    fontWeight: 700,
+                    letterSpacing: '2px',
+                    color: '#162399',
+                    background: '#f8fafc',
+                  }}
+                  value={twoFactorSecret}
+                  readOnly
+                />
+                <button
+                  type="button"
+                  onClick={copy2FASecret}
+                  style={{
+                    height: 42,
+                    padding: '0 16px',
+                    background: '#f1f5f9',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: '0.80rem',
+                    fontWeight: 600,
+                    color: '#334155',
+                  }}
+                >
+                  {copiedSecret ? <Check size={16} color="#16a34a" /> : <Copy size={16} />}
+                  <span>{copiedSecret ? 'Copied' : 'Copy'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 6-Digit Verification Input */}
+            <form onSubmit={handleConfirm2FA}>
+              <div>
+                <label style={labelStyle}>Enter the 6-digit code shown in your app to activate:</label>
+                <input
+                  type="text"
+                  style={{
+                    ...inputStyle,
+                    fontFamily: 'var(--font-mono, monospace)',
+                    fontSize: '1.2rem',
+                    textAlign: 'center',
+                    letterSpacing: '6px',
+                    fontWeight: 700,
+                  }}
+                  maxLength={6}
+                  value={twoFactorVerifyCode}
+                  onChange={(e) => setTwoFactorVerifyCode(e.target.value.replace(/\D/g, ''))}
+                  placeholder="000000"
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                style={primaryBtnStyle}
+                disabled={is2FALoading}
+              >
+                {is2FALoading ? 'Verifying...' : 'Verify and Enable 2FA'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setTwoFactorStep('idle')}
+                style={{
+                  width: '100%',
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#64748b',
+                  fontSize: '0.82rem',
+                  marginTop: 10,
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel setup
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* 2FA Disable Confirmation */}
+        {twoFactorStep === 'disable_confirm' && (
+          <form onSubmit={handleDisable2FA} style={{ marginTop: 20, paddingTop: 18, borderTop: '1px solid #f1f5f9' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ fontSize: '0.90rem', fontWeight: 700, color: '#dc2626' }}>
+                Disable Two-Factor Authentication
+              </div>
+              <button
+                type="button"
+                onClick={() => setTwoFactorStep('idle')}
+                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 4 }}
+                title="Cancel"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '12px 14px', marginBottom: 16, fontSize: '0.82rem', color: '#991b1b' }}>
+              Disabling 2FA will remove the extra layer of security from your account. Please enter your account password to confirm:
+            </div>
+
+            <div>
+              <label style={labelStyle}>Account Password</label>
+              <input
+                type="password"
+                style={inputStyle}
+                value={disablePasswordInput}
+                onChange={(e) => setDisablePasswordInput(e.target.value)}
+                placeholder="Enter your account password"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              style={{ ...primaryBtnStyle, background: '#dc2626' }}
+              disabled={is2FALoading}
+            >
+              {is2FALoading ? 'Disabling...' : 'Confirm & Disable 2FA'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTwoFactorStep('idle')}
+              style={{
+                width: '100%',
+                background: 'transparent',
+                border: 'none',
+                color: '#64748b',
+                fontSize: '0.82rem',
+                marginTop: 10,
+                cursor: 'pointer',
+              }}
+            >
+              Cancel
+            </button>
+          </form>
+        )}
       </div>
 
       {/* 4. Timezone Card */}
