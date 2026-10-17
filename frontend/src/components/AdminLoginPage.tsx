@@ -11,7 +11,6 @@ import {
   AlertTriangle,
   ArrowRight,
   Terminal,
-  Server,
   ArrowLeft,
   CheckCircle2,
 } from 'lucide-react';
@@ -66,12 +65,6 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onNavigate }) =>
     }
   };
 
-  const handleQuickFillAdmin = () => {
-    setAdminIdentifier('admin@digitalsmm.com');
-    setPassword('Admin@DigitalSMM2026!');
-    setSecurityPin('9901');
-    setErrorMessage(null);
-  };
 
   return (
     <div
@@ -358,30 +351,6 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onNavigate }) =>
             <ShieldCheck size={18} />
             <span>{isLoading ? 'Verifying Credentials...' : 'Authenticate & Enter Admin Hub'}</span>
             <ArrowRight size={16} />
-          </button>
-
-          {/* Quick-fill root admin */}
-          <button
-            type="button"
-            onClick={handleQuickFillAdmin}
-            style={{
-              width: '100%',
-              padding: '9px 12px',
-              borderRadius: 8,
-              border: '1px dashed rgba(56, 189, 248, 0.3)',
-              background: 'rgba(2, 132, 199, 0.08)',
-              color: '#38bdf8',
-              fontSize: '0.78rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6,
-            }}
-          >
-            <Server size={14} />
-            <span>Auto-Fill Root Administrator Credentials</span>
           </button>
         </form>
 

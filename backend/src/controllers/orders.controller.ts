@@ -19,8 +19,8 @@ export class OrdersController {
     const { serviceId, link, quantity, runs, interval } = req.body;
 
     const service =
-      db.getServiceById(serviceId) ||
-      db.getServiceByExternalId(parseInt(serviceId, 10));
+      (await db.getServiceByIdAsync(serviceId)) ||
+      (await db.getServiceByExternalIdAsync(parseInt(serviceId, 10)));
 
     if (!service) {
       res.status(404).json({ success: false, error: 'Selected service does not exist' });
@@ -181,6 +181,7 @@ export class OrdersController {
     const smm = SMMFollowsService.getInstance();
     const results: any[] = [];
     let successfulCount = 0;
+    const allServices = await db.getServicesAsync();
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
@@ -194,9 +195,8 @@ export class OrdersController {
       const link = parts[1];
       const quantity = parseInt(parts[2], 10);
 
-      const service =
-        db.getServiceByExternalId(parseInt(serviceIdRaw, 10)) ||
-        db.getServiceById(serviceIdRaw);
+      const numId = parseInt(serviceIdRaw, 10);
+      const service = allServices.find((s) => s.id === serviceIdRaw || (!isNaN(numId) && s.externalId === numId));
 
       if (!service || !service.isActive) {
         results.push({ line: i + 1, raw: line, success: false, error: `Service #${serviceIdRaw} not found or inactive` });

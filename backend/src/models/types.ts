@@ -47,6 +47,14 @@ export interface ServiceItem {
   updatedAt: string;
 }
 
+export interface ServiceOverride {
+  customRate?: number;
+  markupPercent?: number;
+  fixedIncrease?: number;
+  isActive?: boolean;
+  updatedAt?: string;
+}
+
 export type OrderStatus =
   | 'PENDING'
   | 'PROCESSING'
@@ -134,4 +142,14 @@ export interface ProviderBalanceResponse {
   currency: string;
   rawResponse?: any;
 }
+
+export interface PendingSignup {
+  username: string;
+  email: string;
+  passwordHash: string;
+  otp: string;
+  expiresAt: number;
+  attempts: number;
+}
+
 

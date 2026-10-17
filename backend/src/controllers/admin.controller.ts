@@ -15,7 +15,7 @@ export class AdminController {
 
     const users = db.getUsers();
     const orders = db.getOrders();
-    const services = db.getServices();
+    const services = await db.getServicesAsync();
 
     const totalRevenue = orders
       .filter((o) => o.status !== 'CANCELED')
@@ -280,6 +280,9 @@ export class AdminController {
     const rawUrl = db.getSettingValue('smmfollows_api_url') || ENV.SMMFOLLOWS_API_URL;
     const markup = db.getSettingValue('default_markup_percent') || ENV.DEFAULT_MARKUP_PERCENT.toString();
     const siteName = db.getSettingValue('site_name') || 'DigitalSMM';
+    const bakongAccountId = db.getSettingValue('bakong_account_id') || ENV.BAKONG_ACCOUNT_ID;
+    const bakongMerchantName = db.getSettingValue('bakong_merchant_name') || ENV.BAKONG_MERCHANT_NAME;
+    const bakongMerchantCity = db.getSettingValue('bakong_merchant_city') || ENV.BAKONG_MERCHANT_CITY;
 
     res.json({
       success: true,
@@ -288,6 +291,9 @@ export class AdminController {
         smmfollows_api_url: rawUrl,
         default_markup_percent: parseFloat(markup),
         site_name: siteName,
+        bakong_account_id: bakongAccountId,
+        bakong_merchant_name: bakongMerchantName,
+        bakong_merchant_city: bakongMerchantCity,
       },
     });
   }
@@ -297,7 +303,7 @@ export class AdminController {
    */
   public static async updateSettings(req: AuthenticatedRequest, res: Response): Promise<void> {
     const db = DatabaseService.getInstance();
-    const { apiKey, apiUrl, defaultMarkupPercent, siteName } = req.body;
+    const { apiKey, apiUrl, defaultMarkupPercent, siteName, bakongAccountId, bakongMerchantName, bakongMerchantCity } = req.body;
 
     if (apiKey) {
       await db.setSetting('smmfollows_api_key', apiKey, true);
@@ -313,6 +319,18 @@ export class AdminController {
 
     if (siteName) {
       await db.setSetting('site_name', siteName, false);
+    }
+
+    if (bakongAccountId) {
+      await db.setSetting('bakong_account_id', bakongAccountId.trim(), false);
+    }
+
+    if (bakongMerchantName) {
+      await db.setSetting('bakong_merchant_name', bakongMerchantName.trim(), false);
+    }
+
+    if (bakongMerchantCity) {
+      await db.setSetting('bakong_merchant_city', bakongMerchantCity.trim(), false);
     }
 
     await db.logAudit(

@@ -86,7 +86,6 @@ const server = app.listen(ENV.PORT, () => {
   console.log(`🌐 Provider: SMMFollows API Connected`);
   console.log(`🔑 Reseller API v2 Ready at: http://localhost:${ENV.PORT}/api/v2`);
   console.log(`👤 Default Admin: ${ENV.ADMIN_EMAIL} / ${ENV.ADMIN_PASSWORD}`);
-  console.log(`👤 Default Demo: user@digitalsmm.com / User@DigitalSMM2026!`);
   console.log('====================================================');
 });
 

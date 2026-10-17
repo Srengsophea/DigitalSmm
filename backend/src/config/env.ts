@@ -19,4 +19,8 @@ export const ENV = {
   ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'Admin@DigitalSMM2026!',
   CORS_ORIGIN: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173', 'http://localhost:5000'],
   DATA_DIR: process.env.DATA_DIR || path.resolve(__dirname, '../../data'),
+  BAKONG_ACCOUNT_ID: process.env.BAKONG_ACCOUNT_ID || 'sophea_sreng2@bkrt',
+  BAKONG_MERCHANT_NAME: process.env.BAKONG_MERCHANT_NAME || 'Digital Smm',
+  BAKONG_MERCHANT_CITY: process.env.BAKONG_MERCHANT_CITY || 'Phnom Penh',
+  BAKONG_TOKEN: process.env.BAKONG_TOKEN || '',
 };

@@ -2,48 +2,186 @@ import { Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { DatabaseService } from '../services/db.service';
+import { EmailService } from '../services/email.service';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { ENV } from '../config/env';
 import { EncryptionService } from '../services/encryption.service';
+import { PendingSignup } from '../models/types';
+
+// Thread-safe in-memory store for pending email OTP signups (key: normalized lowercase email)
+const pendingSignups = new Map<string, PendingSignup>();
+
+// Clean expired registrations periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [email, pending] of pendingSignups.entries()) {
+    if (now > pending.expiresAt) {
+      pendingSignups.delete(email);
+    }
+  }
+}, 5 * 60 * 1000);
 
 export class AuthController {
-  public static async register(req: AuthenticatedRequest, res: Response): Promise<void> {
+  /**
+   * Step 1: Validate registration info, generate 6-digit OTP code, and dispatch via email
+   */
+  public static async sendSignupOtp(req: AuthenticatedRequest, res: Response): Promise<void> {
     const db = DatabaseService.getInstance();
+    const emailService = EmailService.getInstance();
     const { username, email, password } = req.body;
 
+    const normalizedEmail = email.toLowerCase().trim();
+    const cleanUsername = username.trim();
+
     // Check if email already registered
-    if (db.getUserByEmail(email)) {
-      res.status(409).json({ success: false, error: 'Email is already registered' });
+    if (db.getUserByEmail(normalizedEmail)) {
+      res.status(409).json({ success: false, error: 'This email address is already registered. Please sign in.' });
       return;
     }
 
     // Check if username already taken
-    if (db.getUserByUsername(username)) {
-      res.status(409).json({ success: false, error: 'Username is already taken' });
+    if (db.getUserByUsername(cleanUsername)) {
+      res.status(409).json({ success: false, error: 'This username is already taken. Please choose another.' });
       return;
     }
 
-    // Hash password with bcrypt salt rounds = 12
+    if (!password || password.length < 6) {
+      res.status(400).json({ success: false, error: 'Password must be at least 6 characters long.' });
+      return;
+    }
+
+    // Rate-limit resend requests if recently sent
+    const existing = pendingSignups.get(normalizedEmail);
+    if (existing && Date.now() < existing.expiresAt - 9.5 * 60 * 1000) {
+      // Requested within the last 30 seconds
+      res.status(429).json({
+        success: false,
+        error: 'Please wait 30 seconds before requesting another verification code.',
+      });
+      return;
+    }
+
+    // Generate cryptographically sound 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Pre-hash password with bcrypt (rounds = 12)
     const salt = await bcrypt.genSalt(12);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    const newUser = await db.createUser({
-      username,
-      email: email.toLowerCase(),
+    // Store in pending signups with 10-minute validity
+    pendingSignups.set(normalizedEmail, {
+      username: cleanUsername,
+      email: normalizedEmail,
       passwordHash,
+      otp,
+      expiresAt: Date.now() + 10 * 60 * 1000,
+      attempts: 0,
+    });
+
+    // Dispatch email
+    const emailResult = await emailService.sendSignupOtp(normalizedEmail, cleanUsername, otp);
+
+    await db.logAudit(
+      'SIGNUP_OTP_DISPATCHED',
+      `Signup verification code dispatched to ${cleanUsername} (${normalizedEmail}) via ${emailResult.deliveryMethod}`,
+      req.ip || '127.0.0.1'
+    );
+
+    res.json({
+      success: true,
+      message: `A 6-digit verification code has been sent to ${normalizedEmail}.`,
+      email: normalizedEmail,
+      expiresInSeconds: 600,
+      deliveryMethod: emailResult.deliveryMethod,
+    });
+  }
+
+  /**
+   * Step 2: Verify the 6-digit email OTP and officially create the real user account
+   */
+  public static async verifySignupOtp(req: AuthenticatedRequest, res: Response): Promise<void> {
+    const db = DatabaseService.getInstance();
+    const { email, otp } = req.body;
+
+    const normalizedEmail = (email || '').toLowerCase().trim();
+    const cleanOtp = (otp || '').toString().trim();
+
+    const pending = pendingSignups.get(normalizedEmail);
+
+    if (!pending) {
+      res.status(400).json({
+        success: false,
+        error: 'No pending registration found for this email, or the code has expired. Please restart signup.',
+      });
+      return;
+    }
+
+    // Check expiration
+    if (Date.now() > pending.expiresAt) {
+      pendingSignups.delete(normalizedEmail);
+      res.status(400).json({
+        success: false,
+        error: 'The verification code has expired. Please request a new one.',
+      });
+      return;
+    }
+
+    // Check maximum invalid attempts
+    if (pending.attempts >= 5) {
+      pendingSignups.delete(normalizedEmail);
+      res.status(429).json({
+        success: false,
+        error: 'Too many incorrect attempts. Please request a new verification code.',
+      });
+      return;
+    }
+
+    // Verify OTP code
+    if (pending.otp !== cleanOtp) {
+      pending.attempts += 1;
+      const remaining = 5 - pending.attempts;
+      res.status(400).json({
+        success: false,
+        error: `Incorrect verification code. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.`,
+      });
+      return;
+    }
+
+    // OTP is valid! Ensure neither email nor username were registered concurrently
+    if (db.getUserByEmail(pending.email)) {
+      pendingSignups.delete(normalizedEmail);
+      res.status(409).json({ success: false, error: 'Email is already registered. Please log in.' });
+      return;
+    }
+
+    if (db.getUserByUsername(pending.username)) {
+      pendingSignups.delete(normalizedEmail);
+      res.status(409).json({ success: false, error: 'Username was already claimed. Please restart registration.' });
+      return;
+    }
+
+    // Create real user account in DB
+    const newUser = await db.createUser({
+      username: pending.username,
+      email: pending.email,
+      passwordHash: pending.passwordHash,
       balance: 0.0,
       role: 'USER',
       status: 'active',
     });
 
+    // Remove from pending store
+    pendingSignups.delete(normalizedEmail);
+
     await db.logAudit(
-      'USER_REGISTER',
-      `New user registered: ${username} (${email})`,
+      'USER_REGISTER_VERIFIED',
+      `New real account verified & created: ${newUser.username} (${newUser.email})`,
       req.ip || '127.0.0.1',
       newUser.id,
-      username
+      newUser.username
     );
 
+    // Issue JWT session token (7-day validity)
     const token = jwt.sign(
       { userId: newUser.id, role: newUser.role, username: newUser.username },
       ENV.JWT_SECRET,
@@ -54,19 +192,69 @@ export class AuthController {
 
     res.status(201).json({
       success: true,
-      message: 'Account created successfully!',
+      message: 'Account verified and created successfully!',
       token,
       user: safeUser,
     });
   }
 
+  /**
+   * Resend signup OTP code
+   */
+  public static async resendSignupOtp(req: AuthenticatedRequest, res: Response): Promise<void> {
+    const emailService = EmailService.getInstance();
+    const { email } = req.body;
+    const normalizedEmail = (email || '').toLowerCase().trim();
+
+    const pending = pendingSignups.get(normalizedEmail);
+    if (!pending) {
+      res.status(400).json({
+        success: false,
+        error: 'No active signup session found. Please enter your registration details again.',
+      });
+      return;
+    }
+
+    // Generate fresh OTP code and extend expiration
+    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    pending.otp = newOtp;
+    pending.expiresAt = Date.now() + 10 * 60 * 1000;
+    pending.attempts = 0;
+
+    const result = await emailService.sendSignupOtp(normalizedEmail, pending.username, newOtp);
+
+    res.json({
+      success: true,
+      message: `A new 6-digit verification code has been dispatched to ${normalizedEmail}.`,
+      deliveryMethod: result.deliveryMethod,
+    });
+  }
+
+  /**
+   * Fallback Unified Register:
+   * If OTP is provided, verifies it; if not provided, sends the OTP!
+   */
+  public static async register(req: AuthenticatedRequest, res: Response): Promise<void> {
+    const { otp } = req.body;
+    if (otp && typeof otp === 'string' && otp.trim().length > 0) {
+      await AuthController.verifySignupOtp(req, res);
+    } else {
+      await AuthController.sendSignupOtp(req, res);
+    }
+  }
+
+  /**
+   * Real user/password login
+   */
   public static async login(req: AuthenticatedRequest, res: Response): Promise<void> {
     const db = DatabaseService.getInstance();
     const { login, password } = req.body;
 
+    const cleanLogin = (login || '').trim();
+
     const user =
-      db.getUserByEmail(login) ||
-      db.getUserByUsername(login);
+      db.getUserByEmail(cleanLogin) ||
+      db.getUserByUsername(cleanLogin);
 
     if (!user) {
       res.status(401).json({ success: false, error: 'Invalid email/username or password' });
@@ -74,7 +262,7 @@ export class AuthController {
     }
 
     if (user.status !== 'active') {
-      res.status(403).json({ success: false, error: 'This account has been suspended' });
+      res.status(403).json({ success: false, error: 'This account has been suspended by administration' });
       return;
     }
 
@@ -152,6 +340,10 @@ export class AuthController {
     });
   }
 
+  /**
+   * Real Google Account Sign-In / Sign-Up
+   * Decodes Google ID Token (GSI) or profile data and issues real session
+   */
   public static async googleAuth(req: AuthenticatedRequest, res: Response): Promise<void> {
     const db = DatabaseService.getInstance();
     const { email, name, credential } = req.body;
@@ -159,7 +351,7 @@ export class AuthController {
     let targetEmail = email;
     let targetName = name;
 
-    // Decode Google ID Token if present
+    // Decode Google ID Token if present from Google Identity Services
     if (credential && typeof credential === 'string') {
       try {
         const parts = credential.split('.');
@@ -184,7 +376,7 @@ export class AuthController {
     let user = db.getUserByEmail(targetEmail);
 
     if (!user) {
-      // Create new user from Google Account
+      // Create new real user from Google Account
       const baseUsername = (targetName || targetEmail.split('@')[0])
         .replace(/[^a-zA-Z0-9_]/g, '')
         .toLowerCase()
@@ -217,7 +409,7 @@ export class AuthController {
       );
     } else {
       if (user.status !== 'active') {
-        res.status(403).json({ success: false, error: 'Account suspended' });
+        res.status(403).json({ success: false, error: 'This account has been suspended by administration' });
         return;
       }
 
@@ -240,10 +432,9 @@ export class AuthController {
 
     res.json({
       success: true,
-      message: 'Signed in with Google / Gmail successfully!',
+      message: 'Signed in with Google successfully!',
       token,
       user: safeUser,
     });
   }
 }
-

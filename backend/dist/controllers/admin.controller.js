@@ -14,7 +14,7 @@ class AdminController {
         const smm = smmfollows_service_1.SMMFollowsService.getInstance();
         const users = db.getUsers();
         const orders = db.getOrders();
-        const services = db.getServices();
+        const services = await db.getServicesAsync();
         const totalRevenue = orders
             .filter((o) => o.status !== 'CANCELED')
             .reduce((sum, o) => sum + o.charge, 0);
@@ -209,6 +209,9 @@ class AdminController {
         const rawUrl = db.getSettingValue('smmfollows_api_url') || env_1.ENV.SMMFOLLOWS_API_URL;
         const markup = db.getSettingValue('default_markup_percent') || env_1.ENV.DEFAULT_MARKUP_PERCENT.toString();
         const siteName = db.getSettingValue('site_name') || 'DigitalSMM';
+        const bakongAccountId = db.getSettingValue('bakong_account_id') || env_1.ENV.BAKONG_ACCOUNT_ID;
+        const bakongMerchantName = db.getSettingValue('bakong_merchant_name') || env_1.ENV.BAKONG_MERCHANT_NAME;
+        const bakongMerchantCity = db.getSettingValue('bakong_merchant_city') || env_1.ENV.BAKONG_MERCHANT_CITY;
         res.json({
             success: true,
             settings: {
@@ -216,6 +219,9 @@ class AdminController {
                 smmfollows_api_url: rawUrl,
                 default_markup_percent: parseFloat(markup),
                 site_name: siteName,
+                bakong_account_id: bakongAccountId,
+                bakong_merchant_name: bakongMerchantName,
+                bakong_merchant_city: bakongMerchantCity,
             },
         });
     }
@@ -224,7 +230,7 @@ class AdminController {
      */
     static async updateSettings(req, res) {
         const db = db_service_1.DatabaseService.getInstance();
-        const { apiKey, apiUrl, defaultMarkupPercent, siteName } = req.body;
+        const { apiKey, apiUrl, defaultMarkupPercent, siteName, bakongAccountId, bakongMerchantName, bakongMerchantCity } = req.body;
         if (apiKey) {
             await db.setSetting('smmfollows_api_key', apiKey, true);
         }
@@ -236,6 +242,15 @@ class AdminController {
         }
         if (siteName) {
             await db.setSetting('site_name', siteName, false);
+        }
+        if (bakongAccountId) {
+            await db.setSetting('bakong_account_id', bakongAccountId.trim(), false);
+        }
+        if (bakongMerchantName) {
+            await db.setSetting('bakong_merchant_name', bakongMerchantName.trim(), false);
+        }
+        if (bakongMerchantCity) {
+            await db.setSetting('bakong_merchant_city', bakongMerchantCity.trim(), false);
         }
         await db.logAudit('SETTINGS_UPDATED', `Admin ${req.user?.username} updated system/provider settings`, req.ip || '127.0.0.1', req.user?.id, req.user?.username);
         res.json({ success: true, message: 'Settings saved and encrypted securely' });

@@ -24,7 +24,10 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isAdmin: boolean;
   login: (login: string, pass: string) => Promise<User>;
-  register: (username: string, email: string, pass: string) => Promise<User>;
+  register: (username: string, email: string, pass: string, otp?: string) => Promise<User>;
+  sendSignupOtp: (username: string, email: string, pass: string) => Promise<{ success: boolean; message: string; email: string; deliveryMethod: string }>;
+  verifySignupOtp: (email: string, otp: string) => Promise<User>;
+  resendSignupOtp: (email: string) => Promise<{ success: boolean; message: string }>;
   loginWithGoogle: (payload: { email?: string; name?: string; credential?: string }) => Promise<User>;
   logout: () => void;
   refreshProfile: () => Promise<void>;
@@ -99,8 +102,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     throw new Error('Authentication failed: Missing user session');
   };
 
-  const register = async (username: string, email: string, pass: string): Promise<User> => {
-    const data = await api.auth.register(username, email, pass);
+  const register = async (username: string, email: string, pass: string, otp?: string): Promise<User> => {
+    const data = await api.auth.register(username, email, pass, otp);
     if (data.token && data.user) {
       localStorage.setItem('digitalsmm_token', data.token);
       setToken(data.token);
@@ -109,6 +112,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return data.user;
     }
     throw new Error('Registration failed: Missing user session');
+  };
+
+  const sendSignupOtp = async (
+    username: string,
+    email: string,
+    pass: string
+  ): Promise<{ success: boolean; message: string; email: string; deliveryMethod: string }> => {
+    const data = await api.auth.sendOtp(username, email, pass);
+    if (data.success) {
+      showToast(data.message || 'Verification code sent to your email', 'info');
+      return data;
+    }
+    throw new Error(data.error || 'Failed to dispatch verification code');
+  };
+
+  const verifySignupOtp = async (email: string, otp: string): Promise<User> => {
+    const data = await api.auth.verifyOtp(email, otp);
+    if (data.token && data.user) {
+      localStorage.setItem('digitalsmm_token', data.token);
+      setToken(data.token);
+      setUser(data.user);
+      showToast('Email verified successfully! Welcome to DigitalSMM.', 'success');
+      return data.user;
+    }
+    throw new Error(data.error || 'Verification failed');
+  };
+
+  const resendSignupOtp = async (email: string): Promise<{ success: boolean; message: string }> => {
+    const data = await api.auth.resendOtp(email);
+    if (data.success) {
+      showToast(data.message || 'New verification code sent', 'info');
+      return data;
+    }
+    throw new Error(data.error || 'Failed to resend code');
   };
 
   const loginWithGoogle = async (payload: { email?: string; name?: string; credential?: string }): Promise<User> => {
@@ -140,6 +177,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAdmin: user?.role === 'ADMIN',
         login,
         register,
+        sendSignupOtp,
+        verifySignupOtp,
+        resendSignupOtp,
         loginWithGoogle,
         logout,
         refreshProfile,

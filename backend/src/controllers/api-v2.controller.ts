@@ -41,7 +41,8 @@ export class ApiV2Controller {
       }
 
       case 'services': {
-        const services = db.getServices().filter((s) => s.isActive);
+        const allServices = await db.getServicesAsync();
+        const services = allServices.filter((s) => s.isActive);
         const formatted = services.map((s) => ({
           service: s.externalId,
           name: s.name,
@@ -69,8 +70,8 @@ export class ApiV2Controller {
         }
 
         const service =
-          db.getServiceByExternalId(parseInt(serviceIdRaw, 10)) ||
-          db.getServiceById(serviceIdRaw.toString());
+          (await db.getServiceByExternalIdAsync(parseInt(serviceIdRaw, 10))) ||
+          (await db.getServiceByIdAsync(serviceIdRaw.toString()));
 
         if (!service || !service.isActive) {
           res.status(400).json({ error: 'Invalid or inactive service ID' });

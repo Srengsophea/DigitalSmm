@@ -25,11 +25,35 @@ export const api = {
       });
       return handleResponse<any>(res);
     },
-    async register(username: string, email: string, password: string) {
-      const res = await fetch(`${API_BASE}/auth/register`, {
+    async sendOtp(username: string, email: string, password: string) {
+      const res = await fetch(`${API_BASE}/auth/send-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, email, password }),
+      });
+      return handleResponse<any>(res);
+    },
+    async verifyOtp(email: string, otp: string) {
+      const res = await fetch(`${API_BASE}/auth/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp }),
+      });
+      return handleResponse<any>(res);
+    },
+    async resendOtp(email: string) {
+      const res = await fetch(`${API_BASE}/auth/resend-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      return handleResponse<any>(res);
+    },
+    async register(username: string, email: string, password: string, otp?: string) {
+      const res = await fetch(`${API_BASE}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email, password, otp }),
       });
       return handleResponse<any>(res);
     },

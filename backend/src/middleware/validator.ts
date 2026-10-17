@@ -32,8 +32,31 @@ export const registerSchema = z.object({
   email: z.string().email('Please provide a valid email address'),
   password: z
     .string()
-    .min(8, 'Password must be at least 8 characters')
+    .min(6, 'Password must be at least 6 characters')
     .max(100, 'Password is too long'),
+  otp: z.string().optional(),
+});
+
+export const sendSignupOtpSchema = z.object({
+  username: z
+    .string()
+    .min(3, 'Username must be at least 3 characters')
+    .max(30, 'Username cannot exceed 30 characters')
+    .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
+  email: z.string().email('Please provide a valid email address'),
+  password: z
+    .string()
+    .min(6, 'Password must be at least 6 characters')
+    .max(100, 'Password is too long'),
+});
+
+export const verifySignupOtpSchema = z.object({
+  email: z.string().email('Please provide a valid email address'),
+  otp: z.string().min(4, 'Verification code is required').max(10),
+});
+
+export const resendOtpSchema = z.object({
+  email: z.string().email('Please provide a valid email address'),
 });
 
 export const loginSchema = z.object({

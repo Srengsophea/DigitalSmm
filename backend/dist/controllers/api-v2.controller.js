@@ -35,7 +35,8 @@ class ApiV2Controller {
                 return;
             }
             case 'services': {
-                const services = db.getServices().filter((s) => s.isActive);
+                const allServices = await db.getServicesAsync();
+                const services = allServices.filter((s) => s.isActive);
                 const formatted = services.map((s) => ({
                     service: s.externalId,
                     name: s.name,
@@ -59,8 +60,8 @@ class ApiV2Controller {
                     res.status(400).json({ error: 'service, link, and quantity are required' });
                     return;
                 }
-                const service = db.getServiceByExternalId(parseInt(serviceIdRaw, 10)) ||
-                    db.getServiceById(serviceIdRaw.toString());
+                const service = (await db.getServiceByExternalIdAsync(parseInt(serviceIdRaw, 10))) ||
+                    (await db.getServiceByIdAsync(serviceIdRaw.toString()));
                 if (!service || !service.isActive) {
                     res.status(400).json({ error: 'Invalid or inactive service ID' });
                     return;

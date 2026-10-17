@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateProviderSettingsSchema = exports.updateIndividualServiceSchema = exports.bulkStatusSchema = exports.updateServiceMarkupSchema = exports.depositSchema = exports.createOrderSchema = exports.loginSchema = exports.registerSchema = exports.validateBody = void 0;
+exports.updateProviderSettingsSchema = exports.updateIndividualServiceSchema = exports.bulkStatusSchema = exports.updateServiceMarkupSchema = exports.depositSchema = exports.createOrderSchema = exports.loginSchema = exports.resendOtpSchema = exports.verifySignupOtpSchema = exports.sendSignupOtpSchema = exports.registerSchema = exports.validateBody = void 0;
 const zod_1 = require("zod");
 const validateBody = (schema) => {
     return (req, res, next) => {
@@ -34,8 +34,28 @@ exports.registerSchema = zod_1.z.object({
     email: zod_1.z.string().email('Please provide a valid email address'),
     password: zod_1.z
         .string()
-        .min(8, 'Password must be at least 8 characters')
+        .min(6, 'Password must be at least 6 characters')
         .max(100, 'Password is too long'),
+    otp: zod_1.z.string().optional(),
+});
+exports.sendSignupOtpSchema = zod_1.z.object({
+    username: zod_1.z
+        .string()
+        .min(3, 'Username must be at least 3 characters')
+        .max(30, 'Username cannot exceed 30 characters')
+        .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
+    email: zod_1.z.string().email('Please provide a valid email address'),
+    password: zod_1.z
+        .string()
+        .min(6, 'Password must be at least 6 characters')
+        .max(100, 'Password is too long'),
+});
+exports.verifySignupOtpSchema = zod_1.z.object({
+    email: zod_1.z.string().email('Please provide a valid email address'),
+    otp: zod_1.z.string().min(4, 'Verification code is required').max(10),
+});
+exports.resendOtpSchema = zod_1.z.object({
+    email: zod_1.z.string().email('Please provide a valid email address'),
 });
 exports.loginSchema = zod_1.z.object({
     login: zod_1.z.string().min(1, 'Email or username is required'),

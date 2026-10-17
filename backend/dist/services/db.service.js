@@ -10,16 +10,23 @@ const crypto_1 = __importDefault(require("crypto"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const env_1 = require("../config/env");
 const encryption_service_1 = require("./encryption.service");
+const smmfollows_service_1 = require("./smmfollows.service");
 class DatabaseService {
     static instance;
     filePath;
     data;
+    inMemoryServices = [];
+    lastServiceFetchTime = 0;
+    serviceFetchPromise = null;
+    static CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes cache
     writeLock = Promise.resolve();
     constructor() {
+        DatabaseService.instance = this;
         this.filePath = path_1.default.join(env_1.ENV.DATA_DIR, 'digitalsmm.json');
         this.data = {
             users: [],
             services: [],
+            serviceOverrides: {},
             orders: [],
             transactions: [],
             settings: {},
@@ -30,7 +37,7 @@ class DatabaseService {
     }
     static getInstance() {
         if (!DatabaseService.instance) {
-            DatabaseService.instance = new DatabaseService();
+            new DatabaseService();
         }
         return DatabaseService.instance;
     }
@@ -44,6 +51,10 @@ class DatabaseService {
                 this.data = JSON.parse(raw);
                 if (!this.data.tickets)
                     this.data.tickets = [];
+                if (!this.data.serviceOverrides)
+                    this.data.serviceOverrides = {};
+                // Ensure services is empty in this.data; services live in memory from SMMFollows
+                this.data.services = [];
             }
             catch (err) {
                 console.error('Error loading database file, initializing clean DB:', err);
@@ -55,12 +66,18 @@ class DatabaseService {
         }
         this.ensureAdminUser();
         this.ensureProviderSettings();
-        this.ensureWelcomeTicket();
+        // Asynchronously preload live services directly from SMMFollows after init finishes
+        setImmediate(() => {
+            this.getServicesAsync().catch((err) => {
+                console.warn('Initial SMMFollows services fetch warning:', err.message);
+            });
+        });
     }
     seedDefaults() {
         this.data = {
             users: [],
             services: [],
+            serviceOverrides: {},
             orders: [],
             transactions: [],
             settings: {},
@@ -87,33 +104,8 @@ class DatabaseService {
                 updatedAt: new Date().toISOString(),
             };
             this.data.users.push(adminUser);
-            // Also create a demo regular user
-            const demoUserHash = bcryptjs_1.default.hashSync('User@DigitalSMM2026!', salt);
-            const demoUser = {
-                id: crypto_1.default.randomUUID(),
-                username: 'demouser',
-                email: 'user@digitalsmm.com',
-                passwordHash: demoUserHash,
-                balance: 100.0,
-                role: 'USER',
-                status: 'active',
-                apiKey: encryption_service_1.EncryptionService.generateApiKey('ds_usr_'),
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-            };
-            this.data.users.push(demoUser);
-            this.data.transactions.push({
-                id: crypto_1.default.randomUUID(),
-                userId: demoUser.id,
-                type: 'DEPOSIT',
-                amount: 100.0,
-                balanceBefore: 0,
-                balanceAfter: 100.0,
-                description: 'Welcome promotional deposit credited to your balance',
-                createdAt: new Date().toISOString(),
-            });
             this.persistSync();
-            console.log('✅ Admin & Demo Users created successfully');
+            console.log('✅ Admin User initialized successfully');
         }
     }
     ensureProviderSettings() {
@@ -152,25 +144,84 @@ class DatabaseService {
                 updatedAt: new Date().toISOString(),
             };
         }
+        if (!this.data.settings['bakong_account_id']) {
+            this.data.settings['bakong_account_id'] = {
+                key: 'bakong_account_id',
+                value: env_1.ENV.BAKONG_ACCOUNT_ID,
+                isEncrypted: false,
+                updatedAt: new Date().toISOString(),
+            };
+        }
+        if (!this.data.settings['bakong_merchant_name']) {
+            this.data.settings['bakong_merchant_name'] = {
+                key: 'bakong_merchant_name',
+                value: env_1.ENV.BAKONG_MERCHANT_NAME,
+                isEncrypted: false,
+                updatedAt: new Date().toISOString(),
+            };
+        }
+        if (!this.data.settings['bakong_merchant_city']) {
+            this.data.settings['bakong_merchant_city'] = {
+                key: 'bakong_merchant_city',
+                value: env_1.ENV.BAKONG_MERCHANT_CITY,
+                isEncrypted: false,
+                updatedAt: new Date().toISOString(),
+            };
+        }
         this.persistSync();
     }
     /**
-     * Thread-safe atomic file persistence using temporary file and atomic rename
+     * Thread-safe atomic file persistence with Windows file-lock fallback
      */
     async persist() {
         this.writeLock = this.writeLock.then(async () => {
             const tempPath = `${this.filePath}.tmp.${Date.now()}`;
-            const jsonContent = JSON.stringify(this.data, null, 2);
-            await fs_1.default.promises.writeFile(tempPath, jsonContent, 'utf8');
-            await fs_1.default.promises.rename(tempPath, this.filePath);
+            // Never store raw services in the JSON file; services are fetched live from SMMFollows
+            const toPersist = {
+                ...this.data,
+                services: [],
+            };
+            const jsonContent = JSON.stringify(toPersist, null, 2);
+            try {
+                await fs_1.default.promises.writeFile(tempPath, jsonContent, 'utf8');
+                try {
+                    await fs_1.default.promises.rename(tempPath, this.filePath);
+                }
+                catch (renameErr) {
+                    // Fallback for Windows file-locking / EPERM
+                    await fs_1.default.promises.copyFile(tempPath, this.filePath);
+                    await fs_1.default.promises.unlink(tempPath).catch(() => { });
+                }
+            }
+            catch (err) {
+                console.error('Error persisting database:', err);
+            }
         });
         return this.writeLock;
     }
     persistSync() {
         const tempPath = `${this.filePath}.tmp.${Date.now()}`;
-        const jsonContent = JSON.stringify(this.data, null, 2);
-        fs_1.default.writeFileSync(tempPath, jsonContent, 'utf8');
-        fs_1.default.renameSync(tempPath, this.filePath);
+        const toPersist = {
+            ...this.data,
+            services: [],
+        };
+        const jsonContent = JSON.stringify(toPersist, null, 2);
+        try {
+            fs_1.default.writeFileSync(tempPath, jsonContent, 'utf8');
+            try {
+                fs_1.default.renameSync(tempPath, this.filePath);
+            }
+            catch (err) {
+                fs_1.default.copyFileSync(tempPath, this.filePath);
+                try {
+                    fs_1.default.unlinkSync(tempPath);
+                }
+                catch (_) { }
+            }
+        }
+        catch (writeErr) {
+            fs_1.default.writeFileSync(this.filePath, jsonContent, 'utf8');
+        }
     }
     // ================= USERS =================
     getUsers() {
@@ -243,97 +294,192 @@ class DatabaseService {
         return { success: true, newBalance };
     }
     // ================= SERVICES =================
+    /**
+     * Asynchronously fetch services dynamically from SMMFollows with in-memory TTL caching
+     */
+    async getServicesAsync(forceRefresh = false) {
+        const isCacheValid = !forceRefresh &&
+            this.inMemoryServices.length > 0 &&
+            Date.now() - this.lastServiceFetchTime < DatabaseService.CACHE_TTL_MS;
+        if (isCacheValid) {
+            return [...this.inMemoryServices];
+        }
+        if (this.serviceFetchPromise) {
+            return this.serviceFetchPromise;
+        }
+        this.serviceFetchPromise = (async () => {
+            try {
+                const smm = smmfollows_service_1.SMMFollowsService.getInstance();
+                const rawServices = await smm.getServices();
+                if (Array.isArray(rawServices) && rawServices.length > 0) {
+                    this.inMemoryServices = this.transformRawServices(rawServices);
+                    this.lastServiceFetchTime = Date.now();
+                    console.log(`✅ Loaded ${this.inMemoryServices.length} live services from SMMFollows`);
+                }
+                return [...this.inMemoryServices];
+            }
+            catch (err) {
+                console.error('Failed to fetch services from SMMFollows:', err.message);
+                if (this.inMemoryServices.length > 0) {
+                    console.log('Serving from existing in-memory cache as fallback');
+                    return [...this.inMemoryServices];
+                }
+                return [];
+            }
+            finally {
+                this.serviceFetchPromise = null;
+            }
+        })();
+        return this.serviceFetchPromise;
+    }
+    /**
+     * Synchronous getter for in-memory services
+     */
     getServices() {
-        return [...this.data.services];
+        return [...this.inMemoryServices];
+    }
+    async getServiceByIdAsync(id) {
+        const services = await this.getServicesAsync();
+        const numId = Number(id);
+        return services.find((s) => s.id === id || (!isNaN(numId) && s.externalId === numId));
+    }
+    async getServiceByExternalIdAsync(externalId) {
+        const services = await this.getServicesAsync();
+        return services.find((s) => s.externalId === externalId);
     }
     getServiceById(id) {
-        return this.data.services.find((s) => s.id === id);
+        const numId = Number(id);
+        return this.inMemoryServices.find((s) => s.id === id || (!isNaN(numId) && s.externalId === numId));
     }
     getServiceByExternalId(externalId) {
-        return this.data.services.find((s) => s.externalId === externalId);
+        return this.inMemoryServices.find((s) => s.externalId === externalId);
     }
-    async upsertServices(rawServices, markupPercent) {
-        const activeMarkup = markupPercent ?? Number(this.getSettingValue('default_markup_percent') || '30');
+    /**
+     * Transform raw SMMFollows catalog items into full DigitalSMM ServiceItem objects,
+     * applying default markup and individual admin service overrides.
+     */
+    transformRawServices(rawServices) {
+        const defaultMarkup = Number(this.getSettingValue('default_markup_percent') || '30');
+        const overrides = this.data.serviceOverrides || {};
+        const items = [];
         for (const raw of rawServices) {
             const externalId = Number(raw.service);
+            if (isNaN(externalId))
+                continue;
             const originalRate = parseFloat(raw.rate || '0');
-            const rateMultiplier = 1 + activeMarkup / 100;
-            const customRate = Number((originalRate * rateMultiplier).toFixed(4));
-            const platform = this.detectPlatform(raw.category, raw.name);
-            const existing = this.data.services.find((s) => s.externalId === externalId);
-            if (existing) {
-                existing.name = raw.name;
-                existing.category = raw.category;
-                existing.platform = platform;
-                existing.originalRate = originalRate;
-                // Keep existing customRate if admin manually adjusted it, otherwise apply markup
-                if (!existing.customRate || existing.markupPercent === activeMarkup) {
-                    existing.customRate = customRate;
-                    existing.markupPercent = activeMarkup;
+            const extKey = String(externalId);
+            const override = overrides[extKey];
+            let customRate;
+            let markupPercent;
+            let isActive = true;
+            if (override) {
+                if (override.isActive !== undefined) {
+                    isActive = Boolean(override.isActive);
                 }
-                existing.min = parseInt(raw.min || '10', 10);
-                existing.max = parseInt(raw.max || '10000', 10);
-                existing.type = raw.type || 'Default';
-                existing.dripfeed = Boolean(raw.dripfeed);
-                existing.refill = Boolean(raw.refill);
-                existing.cancel = Boolean(raw.cancel);
-                existing.updatedAt = new Date().toISOString();
+                if (override.customRate !== undefined) {
+                    customRate = Number(override.customRate);
+                    markupPercent =
+                        override.markupPercent ??
+                            (originalRate > 0
+                                ? Number((((customRate - originalRate) / originalRate) * 100).toFixed(2))
+                                : defaultMarkup);
+                }
+                else if (override.markupPercent !== undefined) {
+                    markupPercent = Number(override.markupPercent);
+                    customRate = Number((originalRate * (1 + markupPercent / 100)).toFixed(4));
+                }
+                else if (override.fixedIncrease !== undefined) {
+                    customRate = Number((originalRate + override.fixedIncrease).toFixed(4));
+                    markupPercent =
+                        originalRate > 0
+                            ? Number((((customRate - originalRate) / originalRate) * 100).toFixed(2))
+                            : 0;
+                }
+                else {
+                    markupPercent = defaultMarkup;
+                    customRate = Number((originalRate * (1 + markupPercent / 100)).toFixed(4));
+                }
             }
             else {
-                const newService = {
-                    id: crypto_1.default.randomUUID(),
-                    externalId,
-                    name: raw.name,
-                    category: raw.category || 'General',
-                    platform,
-                    originalRate,
-                    customRate,
-                    markupPercent: activeMarkup,
-                    min: parseInt(raw.min || '10', 10),
-                    max: parseInt(raw.max || '10000', 10),
-                    type: raw.type || 'Default',
-                    isActive: true,
-                    dripfeed: Boolean(raw.dripfeed),
-                    refill: Boolean(raw.refill),
-                    cancel: Boolean(raw.cancel),
-                    updatedAt: new Date().toISOString(),
-                };
-                this.data.services.push(newService);
+                markupPercent = defaultMarkup;
+                customRate = Number((originalRate * (1 + markupPercent / 100)).toFixed(4));
             }
+            const platform = this.detectPlatform(raw.category, raw.name);
+            items.push({
+                id: String(externalId),
+                externalId,
+                name: raw.name || `Service #${externalId}`,
+                category: raw.category || 'General',
+                platform,
+                originalRate,
+                customRate,
+                markupPercent,
+                min: parseInt(raw.min || '10', 10),
+                max: parseInt(raw.max || '10000', 10),
+                type: raw.type || 'Default',
+                isActive,
+                dripfeed: Boolean(raw.dripfeed),
+                refill: Boolean(raw.refill),
+                cancel: Boolean(raw.cancel),
+                updatedAt: override?.updatedAt || new Date().toISOString(),
+            });
         }
-        await this.persist();
-        return { count: this.data.services.length };
+        return items;
+    }
+    async upsertServices(rawServices, markupPercent) {
+        if (markupPercent !== undefined && !isNaN(markupPercent)) {
+            await this.setSetting('default_markup_percent', markupPercent.toString(), false);
+        }
+        if (Array.isArray(rawServices) && rawServices.length > 0) {
+            this.inMemoryServices = this.transformRawServices(rawServices);
+            this.lastServiceFetchTime = Date.now();
+        }
+        return { count: this.inMemoryServices.length };
     }
     async updateService(id, updates) {
+        await this.getServicesAsync();
         const numId = Number(id);
-        const index = this.data.services.findIndex((s) => s.id === id || (!isNaN(numId) && s.externalId === numId));
-        if (index === -1)
+        const target = this.inMemoryServices.find((s) => s.id === id || (!isNaN(numId) && s.externalId === numId));
+        if (!target)
             return null;
-        const current = this.data.services[index];
-        let customRate = updates.customRate !== undefined ? Number(updates.customRate) : current.customRate;
-        let markupPercent = updates.markupPercent !== undefined ? Number(updates.markupPercent) : current.markupPercent;
+        const extKey = String(target.externalId);
+        if (!this.data.serviceOverrides) {
+            this.data.serviceOverrides = {};
+        }
+        const currentOverride = this.data.serviceOverrides[extKey] || {};
+        let customRate = updates.customRate !== undefined ? Number(updates.customRate) : target.customRate;
+        let markupPercent = updates.markupPercent !== undefined ? Number(updates.markupPercent) : target.markupPercent;
+        let isActive = updates.isActive !== undefined ? Boolean(updates.isActive) : target.isActive;
         // If customRate was explicitly provided without markupPercent, compute markupPercent based on originalRate
-        if (updates.customRate !== undefined && updates.markupPercent === undefined && current.originalRate > 0) {
-            markupPercent = Number((((customRate - current.originalRate) / current.originalRate) * 100).toFixed(2));
+        if (updates.customRate !== undefined && updates.markupPercent === undefined && target.originalRate > 0) {
+            markupPercent = Number((((customRate - target.originalRate) / target.originalRate) * 100).toFixed(2));
         }
         else if (updates.markupPercent !== undefined && updates.customRate === undefined) {
-            customRate = Number((current.originalRate * (1 + markupPercent / 100)).toFixed(4));
+            customRate = Number((target.originalRate * (1 + markupPercent / 100)).toFixed(4));
         }
-        this.data.services[index] = {
-            ...current,
-            ...updates,
+        this.data.serviceOverrides[extKey] = {
+            ...currentOverride,
             customRate,
             markupPercent,
+            isActive,
             updatedAt: new Date().toISOString(),
         };
+        target.customRate = customRate;
+        target.markupPercent = markupPercent;
+        target.isActive = isActive;
+        target.updatedAt = new Date().toISOString();
         await this.persist();
-        return this.data.services[index];
+        return target;
     }
     async batchUpdateMarkup(options) {
+        await this.getServicesAsync();
         const { markupPercent, fixedIncrease, platform, category, serviceIds } = options;
         let count = 0;
         const targetIds = serviceIds && serviceIds.length > 0 ? new Set(serviceIds.map(String)) : null;
-        for (const service of this.data.services) {
+        if (!this.data.serviceOverrides) {
+            this.data.serviceOverrides = {};
+        }
+        for (const service of this.inMemoryServices) {
             if (targetIds && !targetIds.has(service.id) && !targetIds.has(service.externalId.toString())) {
                 continue;
             }
@@ -343,15 +489,31 @@ class DatabaseService {
             if (category && category !== 'All' && !service.category.toLowerCase().includes(category.toLowerCase())) {
                 continue;
             }
+            const extKey = String(service.externalId);
+            const currentOverride = this.data.serviceOverrides[extKey] || {};
             if (markupPercent !== undefined) {
                 service.markupPercent = markupPercent;
                 service.customRate = Number((service.originalRate * (1 + markupPercent / 100)).toFixed(4));
+                this.data.serviceOverrides[extKey] = {
+                    ...currentOverride,
+                    markupPercent,
+                    customRate: service.customRate,
+                    updatedAt: new Date().toISOString(),
+                };
             }
             else if (fixedIncrease !== undefined) {
                 service.customRate = Number((service.originalRate + fixedIncrease).toFixed(4));
-                service.markupPercent = service.originalRate > 0
-                    ? Number((((service.customRate - service.originalRate) / service.originalRate) * 100).toFixed(2))
-                    : 0;
+                service.markupPercent =
+                    service.originalRate > 0
+                        ? Number((((service.customRate - service.originalRate) / service.originalRate) * 100).toFixed(2))
+                        : 0;
+                this.data.serviceOverrides[extKey] = {
+                    ...currentOverride,
+                    fixedIncrease,
+                    customRate: service.customRate,
+                    markupPercent: service.markupPercent,
+                    updatedAt: new Date().toISOString(),
+                };
             }
             service.updatedAt = new Date().toISOString();
             count++;
@@ -363,12 +525,22 @@ class DatabaseService {
         return { updatedCount: count };
     }
     async bulkUpdateStatus(serviceIds, isActive) {
+        await this.getServicesAsync();
         const idSet = new Set(serviceIds.map(String));
         let count = 0;
-        for (const service of this.data.services) {
+        if (!this.data.serviceOverrides) {
+            this.data.serviceOverrides = {};
+        }
+        for (const service of this.inMemoryServices) {
             if (idSet.has(service.id) || idSet.has(service.externalId.toString())) {
                 service.isActive = isActive;
                 service.updatedAt = new Date().toISOString();
+                const extKey = String(service.externalId);
+                this.data.serviceOverrides[extKey] = {
+                    ...(this.data.serviceOverrides[extKey] || {}),
+                    isActive,
+                    updatedAt: new Date().toISOString(),
+                };
                 count++;
             }
         }
@@ -493,28 +665,6 @@ class DatabaseService {
     }
     getAuditLogs() {
         return [...this.data.auditLogs];
-    }
-    ensureWelcomeTicket() {
-        if (!this.data.tickets)
-            this.data.tickets = [];
-        if (this.data.tickets.length === 0) {
-            const demoUser = this.data.users.find((u) => u.username === 'demouser');
-            this.data.tickets.push({
-                id: crypto_1.default.randomUUID(),
-                ticketNumber: 1172282,
-                userId: demoUser ? demoUser.id : 'demo-user-id',
-                username: demoUser ? demoUser.username : 'demouser',
-                subjectType: 'Orders',
-                subType: 'Refill',
-                orderIds: '27417914',
-                message: "Welcome to SmmFollows.com We're glad you're here! Feel free to reach out for any order assistance.",
-                referralSource: 'Search engines',
-                status: 'New',
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-            });
-            this.persistSync();
-        }
     }
     // ================= TICKETS =================
     getTickets() {

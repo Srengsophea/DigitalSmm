@@ -75,7 +75,7 @@ class WalletController {
             return;
         }
         const bakong = bakong_service_1.BakongService.getInstance();
-        const billNumber = `KHQR-${Date.now().toString().slice(-6)}`;
+        const billNumber = `KHQR${Date.now().toString().slice(-6)}`;
         try {
             const khqrRes = await bakong.generateKHQR({
                 amount: numAmount,
@@ -90,6 +90,9 @@ class WalletController {
                     qrString: khqrRes.data.qrString,
                     qrImage: khqrRes.data.qrImage,
                     deeplink: khqrRes.data.deeplink,
+                    accountId: khqrRes.data.accountId,
+                    merchantName: khqrRes.data.merchantName,
+                    merchantCity: khqrRes.data.merchantCity,
                     amount: numAmount,
                     currency,
                     billNumber,
@@ -97,19 +100,10 @@ class WalletController {
             });
         }
         catch (err) {
-            // In case the external domain is behind a transient network challenge, provide reliable fallback KHQR QR representation
-            const simulatedMd5 = `khqr_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-            res.json({
-                success: true,
-                fallback: true,
-                data: {
-                    md5: simulatedMd5,
-                    qrString: `00020101021229380016bakong@nbc.gov.kh0114DigitalSMM_Store520459995303840540${numAmount.toFixed(2)}5802KH5910DigitalSMM6010Phnom Penh62190115${billNumber}6304ABCD`,
-                    amount: numAmount,
-                    currency,
-                    billNumber,
-                    message: 'KHQR generated successfully',
-                },
+            console.error('Bakong KHQR generation error:', err);
+            res.status(500).json({
+                success: false,
+                error: `Failed to generate genuine Bakong KHQR: ${err.message}`,
             });
         }
     }
@@ -129,34 +123,48 @@ class WalletController {
         }
         const numAmount = parseFloat(amount) || 5.0;
         const bakong = bakong_service_1.BakongService.getInstance();
+        // Check if this payment was already credited (prevent double-credit)
+        const userTransactions = db.getTransactionsByUserId(req.user.id);
+        const alreadyCredited = userTransactions.some((tx) => tx.referenceId === md5);
+        if (alreadyCredited) {
+            const refreshedUser = db.getUserById(req.user.id);
+            res.json({
+                success: true,
+                confirmed: true,
+                alreadyProcessed: true,
+                message: 'Payment has already been credited to your wallet.',
+                newBalance: refreshedUser?.balance ?? req.user.balance,
+            });
+            return;
+        }
         try {
             const checkRes = await bakong.checkPayment(md5);
             if (checkRes.responseCode === 0) {
-                // Confirmed payment!
-                const creditResult = await db.adjustUserBalance(req.user.id, numAmount, 'DEPOSIT', md5, `Bakong KHQR Payment Confirmed (Hash: ${md5.slice(0, 10)})`);
-                await db.logAudit('KHQR_PAYMENT_CONFIRMED', `Bakong KHQR payment of $${numAmount.toFixed(2)} credited to ${req.user.username} (MD5: ${md5})`, req.ip || '127.0.0.1', req.user.id, req.user.username);
+                // Real payment confirmed on Bakong network!
+                const creditAmount = checkRes.data?.amount ? Number(checkRes.data.amount) : numAmount;
+                const creditResult = await db.adjustUserBalance(req.user.id, creditAmount, 'DEPOSIT', md5, `Bakong KHQR to ${bakong.getAccountId()} (MD5: ${md5.slice(0, 10)})`);
+                await db.logAudit('KHQR_PAYMENT_CONFIRMED', `Bakong payment of $${creditAmount.toFixed(2)} confirmed & credited to ${req.user.username} (MD5: ${md5})`, req.ip || '127.0.0.1', req.user.id, req.user.username);
                 res.json({
                     success: true,
                     confirmed: true,
-                    message: 'Payment confirmed! Balance credited.',
+                    message: 'Payment confirmed by Bakong network! Balance credited.',
                     newBalance: creditResult.newBalance,
                 });
                 return;
             }
+            // Not yet paid/confirmed in Bakong network
             res.json({
                 success: true,
                 confirmed: false,
-                message: 'Payment pending confirmation. Please complete payment in your banking app.',
+                message: 'Payment pending in Bakong network. Please approve the payment in your banking app.',
             });
         }
         catch (err) {
-            // If client confirmed manual verification or test sandbox
-            const creditResult = await db.adjustUserBalance(req.user.id, numAmount, 'DEPOSIT', md5, `Bakong KHQR Payment (Ref: ${md5.slice(0, 10)})`);
+            // Real check failed or still pending; do NOT credit fake balance
             res.json({
                 success: true,
-                confirmed: true,
-                message: 'Payment verified and credited to your wallet!',
-                newBalance: creditResult.newBalance,
+                confirmed: false,
+                message: 'Payment is pending verification in the NBC Bakong network. Please ensure payment is submitted.',
             });
         }
     }
