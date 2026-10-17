@@ -198,7 +198,7 @@ export const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({
             </ul>
           </div>
 
-          {/* Non-authenticated Guest Bonus Notice */}
+          {/* Non-authenticated Guest Notice */}
           {!isAuthenticated && (
             <div
               style={{
@@ -227,7 +227,7 @@ export const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({
                 <DollarSign size={20} />
               </div>
               <div style={{ fontSize: '0.84rem', color: '#0c4a6e', lineHeight: 1.4 }}>
-                <strong>Claim $10 Free Welcome Bonus:</strong> Sign up for a free DigitalSMM account now to test this service with an instant $10.00 promotional balance!
+                <strong>Create an Account:</strong> Sign up for a free DigitalSMM account to place instant orders, track delivery status in real-time, and access API keys.
               </div>
             </div>
           )}
@@ -277,7 +277,7 @@ export const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({
                 }}
               >
                 <UserPlus size={14} />
-                Sign Up & Claim $10 Bonus
+                Sign Up Now
               </button>
             </div>
           )}

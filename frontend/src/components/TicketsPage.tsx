@@ -76,18 +76,6 @@ export const TicketsPage: React.FC<TicketsPageProps> = ({ openAuthModal }) => {
       subOptions: ['Invoice Request', 'Tax Info', 'VAT Certificate'],
     },
     {
-      name: 'Child Panel',
-      icon: (
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-          <rect x="3" y="4" width="18" height="13" rx="2" fill="#e0f2fe" stroke="#0284c7" strokeWidth="1.5" />
-          <path d="M8 20h8M12 17v3" stroke="#0284c7" strokeWidth="1.8" strokeLinecap="round" />
-          <circle cx="6" cy="7" r="1" fill="#38bdf8" />
-          <circle cx="9" cy="7" r="1" fill="#38bdf8" />
-        </svg>
-      ),
-      subOptions: ['Domain Setup', 'Panel Issue', 'Renewal ($3/mo)'],
-    },
-    {
       name: 'API',
       icon: (
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none">

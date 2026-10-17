@@ -1,5 +1,5 @@
 import React from 'react';
-import { HelpCircle, ShoppingBag, FileText, DollarSign, CheckCircle2 } from 'lucide-react';
+import { HelpCircle, FileText, DollarSign } from 'lucide-react';
 
 export const FAQView: React.FC = () => {
   const faqs = [
@@ -36,36 +36,6 @@ export const FAQView: React.FC = () => {
           </div>
         ))}
       </div>
-    </div>
-  );
-};
-
-export const ChildPanelView: React.FC = () => {
-  return (
-    <div className="card" style={{ maxWidth: 860, margin: '0 auto', textAlign: 'center' }}>
-      <div style={{ width: 60, height: 60, borderRadius: '50%', background: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-        <ShoppingBag size={28} color="#0284c7" />
-      </div>
-      <h2>Order Your Own Child Panel</h2>
-      <p style={{ color: 'var(--text-muted)', maxWidth: 540, margin: '8px auto 24px' }}>
-        Start your own SMM reseller business connected to DigitalSMM with your custom domain name for only $3/month.
-      </p>
-
-      <div style={{ background: '#f8fafc', padding: 20, borderRadius: 12, border: '1px solid #e2e8f0', maxWidth: 480, margin: '0 auto 24px', textAlign: 'left' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: '0.88rem', color: '#1e293b' }}>
-          <CheckCircle2 size={16} color="#16a34a" /> Automated synchronization with 7,500+ services
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: '0.88rem', color: '#1e293b' }}>
-          <CheckCircle2 size={16} color="#16a34a" /> Free SSL certificate & custom domain setup
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.88rem', color: '#1e293b' }}>
-          <CheckCircle2 size={16} color="#16a34a" /> KHQR Bakong & International payment modules
-        </div>
-      </div>
-
-      <button className="btn btn-primary" style={{ padding: '12px 32px' }}>
-        Order Child Panel ($3.00/Month)
-      </button>
     </div>
   );
 };

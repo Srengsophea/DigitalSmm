@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateProviderSettingsSchema = exports.updateIndividualServiceSchema = exports.updateServiceMarkupSchema = exports.depositSchema = exports.createOrderSchema = exports.loginSchema = exports.registerSchema = exports.validateBody = void 0;
+exports.updateProviderSettingsSchema = exports.updateIndividualServiceSchema = exports.bulkStatusSchema = exports.updateServiceMarkupSchema = exports.depositSchema = exports.createOrderSchema = exports.loginSchema = exports.registerSchema = exports.validateBody = void 0;
 const zod_1 = require("zod");
 const validateBody = (schema) => {
     return (req, res, next) => {
@@ -53,11 +53,19 @@ exports.depositSchema = zod_1.z.object({
     method: zod_1.z.enum(['CRYPTO_USDT', 'CREDIT_CARD', 'PAYPAL', 'STRIPE', 'BANK_TRANSFER']).default('CRYPTO_USDT'),
 });
 exports.updateServiceMarkupSchema = zod_1.z.object({
-    markupPercent: zod_1.z.number().min(0, 'Markup cannot be negative').max(1000, 'Markup cannot exceed 1000%'),
+    markupPercent: zod_1.z.number().min(0, 'Markup cannot be negative').max(1000, 'Markup cannot exceed 1000%').optional(),
+    fixedIncrease: zod_1.z.number().min(0, 'Fixed increase cannot be negative').max(1000).optional(),
+    platform: zod_1.z.string().optional(),
+    category: zod_1.z.string().optional(),
+    serviceIds: zod_1.z.array(zod_1.z.string()).optional(),
+});
+exports.bulkStatusSchema = zod_1.z.object({
+    serviceIds: zod_1.z.array(zod_1.z.string()).min(1, 'At least one service ID is required'),
+    isActive: zod_1.z.boolean(),
 });
 exports.updateIndividualServiceSchema = zod_1.z.object({
-    customRate: zod_1.z.number().positive().optional(),
-    markupPercent: zod_1.z.number().min(0).optional(),
+    customRate: zod_1.z.number().min(0, 'Custom rate must be non-negative').optional(),
+    markupPercent: zod_1.z.number().min(0, 'Markup percent must be non-negative').optional(),
     isActive: zod_1.z.boolean().optional(),
 });
 exports.updateProviderSettingsSchema = zod_1.z.object({

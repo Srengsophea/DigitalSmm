@@ -30,18 +30,16 @@ class AuthController {
             username,
             email: email.toLowerCase(),
             passwordHash,
-            balance: 10.0, // Complimentary $10.00 test credit for new registrations
+            balance: 0.0,
             role: 'USER',
             status: 'active',
         });
-        // Record welcome credit transaction
-        await db.adjustUserBalance(newUser.id, 10.0, 'DEPOSIT', 'WELCOME_BONUS', 'Welcome bonus credit of $10.00');
         await db.logAudit('USER_REGISTER', `New user registered: ${username} (${email})`, req.ip || '127.0.0.1', newUser.id, username);
         const token = jsonwebtoken_1.default.sign({ userId: newUser.id, role: newUser.role, username: newUser.username }, env_1.ENV.JWT_SECRET, { expiresIn: '7d' });
         const { passwordHash: _, ...safeUser } = newUser;
         res.status(201).json({
             success: true,
-            message: 'Account created successfully with $10.00 welcome credit!',
+            message: 'Account created successfully!',
             token,
             user: safeUser,
         });
@@ -148,11 +146,10 @@ class AuthController {
                 username: candidateUsername,
                 email: targetEmail,
                 passwordHash,
-                balance: 10.0,
+                balance: 0.0,
                 role: 'USER',
                 status: 'active',
             });
-            await db.adjustUserBalance(user.id, 10.0, 'DEPOSIT', 'GOOGLE_WELCOME', 'Welcome bonus credit of $10.00 for Google / Gmail signup');
             await db.logAudit('GOOGLE_REGISTER', `User registered with Google: ${user.username} (${targetEmail})`, req.ip || '127.0.0.1', user.id, user.username);
         }
         else {

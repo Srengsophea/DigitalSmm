@@ -305,26 +305,75 @@ class DatabaseService {
         return { count: this.data.services.length };
     }
     async updateService(id, updates) {
-        const index = this.data.services.findIndex((s) => s.id === id);
+        const numId = Number(id);
+        const index = this.data.services.findIndex((s) => s.id === id || (!isNaN(numId) && s.externalId === numId));
         if (index === -1)
             return null;
+        const current = this.data.services[index];
+        let customRate = updates.customRate !== undefined ? Number(updates.customRate) : current.customRate;
+        let markupPercent = updates.markupPercent !== undefined ? Number(updates.markupPercent) : current.markupPercent;
+        // If customRate was explicitly provided without markupPercent, compute markupPercent based on originalRate
+        if (updates.customRate !== undefined && updates.markupPercent === undefined && current.originalRate > 0) {
+            markupPercent = Number((((customRate - current.originalRate) / current.originalRate) * 100).toFixed(2));
+        }
+        else if (updates.markupPercent !== undefined && updates.customRate === undefined) {
+            customRate = Number((current.originalRate * (1 + markupPercent / 100)).toFixed(4));
+        }
         this.data.services[index] = {
-            ...this.data.services[index],
+            ...current,
             ...updates,
+            customRate,
+            markupPercent,
             updatedAt: new Date().toISOString(),
         };
         await this.persist();
         return this.data.services[index];
     }
-    async batchUpdateMarkup(markupPercent) {
-        const multiplier = 1 + markupPercent / 100;
+    async batchUpdateMarkup(options) {
+        const { markupPercent, fixedIncrease, platform, category, serviceIds } = options;
+        let count = 0;
+        const targetIds = serviceIds && serviceIds.length > 0 ? new Set(serviceIds.map(String)) : null;
         for (const service of this.data.services) {
-            service.markupPercent = markupPercent;
-            service.customRate = Number((service.originalRate * multiplier).toFixed(4));
+            if (targetIds && !targetIds.has(service.id) && !targetIds.has(service.externalId.toString())) {
+                continue;
+            }
+            if (platform && platform !== 'All' && service.platform.toLowerCase() !== platform.toLowerCase()) {
+                continue;
+            }
+            if (category && category !== 'All' && !service.category.toLowerCase().includes(category.toLowerCase())) {
+                continue;
+            }
+            if (markupPercent !== undefined) {
+                service.markupPercent = markupPercent;
+                service.customRate = Number((service.originalRate * (1 + markupPercent / 100)).toFixed(4));
+            }
+            else if (fixedIncrease !== undefined) {
+                service.customRate = Number((service.originalRate + fixedIncrease).toFixed(4));
+                service.markupPercent = service.originalRate > 0
+                    ? Number((((service.customRate - service.originalRate) / service.originalRate) * 100).toFixed(2))
+                    : 0;
+            }
             service.updatedAt = new Date().toISOString();
+            count++;
         }
-        await this.setSetting('default_markup_percent', markupPercent.toString(), false);
+        if (!platform && !category && !serviceIds && markupPercent !== undefined) {
+            await this.setSetting('default_markup_percent', markupPercent.toString(), false);
+        }
         await this.persist();
+        return { updatedCount: count };
+    }
+    async bulkUpdateStatus(serviceIds, isActive) {
+        const idSet = new Set(serviceIds.map(String));
+        let count = 0;
+        for (const service of this.data.services) {
+            if (idSet.has(service.id) || idSet.has(service.externalId.toString())) {
+                service.isActive = isActive;
+                service.updatedAt = new Date().toISOString();
+                count++;
+            }
+        }
+        await this.persist();
+        return count;
     }
     detectPlatform(category = '', name = '') {
         const combined = `${category} ${name}`.toLowerCase();

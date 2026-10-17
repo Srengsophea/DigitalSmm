@@ -89,7 +89,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
       setIsLoading(true);
       try {
         await register(username.trim(), email.trim(), password);
-        setSuccessMessage('Account created with $10.00 credit! Redirecting...');
+        setSuccessMessage('Account created successfully! Redirecting...');
         setTimeout(() => {
           onNavigate('/new-order');
         }, 600);
@@ -173,8 +173,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               </div>
 
               <div className="auth-left-bonus-badge">
-                <Gift size={14} />
-                <span>$10 Free Welcome Credit For New Signups</span>
+                <Shield size={14} />
+                <span>Official Direct Provider Platform</span>
               </div>
 
               <h2 className="auth-left-heading">
@@ -220,11 +220,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
                 <div className="auth-feature-item">
                   <div className="auth-feature-icon">
-                    <Gift size={16} color="#f472b6" />
+                    <Sparkles size={16} color="#f472b6" />
                   </div>
                   <div>
-                    <div className="auth-feature-title">Instant $10.00 Welcome Balance</div>
-                    <div className="auth-feature-sub">Free trial balance auto-credited upon account registration.</div>
+                    <div className="auth-feature-title">Wholesale Reseller Rates</div>
+                    <div className="auth-feature-sub">Unbeatable bulk prices starting from just $0.001 per thousand.</div>
                   </div>
                 </div>
               </div>
@@ -266,7 +266,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   setErrorMessage(null);
                 }}
               >
-                Create Account <span className="badge-bonus-pill">+$10</span>
+                Create Account
               </button>
             </div>
 
@@ -520,7 +520,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   <span>Authenticating...</span>
                 ) : mode === 'signup' ? (
                   <>
-                    <span>Create Account & Claim $10 Bonus</span>
+                    <span>Create Account</span>
                     <ArrowRight size={16} />
                   </>
                 ) : (
@@ -550,7 +550,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                       onClick={() => setMode('signup')}
                       style={{ color: '#162399', fontWeight: 700, cursor: 'pointer' }}
                     >
-                      Sign up now ($10 bonus)
+                      Sign up now
                     </span>
                   </>
                 ) : (

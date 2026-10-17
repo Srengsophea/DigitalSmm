@@ -40,13 +40,25 @@
       "username": "alexcreator",
       "email": "creator@gmail.com",
       "passwordHash": "$2b$12$j2/25z5OcQyHRSdwTdthK.diUPPh0Dp5TgYjIoS7r7FKv2zYMr3Mm",
-      "balance": 20,
+      "balance": 25,
       "role": "USER",
       "status": "active",
       "id": "1891cf37-331b-4b4c-8004-c924332f881a",
       "apiKey": "ds_usr_2340e9b0b7f774de7ff220e338f955183032a0f2eec5d067",
       "createdAt": "2026-10-16T19:06:51.327Z",
-      "updatedAt": "2026-10-16T19:06:51.373Z"
+      "updatedAt": "2026-10-17T05:12:49.645Z"
+    },
+    {
+      "username": "test_nobonus_99",
+      "email": "test_nobonus_99@example.com",
+      "passwordHash": "$2b$12$fYoSvXWVr61AoGUONr4WruP2SZpRIfdic0DxJy87YTgGZp8.kSDcm",
+      "balance": 5,
+      "role": "USER",
+      "status": "active",
+      "id": "d2c395b5-3569-4199-98c1-70ed813961a6",
+      "apiKey": "ds_usr_9611085973f955955234205ae24c0b324fdea4bf80f28541",
+      "createdAt": "2026-10-17T05:14:00.729Z",
+      "updatedAt": "2026-10-17T05:16:13.284Z"
     }
   ],
   "services": [
@@ -136299,6 +136311,28 @@
   ],
   "transactions": [
     {
+      "id": "f9afa7b1-9975-4448-b6d5-35990fb7a8ad",
+      "userId": "d2c395b5-3569-4199-98c1-70ed813961a6",
+      "type": "DEPOSIT",
+      "amount": 5,
+      "balanceBefore": 0,
+      "balanceAfter": 5,
+      "referenceId": "khqr_1792214169603_q88ktr",
+      "description": "Bakong KHQR Payment (Ref: khqr_17922)",
+      "createdAt": "2026-10-17T05:16:13.284Z"
+    },
+    {
+      "id": "31cc1409-cf18-4c1e-b2e9-b7b6bcb3e12d",
+      "userId": "1891cf37-331b-4b4c-8004-c924332f881a",
+      "type": "DEPOSIT",
+      "amount": 5,
+      "balanceBefore": 20,
+      "balanceAfter": 25,
+      "referenceId": "khqr_1792213965738_9e7znq",
+      "description": "Bakong KHQR Payment (Ref: khqr_17922)",
+      "createdAt": "2026-10-17T05:12:49.645Z"
+    },
+    {
       "id": "a14ba1da-2185-4c1b-897b-5cf4351d5065",
       "userId": "1891cf37-331b-4b4c-8004-c924332f881a",
       "type": "DEPOSIT",
@@ -136423,6 +136457,33 @@
     }
   },
   "auditLogs": [
+    {
+      "id": "265cb432-08e5-45d8-9fcc-456a1bd6dd1a",
+      "userId": "ccae8c6d-074e-447c-8d22-7796940df2a2",
+      "username": "demouser",
+      "action": "USER_LOGIN",
+      "details": "User signed in: demouser",
+      "ip": "::1",
+      "createdAt": "2026-10-17T11:56:19.048Z"
+    },
+    {
+      "id": "2940c219-18fd-4fe0-89ea-a8ac23c7198d",
+      "userId": "d2c395b5-3569-4199-98c1-70ed813961a6",
+      "username": "test_nobonus_99",
+      "action": "USER_REGISTER",
+      "details": "New user registered: test_nobonus_99 (test_nobonus_99@example.com)",
+      "ip": "::1",
+      "createdAt": "2026-10-17T05:14:00.781Z"
+    },
+    {
+      "id": "4b530579-b9a8-401a-b61a-084d9b8a6459",
+      "userId": "1891cf37-331b-4b4c-8004-c924332f881a",
+      "username": "alexcreator",
+      "action": "GOOGLE_LOGIN",
+      "details": "User signed in with Google: alexcreator (creator@gmail.com)",
+      "ip": "::1",
+      "createdAt": "2026-10-17T05:11:10.857Z"
+    },
     {
       "id": "40f43634-e6ec-4d2d-bae4-782d9339012e",
       "userId": "1891cf37-331b-4b4c-8004-c924332f881a",

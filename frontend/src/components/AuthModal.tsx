@@ -111,7 +111,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 setErrorMessage(null);
               }}
             >
-              <UserPlus size={14} /> Sign Up (+ $10 Bonus)
+              <UserPlus size={14} /> Sign Up
             </button>
           </div>
 

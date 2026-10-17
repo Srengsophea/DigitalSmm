@@ -2,7 +2,6 @@ import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
   Box,
-  ShoppingBag,
   Layers,
   Heart,
   ClipboardList,
@@ -108,7 +107,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 cursor: 'pointer',
               }}
             >
-              Sign Up ($10)
+              Sign Up
             </button>
           </div>
         )}
@@ -123,15 +122,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <Box size={18} color={activePage === 'new-order' ? '#ffffff' : '#64748b'} />
           <span>New order</span>
-        </button>
-
-        {/* Child Panel */}
-        <button
-          className={`nav-item ${activePage === 'child-panel' ? 'active' : ''}`}
-          onClick={() => handleNav('child-panel', '/child-panel')}
-        >
-          <ShoppingBag size={18} color={activePage === 'child-panel' ? '#ffffff' : '#64748b'} />
-          <span>Child Panel(3$ Monthly)</span>
         </button>
 
         {/* Mass Order */}

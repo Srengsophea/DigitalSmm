@@ -9,7 +9,7 @@ import { AddFundsKhqr } from './components/AddFundsKhqr';
 import { AdminDashboard } from './components/AdminDashboard';
 import { ApiDocs } from './components/ApiDocs';
 import { TicketsPage } from './components/TicketsPage';
-import { FAQView, ChildPanelView, TermsView, AffiliatesView } from './components/InfoViews';
+import { FAQView, TermsView, AffiliatesView } from './components/InfoViews';
 import { FooterBanner } from './components/FooterBanner';
 import { OrderModal } from './components/OrderModal';
 import { TicketModal } from './components/TicketModal';
@@ -143,9 +143,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
 
           {/* Add Funds (Bakong KHQR) */}
           {activePage === 'add-funds' && <AddFundsKhqr />}
-
-          {/* Child Panel ($3 Monthly) */}
-          {activePage === 'child-panel' && <ChildPanelView />}
 
           {/* FAQ */}
           {activePage === 'faq' && <FAQView />}

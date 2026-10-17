@@ -14,6 +14,7 @@ router.post('/users/status', admin_controller_1.AdminController.toggleUserStatus
 router.get('/orders', admin_controller_1.AdminController.getAllOrders);
 router.put('/services/:id', (0, validator_1.validateBody)(validator_1.updateIndividualServiceSchema), admin_controller_1.AdminController.updateService);
 router.post('/services/markup', (0, validator_1.validateBody)(validator_1.updateServiceMarkupSchema), admin_controller_1.AdminController.batchUpdateMarkup);
+router.post('/services/bulk-status', (0, validator_1.validateBody)(validator_1.bulkStatusSchema), admin_controller_1.AdminController.bulkUpdateServiceStatus);
 router.get('/settings', admin_controller_1.AdminController.getSettings);
 router.post('/settings', (0, validator_1.validateBody)(validator_1.updateProviderSettingsSchema), admin_controller_1.AdminController.updateSettings);
 router.get('/audit-logs', admin_controller_1.AdminController.getAuditLogs);

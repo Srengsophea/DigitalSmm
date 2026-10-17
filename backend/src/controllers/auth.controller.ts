@@ -31,19 +31,10 @@ export class AuthController {
       username,
       email: email.toLowerCase(),
       passwordHash,
-      balance: 10.0, // Complimentary $10.00 test credit for new registrations
+      balance: 0.0,
       role: 'USER',
       status: 'active',
     });
-
-    // Record welcome credit transaction
-    await db.adjustUserBalance(
-      newUser.id,
-      10.0,
-      'DEPOSIT',
-      'WELCOME_BONUS',
-      'Welcome bonus credit of $10.00'
-    );
 
     await db.logAudit(
       'USER_REGISTER',
@@ -63,7 +54,7 @@ export class AuthController {
 
     res.status(201).json({
       success: true,
-      message: 'Account created successfully with $10.00 welcome credit!',
+      message: 'Account created successfully!',
       token,
       user: safeUser,
     });
@@ -212,18 +203,10 @@ export class AuthController {
         username: candidateUsername,
         email: targetEmail,
         passwordHash,
-        balance: 10.0,
+        balance: 0.0,
         role: 'USER',
         status: 'active',
       });
-
-      await db.adjustUserBalance(
-        user.id,
-        10.0,
-        'DEPOSIT',
-        'GOOGLE_WELCOME',
-        'Welcome bonus credit of $10.00 for Google / Gmail signup'
-      );
 
       await db.logAudit(
         'GOOGLE_REGISTER',

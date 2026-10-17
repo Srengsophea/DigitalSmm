@@ -174,7 +174,7 @@ export const TopBar: React.FC<TopBarProps> = ({ openAuthModal, openDepositModal,
                 boxShadow: '0 2px 8px rgba(22, 35, 153, 0.25)',
               }}
             >
-              Sign Up ($10)
+              Sign Up
             </button>
           </div>
         )}

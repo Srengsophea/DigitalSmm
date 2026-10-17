@@ -56,8 +56,8 @@ export const PublicHomeView: React.FC<PublicHomeViewProps> = ({
               className="btn-hero-primary"
               onClick={onSignUp}
             >
-              <DollarSign size={18} />
-              Claim $10 Free Welcome Bonus →
+              <Sparkles size={18} />
+              Get Started Free →
             </button>
 
             <button
@@ -140,7 +140,7 @@ export const PublicHomeView: React.FC<PublicHomeViewProps> = ({
                 Create Free Account
               </h3>
               <p style={{ fontSize: '0.88rem', color: '#64748b', lineHeight: 1.6, margin: 0 }}>
-                Sign up in under 30 seconds with Google or email. Receive an automatic <strong>$10.00 free welcome credit</strong> to try any service immediately.
+                Sign up in under 30 seconds with Google or email. Access direct wholesale pricing and launch orders immediately.
               </p>
             </div>
 
@@ -189,13 +189,13 @@ export const PublicHomeView: React.FC<PublicHomeViewProps> = ({
         >
           <div style={{ maxWidth: 640 }}>
             <span className="badge-bonus-pill" style={{ display: 'inline-block', marginBottom: 12 }}>
-              INSTANT $10 FREE TRIAL BONUS
+              DIRECT WHOLESALE SMM PROVIDER
             </span>
             <h2 style={{ fontSize: '2.1rem', fontWeight: 900, color: '#ffffff', margin: '0 0 10px 0' }}>
               Ready to Accelerate Your Social Growth?
             </h2>
             <p style={{ fontSize: '0.98rem', color: '#cbd5e1', lineHeight: 1.6, margin: 0 }}>
-              Join over 50,000+ creators, agencies, and resellers worldwide. Claim your $10 free welcome balance today with no deposit required.
+              Join over 50,000+ creators, agencies, and resellers worldwide. Scale your social presence today with automated 24/7 delivery.
             </p>
           </div>
 
@@ -206,7 +206,7 @@ export const PublicHomeView: React.FC<PublicHomeViewProps> = ({
               style={{ background: '#ffffff', color: '#162399', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
               onClick={onSignUp}
             >
-              Get Started with $10 Bonus →
+              Get Started Now →
             </button>
           </div>
         </div>

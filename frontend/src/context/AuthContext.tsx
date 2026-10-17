@@ -105,7 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('digitalsmm_token', data.token);
       setToken(data.token);
       setUser(data.user);
-      showToast('Registration successful! $10.00 credit added.', 'success');
+      showToast('Registration successful! Welcome to DigitalSMM.', 'success');
       return data.user;
     }
     throw new Error('Registration failed: Missing user session');

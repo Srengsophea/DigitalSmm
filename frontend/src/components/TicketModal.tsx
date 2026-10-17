@@ -56,7 +56,6 @@ export const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose }) => 
                   <option value="Order refill inquiry">Order refill inquiry</option>
                   <option value="Speed / Delivery question">Speed / Delivery question</option>
                   <option value="Payment / KHQR deposit verification">Payment / KHQR deposit verification</option>
-                  <option value="Child panel setup">Child panel setup</option>
                   <option value="Other inquiry">Other inquiry</option>
                 </select>
               </div>

@@ -77,7 +77,7 @@ export const PublicServicesView: React.FC<PublicServicesViewProps> = ({
           </p>
         </div>
 
-        {/* Bonus Callout Card */}
+        {/* Callout Card */}
         <div className="public-bonus-callout-card">
           <div
             style={{
@@ -96,10 +96,10 @@ export const PublicServicesView: React.FC<PublicServicesViewProps> = ({
           </div>
           <div className="public-bonus-callout-text">
             <div>
-              <strong>$10.00 Free Trial Balance</strong>
+              <strong>Instant Wholesale Access</strong>
             </div>
             <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: 2 }}>
-              Auto-credited upon free account registration.
+              Direct provider prices & automated API.
             </div>
           </div>
           <button
@@ -108,7 +108,7 @@ export const PublicServicesView: React.FC<PublicServicesViewProps> = ({
             style={{ padding: '6px 14px', fontSize: '0.80rem', marginLeft: 'auto' }}
             onClick={onSignUp}
           >
-            Claim $10 →
+            Get Started →
           </button>
         </div>
       </div>

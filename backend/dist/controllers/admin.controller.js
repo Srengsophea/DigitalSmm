@@ -153,21 +153,51 @@ class AdminController {
         res.json({ success: true, service: updated });
     }
     /**
-     * Batch update markup percentage for all services
+     * Batch update markup percentage or fixed increase for services (all, by platform, by category, or selected)
      */
     static async batchUpdateMarkup(req, res) {
         const db = db_service_1.DatabaseService.getInstance();
-        const { markupPercent } = req.body;
-        const numMarkup = parseFloat(markupPercent);
-        if (isNaN(numMarkup) || numMarkup < 0) {
-            res.status(400).json({ success: false, error: 'Invalid markup percentage' });
+        const { markupPercent, fixedIncrease, platform, category, serviceIds } = req.body;
+        const numMarkup = markupPercent !== undefined ? parseFloat(markupPercent) : undefined;
+        const numIncrease = fixedIncrease !== undefined ? parseFloat(fixedIncrease) : undefined;
+        if (numMarkup === undefined && numIncrease === undefined) {
+            res.status(400).json({ success: false, error: 'Provide either markupPercent or fixedIncrease' });
             return;
         }
-        await db.batchUpdateMarkup(numMarkup);
-        await db.logAudit('MARKUP_UPDATED', `Admin ${req.user?.username} batch updated global markup to +${numMarkup}%`, req.ip || '127.0.0.1', req.user?.id, req.user?.username);
+        const result = await db.batchUpdateMarkup({
+            markupPercent: numMarkup,
+            fixedIncrease: numIncrease,
+            platform,
+            category,
+            serviceIds,
+        });
+        const targetDesc = serviceIds?.length
+            ? `${serviceIds.length} selected services`
+            : platform
+                ? `platform '${platform}'`
+                : category
+                    ? `category '${category}'`
+                    : 'all catalog services';
+        const ruleDesc = numMarkup !== undefined ? `+${numMarkup}% margin` : `+$${numIncrease?.toFixed(4)} fixed margin`;
+        await db.logAudit('MARKUP_UPDATED', `Admin ${req.user?.username} updated profit margin to ${ruleDesc} for ${targetDesc} (${result.updatedCount} items)`, req.ip || '127.0.0.1', req.user?.id, req.user?.username);
         res.json({
             success: true,
-            message: `Global markup updated to +${numMarkup}% for all services`,
+            message: `Profit margin updated (${ruleDesc}) across ${result.updatedCount} services`,
+            updatedCount: result.updatedCount,
+        });
+    }
+    /**
+     * Bulk toggle services active/disabled status
+     */
+    static async bulkUpdateServiceStatus(req, res) {
+        const db = db_service_1.DatabaseService.getInstance();
+        const { serviceIds, isActive } = req.body;
+        const count = await db.bulkUpdateStatus(serviceIds, Boolean(isActive));
+        await db.logAudit('SERVICE_STATUS_CHANGE', `Admin ${req.user?.username} set status to ${isActive ? 'ACTIVE' : 'DISABLED'} for ${count} services`, req.ip || '127.0.0.1', req.user?.id, req.user?.username);
+        res.json({
+            success: true,
+            message: `Successfully set ${count} services to ${isActive ? 'ACTIVE' : 'DISABLED'}`,
+            updatedCount: count,
         });
     }
     /**

@@ -114,7 +114,6 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
           >
             <UserPlus size={15} />
             <span>Sign Up</span>
-            <span className="badge-bonus-pill">$10 BONUS</span>
           </button>
 
           {/* Mobile Menu Hamburger */}
