@@ -823,7 +823,7 @@ export class AuthController {
    */
   public static async googleAuth(req: AuthenticatedRequest, res: Response): Promise<void> {
     const db = DatabaseService.getInstance();
-    const { email, name, credential } = req.body;
+    const { email, name, credential, accessToken } = req.body;
 
     let targetEmail = email;
     let targetName = name;
@@ -841,6 +841,24 @@ export class AuthController {
         }
       } catch (e) {
         console.error('Failed to parse Google credential token:', e);
+      }
+    }
+
+    // Support Google OAuth2 Access Token verification via Google UserInfo API
+    if (accessToken && typeof accessToken === 'string') {
+      try {
+        const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (userInfoRes.ok) {
+          const info: any = await userInfoRes.json();
+          if (info.email) {
+            targetEmail = info.email;
+            targetName = info.name || info.given_name || info.email.split('@')[0];
+          }
+        }
+      } catch (e) {
+        console.error('Failed to verify Google access token:', e);
       }
     }
 

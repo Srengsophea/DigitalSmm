@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   ShieldCheck,
   Settings,
+  X,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -21,6 +22,8 @@ interface SidebarProps {
   setActivePage: (page: string) => void;
   openTicketModal: () => void;
   onNavigate?: (path: string) => void;
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -28,6 +31,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setActivePage,
   openTicketModal,
   onNavigate,
+  isMobileOpen,
+  onCloseMobile,
 }) => {
   const { user, isAdmin } = useAuth();
   const username = user?.username || 'Guest';
@@ -37,10 +42,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     if (onNavigate) {
       onNavigate(path);
     }
+    if (onCloseMobile) {
+      onCloseMobile();
+    }
   };
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${isMobileOpen ? 'mobile-open' : ''}`}>
       {/* Top Logo */}
       <div className="sidebar-header">
         <div
@@ -50,6 +58,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <span style={{ color: '#162399', fontWeight: 900 }}>DIGITALSMM</span>
         </div>
+        
+        {/* Mobile Close Button */}
+        {onCloseMobile && (
+          <button
+            type="button"
+            className="sidebar-close-mobile-btn"
+            onClick={onCloseMobile}
+            title="Close menu"
+          >
+            <X size={18} />
+          </button>
+        )}
+
         <button className="sidebar-collapse-btn" title="Collapse sidebar">
           <ChevronLeft size={16} />
         </button>

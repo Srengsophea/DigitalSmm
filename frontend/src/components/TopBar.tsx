@@ -11,6 +11,7 @@ import {
   Sun,
   Power,
   LogIn,
+  Menu,
 } from 'lucide-react';
 
 interface TopBarProps {
@@ -19,6 +20,7 @@ interface TopBarProps {
   openDepositModal: () => void;
   onNavigate?: (path: string) => void;
   onNavigatePage?: (page: string, path?: string) => void;
+  onToggleMobileSidebar?: () => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -27,6 +29,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   openDepositModal,
   onNavigate,
   onNavigatePage,
+  onToggleMobileSidebar,
 }) => {
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const balance = user?.balance ?? 0;
@@ -65,8 +68,22 @@ export const TopBar: React.FC<TopBarProps> = ({
 
   return (
     <header className="topbar">
-      {/* Top Bar Left Stats - Modern Card Pills */}
-      <div className="topbar-stats">
+      <div className="topbar-left-wrapper">
+        {/* Mobile Hamburger Menu Toggle Button */}
+        {onToggleMobileSidebar && (
+          <button
+            type="button"
+            className="mobile-menu-toggle-btn"
+            onClick={onToggleMobileSidebar}
+            title="Open Menu"
+            aria-label="Open Menu"
+          >
+            <Menu size={18} />
+          </button>
+        )}
+
+        {/* Top Bar Left Stats - Modern Card Pills */}
+        <div className="topbar-stats">
         {/* Status */}
         <div className="topbar-stat-card stat-card-status">
           <div className="stat-card-icon status-icon-bg">
@@ -130,6 +147,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             <span>Top-up</span>
           </button>
         </div>
+      </div>
       </div>
 
       {/* Top Bar Right Actions */}

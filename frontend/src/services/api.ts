@@ -57,7 +57,7 @@ export const api = {
       });
       return handleResponse<any>(res);
     },
-    async googleLogin(payload: { email?: string; name?: string; credential?: string }) {
+    async googleLogin(payload: { email?: string; name?: string; credential?: string; accessToken?: string }) {
       const res = await fetch(`${API_BASE}/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

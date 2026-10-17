@@ -12,6 +12,8 @@ import {
   ArrowLeft,
   KeyRound,
 } from 'lucide-react';
+import { GoogleAccountPickerModal } from './GoogleAccountPickerModal';
+import { hasGoogleClientId, requestGoogleAccessToken } from '../services/googleAuth';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -33,9 +35,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Google sign in sub-state
-  const [isGooglePromptOpen, setIsGooglePromptOpen] = useState(false);
-  const [googleEmailInput, setGoogleEmailInput] = useState('');
+  // Google sign in modal state
+  const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
 
   if (!isOpen) return null;
 
@@ -100,27 +101,36 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleGoogleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!googleEmailInput.trim()) {
-      setErrorMessage('Please enter your Google / Gmail address.');
-      return;
-    }
-
-    setIsLoading(true);
+  const handleConnectWithGoogle = async () => {
     setErrorMessage(null);
-    try {
-      await loginWithGoogle({
-        email: googleEmailInput.trim(),
-        name: googleEmailInput.split('@')[0],
-      });
-      setIsGooglePromptOpen(false);
-      onClose();
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Google sign-in failed');
-    } finally {
-      setIsLoading(false);
+    if (hasGoogleClientId()) {
+      setIsLoading(true);
+      try {
+        const googleRes = await requestGoogleAccessToken();
+        await loginWithGoogle({
+          email: googleRes.email,
+          name: googleRes.name,
+          accessToken: googleRes.accessToken,
+          credential: googleRes.credential,
+        });
+        onClose();
+      } catch (err: any) {
+        if (err.message !== 'GOOGLE_CLIENT_ID_NOT_CONFIGURED') {
+          setErrorMessage(err.message || 'Google sign-in was cancelled.');
+        } else {
+          setIsGoogleModalOpen(true);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      setIsGoogleModalOpen(true);
     }
+  };
+
+  const handleGoogleConfigured = async () => {
+    setIsGoogleModalOpen(false);
+    await handleConnectWithGoogle();
   };
 
   return (
@@ -162,65 +172,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
         {/* Body */}
         <div className="modal-body">
-          {isGooglePromptOpen ? (
-            <div style={{ padding: '10px 0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                <button
-                  type="button"
-                  onClick={() => setIsGooglePromptOpen(false)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
-                >
-                  <ArrowLeft size={16} />
-                </button>
-                <h4 style={{ margin: 0, fontSize: '1rem', color: '#0f172a', fontWeight: 700 }}>
-                  Sign in with Google / Gmail
-                </h4>
-              </div>
-
-              <form onSubmit={handleGoogleSubmit}>
-                <div className="form-group">
-                  <label className="form-label">Google / Gmail Address</label>
-                  <input
-                    type="email"
-                    required
-                    className="form-input"
-                    placeholder="yourname@gmail.com"
-                    value={googleEmailInput}
-                    onChange={(e) => setGoogleEmailInput(e.target.value)}
-                    autoFocus
-                  />
-                </div>
-
-                {errorMessage && (
-                  <div style={{ color: '#b91c1c', fontSize: '0.84rem', marginBottom: 12 }}>
-                    {errorMessage}
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  className="btn btn-primary btn-block"
-                  disabled={isLoading}
-                  style={{ padding: '11px', marginTop: 8 }}
-                >
-                  {isLoading ? 'Signing in...' : 'Continue with Google'}
-                </button>
-              </form>
-            </div>
-          ) : (
+          {/* Google Sign In Button */}
+          {registerStep !== 'otp' && (
             <>
-              {/* Google Sign In Button */}
-              {registerStep !== 'otp' && (
-                <>
-                  <button
-                    type="button"
-                    className="google-auth-btn"
-                    onClick={() => {
-                      setErrorMessage(null);
-                      setIsGooglePromptOpen(true);
-                    }}
-                    disabled={isLoading}
-                  >
+              <button
+                type="button"
+                className="google-auth-btn"
+                onClick={handleConnectWithGoogle}
+                disabled={isLoading}
+              >
                     <svg width="18" height="18" viewBox="0 0 48 48">
                       <path
                         fill="#EA4335"
@@ -461,10 +421,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   </>
                 )}
               </form>
-            </>
-          )}
+            </div>
+          </div>
+
+          <GoogleAccountPickerModal
+            isOpen={isGoogleModalOpen}
+            onClose={() => setIsGoogleModalOpen(false)}
+            onConfigured={handleGoogleConfigured}
+            isLoading={isLoading}
+          />
         </div>
-      </div>
-    </div>
-  );
-};
+      );
+    };

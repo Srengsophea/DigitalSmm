@@ -778,41 +778,27 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
       />
 
       {/* 2. MAIN 2-COLUMN LAYOUT: Left Form Card + Right Description Card */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1.7fr) minmax(360px, 1.15fr)',
-          gap: 24,
-          alignItems: 'start',
-        }}
-      >
+      <div className="order-page-grid">
         {/* ================= LEFT COLUMN: ORDER FORM CARD ================= */}
         <div
-          className="card"
+          className="card order-form-card"
           style={{
             padding: 0,
-            overflow: 'visible',
+            overflow: 'hidden',
             borderRadius: 12,
             border: '1px solid #e2e8f0',
             background: '#ffffff',
             boxShadow: '0 1px 4px rgba(0, 0, 0, 0.04)',
+            width: '100%',
+            maxWidth: '100%',
+            boxSizing: 'border-box',
           }}
         >
           {/* Top Royal Blue Header Box with rounded pill tabs matching Screenshot 1 */}
-          <div
-            style={{
-              background: '#162399',
-              padding: '12px 16px',
-              borderRadius: '12px 12px 0 0',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: 12,
-              flexWrap: 'wrap',
-            }}
-          >
+          <div className="order-header-tabs">
             <button
               type="button"
+              className={`order-header-tab-btn ${activeTab === 'new' ? 'active' : ''}`}
               onClick={() => setActiveTab('new')}
               style={{
                 background: activeTab === 'new' ? '#ffffff' : '#c8d3e2',
@@ -831,6 +817,7 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
             </button>
             <button
               type="button"
+              className={`order-header-tab-btn ${activeTab === 'subscription' ? 'active' : ''}`}
               onClick={() => setActiveTab('subscription')}
               style={{
                 background: activeTab === 'subscription' ? '#ffffff' : '#c8d3e2',
@@ -849,6 +836,7 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
             </button>
             <button
               type="button"
+              className={`order-header-tab-btn ${activeTab === 'fav' ? 'active' : ''}`}
               onClick={() => setActiveTab('fav')}
               style={{
                 background: activeTab === 'fav' ? '#ffffff' : '#c8d3e2',
@@ -867,6 +855,7 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
             </button>
             <button
               type="button"
+              className={`order-header-tab-btn ${activeTab === 'countries' ? 'active' : ''}`}
               onClick={() => setActiveTab('countries')}
               style={{
                 background: activeTab === 'countries' ? '#ffffff' : '#c8d3e2',
@@ -885,7 +874,7 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
             </button>
           </div>
 
-          <div style={{ padding: '24px 26px' }}>
+          <div className="order-card-body">
             {/* TAB 1: NEW ORDER FORM matching Screenshot 1 */}
             {activeTab === 'new' && (
               <form onSubmit={handleSingleOrderSubmit}>
@@ -989,7 +978,15 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                     className="form-select"
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
-                    style={{ borderRadius: 8, borderColor: '#e2e8f0', fontSize: '0.88rem', padding: '10px 14px' }}
+                    style={{
+                      borderRadius: 8,
+                      borderColor: '#e2e8f0',
+                      fontSize: '0.88rem',
+                      padding: '10px 14px',
+                      width: '100%',
+                      maxWidth: '100%',
+                      boxSizing: 'border-box',
+                    }}
                   >
                     {displayCategories.map((cat) => (
                       <option key={cat} value={cat}>
@@ -1012,7 +1009,15 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                       const s = allServices.find((x) => x.id === e.target.value);
                       if (s) setQuantity(s.min);
                     }}
-                    style={{ borderRadius: 8, borderColor: '#e2e8f0', fontSize: '0.84rem', padding: '10px 14px' }}
+                    style={{
+                      borderRadius: 8,
+                      borderColor: '#e2e8f0',
+                      fontSize: '0.84rem',
+                      padding: '10px 14px',
+                      width: '100%',
+                      maxWidth: '100%',
+                      boxSizing: 'border-box',
+                    }}
                   >
                     {filteredServices.map((s) => (
                       <option key={s.id} value={s.id}>
@@ -1150,7 +1155,15 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                     className="form-select"
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
-                    style={{ borderRadius: 8, borderColor: '#e2e8f0', fontSize: '0.88rem', padding: '10px 14px' }}
+                    style={{
+                      borderRadius: 8,
+                      borderColor: '#e2e8f0',
+                      fontSize: '0.88rem',
+                      padding: '10px 14px',
+                      width: '100%',
+                      maxWidth: '100%',
+                      boxSizing: 'border-box',
+                    }}
                   >
                     {displayCategories.map((cat) => (
                       <option key={cat} value={cat}>
@@ -1168,7 +1181,15 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                     className="form-select"
                     value={selectedServiceId}
                     onChange={(e) => setSelectedServiceId(e.target.value)}
-                    style={{ borderRadius: 8, borderColor: '#e2e8f0', fontSize: '0.84rem', padding: '10px 14px' }}
+                    style={{
+                      borderRadius: 8,
+                      borderColor: '#e2e8f0',
+                      fontSize: '0.84rem',
+                      padding: '10px 14px',
+                      width: '100%',
+                      maxWidth: '100%',
+                      boxSizing: 'border-box',
+                    }}
                   >
                     {filteredServices.map((s) => (
                       <option key={s.id} value={s.id}>
@@ -1399,13 +1420,16 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
 
         {/* ================= RIGHT COLUMN: DESCRIPTION CARD matching Screenshot 1 ================= */}
         <div
-          className="card"
+          className="card order-description-card"
           style={{
             padding: '24px 26px',
             borderRadius: 12,
             border: '1px solid #e2e8f0',
             background: '#ffffff',
             boxShadow: '0 1px 4px rgba(0, 0, 0, 0.04)',
+            width: '100%',
+            maxWidth: '100%',
+            boxSizing: 'border-box',
           }}
         >
           <h3

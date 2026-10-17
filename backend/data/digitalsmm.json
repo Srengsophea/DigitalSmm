@@ -49,6 +49,57 @@
       "updatedAt": "2026-10-17T14:01:40.395Z",
       "twoFactorEnabled": true,
       "twoFactorSecret": "6S42HQCYRPJBXTQZ"
+    },
+    {
+      "username": "daimek116",
+      "email": "daimek116@gmail.com",
+      "passwordHash": "$2b$12$a5AS3i3QgNaFyk7d4LuT0.xt2IsZG5OMOpbTCcRJngp2co0y4NViu",
+      "balance": 0,
+      "role": "USER",
+      "status": "active",
+      "id": "e38e20a5-e062-4839-8f14-7c43bc8e43f2",
+      "apiKey": "ds_usr_f0c5dc837382c8112739737d101c8dbdc64a10a47449570d",
+      "createdAt": "2026-10-17T15:59:13.031Z",
+      "updatedAt": "2026-10-17T15:59:13.031Z"
+    },
+    {
+      "username": "khsophea20",
+      "email": "khsophea20@gmail.com",
+      "passwordHash": "$2b$12$tQ6mv4M1OJQIOzctrfUR.eFXCxPAHeffAL0s16hBjDhx.EEL9aolu",
+      "balance": 0,
+      "role": "USER",
+      "status": "active",
+      "id": "ff549166-80ca-4144-be83-d3317403ef7c",
+      "apiKey": "ds_usr_4113eaae7cd7718a248d273f9ef7d91a7b8d8addcea98bbf",
+      "createdAt": "2026-10-17T16:09:34.338Z",
+      "updatedAt": "2026-10-17T16:09:34.338Z"
+    },
+    {
+      "username": "srengsophea",
+      "email": "sophea.sreng@gmail.com",
+      "passwordHash": "$2b$12$ZvZ42Xh/RM6RMaTBN2DK2enscgELd.v28GEtwVDpj4zf9N91CdfEC",
+      "balance": 0,
+      "role": "USER",
+      "status": "active",
+      "id": "d9b9a2fd-cf4f-479e-a268-b3ed4b48b274",
+      "apiKey": "ds_usr_a0222e0ac5da99f893b527871822204c8534a49c2fc3d942",
+      "createdAt": "2026-10-17T16:31:17.227Z",
+      "updatedAt": "2026-10-17T16:31:17.227Z"
+    },
+    {
+      "username": "baneakopla",
+      "email": "daimek17@gmail.com",
+      "passwordHash": "$2b$12$PIzRlnbL63UJqfr.gZU95uOKR/HK.bOGj4ppSio4tCiDuwkfnqjBC",
+      "balance": 0,
+      "role": "USER",
+      "status": "active",
+      "id": "64ab9100-73e2-4a2d-b923-6c6b946a3b71",
+      "apiKey": "ds_usr_86ced225704729f9d62f12f955404280f7a71abff3b6bae3",
+      "createdAt": "2026-10-17T17:12:49.548Z",
+      "updatedAt": "2026-10-17T17:14:48.657Z",
+      "apiKeyCreatedAt": "2026-10-17T17:14:08.354Z",
+      "twoFactorEnabled": true,
+      "twoFactorSecret": "U4ERX3EDM6G5IZ6D"
     }
   ],
   "services": [],
@@ -133,6 +184,121 @@
     }
   },
   "auditLogs": [
+    {
+      "id": "9c5982ee-aaf1-490f-85f5-596c7359e346",
+      "userId": "64ab9100-73e2-4a2d-b923-6c6b946a3b71",
+      "username": "baneakopla",
+      "action": "USER_LOGIN",
+      "details": "User signed in: baneakopla",
+      "ip": "::1",
+      "createdAt": "2026-10-17T17:15:49.931Z"
+    },
+    {
+      "id": "beec1f65-e29a-493d-b38a-e8a8a43abf2c",
+      "userId": "64ab9100-73e2-4a2d-b923-6c6b946a3b71",
+      "username": "baneakopla",
+      "action": "USER_LOGIN",
+      "details": "User signed in: baneakopla",
+      "ip": "::1",
+      "createdAt": "2026-10-17T17:15:06.931Z"
+    },
+    {
+      "id": "34794c3a-0f2f-4373-a406-079dc8c6e0eb",
+      "userId": "64ab9100-73e2-4a2d-b923-6c6b946a3b71",
+      "username": "baneakopla",
+      "action": "TWO_FACTOR_ENABLED",
+      "details": "Two-factor authentication enabled for user: baneakopla",
+      "ip": "::1",
+      "createdAt": "2026-10-17T17:14:48.661Z"
+    },
+    {
+      "id": "c34023f9-3b6b-4d8a-9cc0-b061e0d6ba49",
+      "userId": "64ab9100-73e2-4a2d-b923-6c6b946a3b71",
+      "username": "baneakopla",
+      "action": "TWO_FACTOR_DISABLED",
+      "details": "Two-factor authentication disabled for user: baneakopla",
+      "ip": "::1",
+      "createdAt": "2026-10-17T17:14:36.920Z"
+    },
+    {
+      "id": "fb40c341-4997-4393-9dd4-5e6483c5dd92",
+      "userId": "64ab9100-73e2-4a2d-b923-6c6b946a3b71",
+      "username": "baneakopla",
+      "action": "TWO_FACTOR_ENABLED",
+      "details": "Two-factor authentication enabled for user: baneakopla",
+      "ip": "::1",
+      "createdAt": "2026-10-17T17:14:30.510Z"
+    },
+    {
+      "id": "d4eefa12-dd3b-420c-8500-cb6a7fbc7ca8",
+      "userId": "64ab9100-73e2-4a2d-b923-6c6b946a3b71",
+      "username": "baneakopla",
+      "action": "API_KEY_ROTATED",
+      "details": "API key rotated for user: baneakopla",
+      "ip": "::1",
+      "createdAt": "2026-10-17T17:14:08.357Z"
+    },
+    {
+      "id": "d3714b30-d6e9-4a05-8015-efa4a49d7111",
+      "userId": "64ab9100-73e2-4a2d-b923-6c6b946a3b71",
+      "username": "baneakopla",
+      "action": "EMAIL_CHANGED",
+      "details": "User baneakopla successfully updated email from baneakopla@gmail.com to daimek17@gmail.com",
+      "ip": "::1",
+      "createdAt": "2026-10-17T17:13:54.287Z"
+    },
+    {
+      "id": "c1d5239a-bee4-4d35-a950-16dbed843f90",
+      "userId": "64ab9100-73e2-4a2d-b923-6c6b946a3b71",
+      "username": "baneakopla",
+      "action": "USER_REGISTER_VERIFIED",
+      "details": "New real account verified & created: baneakopla (baneakopla@gmail.com)",
+      "ip": "::1",
+      "createdAt": "2026-10-17T17:12:49.556Z"
+    },
+    {
+      "id": "ac225308-eb10-4ae5-ad18-ef91d237cb10",
+      "action": "SIGNUP_OTP_DISPATCHED",
+      "details": "Signup verification code dispatched to baneakopla (baneakopla@gmail.com) via smtp",
+      "ip": "::1",
+      "createdAt": "2026-10-17T17:12:09.095Z"
+    },
+    {
+      "id": "c52393ae-f04a-4637-82c3-3e4c33cb0fb3",
+      "userId": "ff549166-80ca-4144-be83-d3317403ef7c",
+      "username": "khsophea20",
+      "action": "GOOGLE_LOGIN",
+      "details": "User signed in with Google: khsophea20 (khsophea20@gmail.com)",
+      "ip": "::1",
+      "createdAt": "2026-10-17T17:02:15.946Z"
+    },
+    {
+      "id": "e7f37ad1-5978-4b79-b828-1ebca0316f42",
+      "userId": "d9b9a2fd-cf4f-479e-a268-b3ed4b48b274",
+      "username": "srengsophea",
+      "action": "GOOGLE_REGISTER",
+      "details": "User registered with Google: srengsophea (sophea.sreng@gmail.com)",
+      "ip": "::1",
+      "createdAt": "2026-10-17T16:31:17.230Z"
+    },
+    {
+      "id": "0100c310-1da2-4a2f-bd15-fb826f1c3fa0",
+      "userId": "ff549166-80ca-4144-be83-d3317403ef7c",
+      "username": "khsophea20",
+      "action": "GOOGLE_REGISTER",
+      "details": "User registered with Google: khsophea20 (khsophea20@gmail.com)",
+      "ip": "::1",
+      "createdAt": "2026-10-17T16:09:34.342Z"
+    },
+    {
+      "id": "fb78a50f-7140-4314-b8bb-e508e02fdee3",
+      "userId": "e38e20a5-e062-4839-8f14-7c43bc8e43f2",
+      "username": "daimek116",
+      "action": "GOOGLE_REGISTER",
+      "details": "User registered with Google: daimek116 (daimek116@gmail.com)",
+      "ip": "::1",
+      "createdAt": "2026-10-17T15:59:13.033Z"
+    },
     {
       "id": "dbcab803-a8f8-4a8d-9f9c-9b51f13bfafd",
       "userId": "fd8dfec8-5007-415f-9d2c-b148c21a7a61",

@@ -106,7 +106,7 @@ export const AddFundsKhqr: React.FC = () => {
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: khqrData ? '1fr 1fr' : '1fr', gap: 24, alignItems: 'start' }}>
+      <div className={`khqr-page-grid ${khqrData ? 'has-qr' : ''}`}>
         {/* Deposit Configuration Form */}
         <div className="card">
           <h3 style={{ fontSize: '1.05rem', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>

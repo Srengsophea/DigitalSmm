@@ -32,7 +32,7 @@ interface AuthContextType {
   sendSignupOtp: (username: string, email: string, pass: string) => Promise<{ success: boolean; message: string; email: string; deliveryMethod: string }>;
   verifySignupOtp: (email: string, otp: string) => Promise<User>;
   resendSignupOtp: (email: string) => Promise<{ success: boolean; message: string }>;
-  loginWithGoogle: (payload: { email?: string; name?: string; credential?: string }) => Promise<User>;
+  loginWithGoogle: (payload: { email?: string; name?: string; credential?: string; accessToken?: string }) => Promise<User>;
   logout: () => void;
   refreshProfile: () => Promise<void>;
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
@@ -152,7 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     throw new Error(data.error || 'Failed to resend code');
   };
 
-  const loginWithGoogle = async (payload: { email?: string; name?: string; credential?: string }): Promise<User> => {
+  const loginWithGoogle = async (payload: { email?: string; name?: string; credential?: string; accessToken?: string }): Promise<User> => {
     const data = await api.auth.googleLogin(payload);
     if (data.token && data.user) {
       localStorage.setItem('digitalsmm_token', data.token);

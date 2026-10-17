@@ -1,4 +1,6 @@
 import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
+import path from 'path';
 import { DatabaseService } from './db.service';
 import { ENV } from '../config/env';
 
@@ -14,6 +16,25 @@ export class EmailService {
     return EmailService.instance;
   }
 
+  private getSmtpConfig() {
+    // Dynamically reload .env to catch any newly saved credentials without server restart
+    dotenv.config({ path: path.resolve(__dirname, '../../.env'), override: true });
+    const db = DatabaseService.getInstance();
+
+    const host = db.getSettingValue('smtp_host') || process.env.SMTP_HOST || 'smtp.gmail.com';
+    const port = parseInt(db.getSettingValue('smtp_port') || process.env.SMTP_PORT || '465', 10);
+    const user = (db.getSettingValue('smtp_user') || process.env.SMTP_USER || '').trim();
+    // Auto-strip spaces in case user pastes 16-character Google App Password with spaces
+    const pass = (db.getSettingValue('smtp_pass') || process.env.SMTP_PASS || '').replace(/\s+/g, '');
+    const from =
+      db.getSettingValue('smtp_from') ||
+      process.env.SMTP_FROM ||
+      `"DigitalSMM Security" <${user || 'noreply@digitalsmm.com'}>`;
+    const secure = port === 465 || db.getSettingValue('smtp_secure') === 'true' || process.env.SMTP_SECURE === 'true';
+
+    return { host, port, user, pass, from, secure };
+  }
+
   /**
    * Send a branded 6-digit email verification OTP to the user for signup
    */
@@ -22,23 +43,14 @@ export class EmailService {
     username: string,
     otp: string
   ): Promise<{ success: boolean; deliveryMethod: 'smtp' | 'console'; error?: string }> {
-    const db = DatabaseService.getInstance();
-
-    const host = db.getSettingValue('smtp_host') || process.env.SMTP_HOST;
-    const port = parseInt(db.getSettingValue('smtp_port') || process.env.SMTP_PORT || '587', 10);
-    const user = db.getSettingValue('smtp_user') || process.env.SMTP_USER;
-    const pass = db.getSettingValue('smtp_pass') || process.env.SMTP_PASS;
-    const from =
-      db.getSettingValue('smtp_from') ||
-      process.env.SMTP_FROM ||
-      `"DigitalSMM Support" <noreply@${host || 'digitalsmm.com'}>`;
-    const secure = port === 465 || db.getSettingValue('smtp_secure') === 'true';
+    const { host, port, user, pass, from, secure } = this.getSmtpConfig();
 
     console.log('\n===========================================================================');
     console.log('🔑 [DIGITALSMM SIGNUP OTP CODE]');
     console.log(`   To User:     ${username} <${email}>`);
     console.log(`   Verify Code: ${otp}`);
     console.log(`   Valid For:   10 minutes`);
+    console.log(`   SMTP Sender: ${user || '(none - console mode)'}`);
     console.log('===========================================================================\n');
 
     if (host && user && pass) {
@@ -133,17 +145,7 @@ export class EmailService {
     title: string,
     actionDescription: string
   ): Promise<{ success: boolean; deliveryMethod: 'smtp' | 'console'; error?: string }> {
-    const db = DatabaseService.getInstance();
-
-    const host = db.getSettingValue('smtp_host') || process.env.SMTP_HOST;
-    const port = parseInt(db.getSettingValue('smtp_port') || process.env.SMTP_PORT || '587', 10);
-    const user = db.getSettingValue('smtp_user') || process.env.SMTP_USER;
-    const pass = db.getSettingValue('smtp_pass') || process.env.SMTP_PASS;
-    const from =
-      db.getSettingValue('smtp_from') ||
-      process.env.SMTP_FROM ||
-      `"DigitalSMM Security" <security@${host || 'digitalsmm.com'}>`;
-    const secure = port === 465 || db.getSettingValue('smtp_secure') === 'true';
+    const { host, port, user, pass, from, secure } = this.getSmtpConfig();
 
     console.log('\n===========================================================================');
     console.log(`🔒 [DIGITALSMM SECURITY CODE: ${title.toUpperCase()}]`);
@@ -151,6 +153,7 @@ export class EmailService {
     console.log(`   Action:      ${actionDescription}`);
     console.log(`   Verify Code: ${otp}`);
     console.log(`   Valid For:   10 minutes`);
+    console.log(`   SMTP Sender: ${user || '(none - console mode)'}`);
     console.log('===========================================================================\n');
 
     if (host && user && pass) {

@@ -378,6 +378,21 @@ export const PlatformPillsBar: React.FC<PlatformPillsBarProps> = ({
     }
   };
 
+  const [isMobile, setIsMobile] = React.useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth <= 768;
+    }
+    return false;
+  });
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
   // Allow horizontal mousewheel scrolling for fast, intuitive desktop browsing
@@ -389,27 +404,31 @@ export const PlatformPillsBar: React.FC<PlatformPillsBarProps> = ({
 
   const renderButton = (platform: string, isWide = false) => {
     const isActive = selectedPlatform.toLowerCase() === platform.toLowerCase();
+    const btnHeight = isMobile ? 38 : 42;
+    const btnPadding = isMobile ? '6px 14px' : isWide ? '10px 24px' : '9px 16px';
+    const btnFontSize = isMobile ? '0.82rem' : isWide ? '0.90rem' : '0.86rem';
+
     return (
       <button
         key={platform}
         type="button"
-        className={`platform-pill-btn ${isActive ? 'active' : ''}`}
+        className={`platform-pill-btn ${isActive ? 'active' : ''} ${isWide ? 'wide' : ''}`}
         onClick={() => onSelectPlatform(platform)}
         title={platform}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: 8,
-          padding: isWide ? '10px 24px' : '9px 16px',
-          height: 42,
-          minHeight: 42,
+          gap: isMobile ? 6 : 8,
+          padding: btnPadding,
+          height: btnHeight,
+          minHeight: btnHeight,
           borderRadius: 8,
           background: isActive ? '#162399' : '#ffffff',
           color: isActive ? '#ffffff' : '#1e293b',
           border: `1.5px solid ${isActive ? '#162399' : '#e2e8f0'}`,
           fontWeight: isActive ? 700 : 600,
-          fontSize: isWide ? '0.90rem' : '0.86rem',
+          fontSize: btnFontSize,
           letterSpacing: '-0.1px',
           cursor: 'pointer',
           whiteSpace: 'nowrap',
@@ -417,8 +436,8 @@ export const PlatformPillsBar: React.FC<PlatformPillsBarProps> = ({
             ? '0 3px 10px rgba(22, 35, 153, 0.28)'
             : '0 1px 3px rgba(0, 20, 80, 0.04)',
           transition: 'all 0.15s ease',
-          flex: isWide ? '1 1 0' : '0 0 auto',
-          minWidth: isWide ? '180px' : 'max-content',
+          flex: isWide && !isMobile ? '1 1 0' : '0 0 auto',
+          minWidth: isWide && !isMobile ? '180px' : 'max-content',
         }}
       >
         {getPlatformIcon(platform, isActive)}
@@ -434,35 +453,38 @@ export const PlatformPillsBar: React.FC<PlatformPillsBarProps> = ({
       className="platform-bar-scroll"
       style={{
         overflowX: 'auto',
-        marginBottom: 24,
-        paddingBottom: 8,
+        marginBottom: isMobile ? 14 : 20,
+        paddingBottom: 4,
         WebkitOverflowScrolling: 'touch',
+        width: '100%',
+        maxWidth: '100%',
+        boxSizing: 'border-box',
       }}
     >
-      <div
-        style={{
-          width: 'max-content',
-          minWidth: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 10,
-        }}
-      >
-        {/* Row 1: 17 items, big and spacious */}
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {PLATFORM_ROW_1.map((p) => renderButton(p, false))}
+      {isMobile ? (
+        /* Mobile Single Sleek Horizontal Swipe Row */
+        <div className="platform-mobile-row">
+          {ALL_PLATFORMS.map((p) => renderButton(p, false))}
         </div>
+      ) : (
+        /* Desktop 3-Row Layout */
+        <div className="platform-desktop-rows">
+          {/* Row 1: 17 items */}
+          <div className="platform-row">
+            {PLATFORM_ROW_1.map((p) => renderButton(p, false))}
+          </div>
 
-        {/* Row 2: 17 items, big and spacious */}
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {PLATFORM_ROW_2.map((p) => renderButton(p, false))}
-        </div>
+          {/* Row 2: 17 items */}
+          <div className="platform-row">
+            {PLATFORM_ROW_2.map((p) => renderButton(p, false))}
+          </div>
 
-        {/* Row 3: 5 wide-spanning items */}
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', width: '100%' }}>
-          {PLATFORM_ROW_3.map((p) => renderButton(p, true))}
+          {/* Row 3: 5 wide-spanning items */}
+          <div className="platform-row platform-row-wide">
+            {PLATFORM_ROW_3.map((p) => renderButton(p, true))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

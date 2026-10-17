@@ -52,6 +52,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   // Modals state
   const [selectedServiceForOrder, setSelectedServiceForOrder] = useState<ServiceItem | null>(null);
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
     const target = activePageProp || initialPage;
@@ -83,6 +84,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   const handleNavPage = (page: string) => {
     setActivePage(page);
     onNavigate(`/${page}`);
+    setIsMobileSidebarOpen(false);
   };
 
   return (
@@ -93,7 +95,17 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         setActivePage={(page) => handleNavPage(page)}
         openTicketModal={() => setIsTicketModalOpen(true)}
         onNavigate={onNavigate}
+        isMobileOpen={isMobileSidebarOpen}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
+
+      {/* Mobile Backdrop Overlay */}
+      {isMobileSidebarOpen && (
+        <div
+          className="sidebar-backdrop active"
+          onClick={() => setIsMobileSidebarOpen(false)}
+        />
+      )}
 
       {/* 2. Main Content Wrapper */}
       <div className="main-wrapper">
@@ -106,6 +118,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
             handleNavPage(page);
           }}
           onNavigatePage={(page) => handleNavPage(page)}
+          onToggleMobileSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
         />
 
         {/* Content Body */}
