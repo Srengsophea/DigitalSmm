@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
-import { Copy, Check, RefreshCw, Key, Play, Terminal } from 'lucide-react';
+import { Copy, Check, RefreshCw, Play, Terminal, LogIn } from 'lucide-react';
 
-export const ApiDocs: React.FC = () => {
+interface ApiDocsProps {
+  onNavigate?: (path: string) => void;
+}
+
+export const ApiDocs: React.FC<ApiDocsProps> = ({ onNavigate }) => {
   const { user, isAuthenticated, refreshProfile, showToast } = useAuth();
   const [copiedKey, setCopiedKey] = useState(false);
   const [copiedMap, setCopiedMap] = useState<{ [key: string]: boolean }>({});
@@ -122,47 +126,43 @@ export const ApiDocs: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', width: '100%', paddingBottom: 40 }}>
-      <div className="api-page-wrapper" style={{ width: '100%' }}>
+      <div className="api-page-wrapper">
         {/* Title */}
         <h1 className="api-page-title">API</h1>
 
-        {/* Top Info Table matching Screenshot 2 */}
-        <table className="api-overview-table">
-          <tbody>
-            <tr>
-              <td>HTTP Method</td>
-              <td>
-                <span style={{ fontWeight: 700, color: '#162399', background: '#eef5ff', padding: '3px 8px', borderRadius: 4 }}>
-                  POST
-                </span>
-              </td>
-            </tr>
-            <tr>
-              <td>API URL</td>
-              <td>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <code style={{ background: '#f8fafc', padding: '4px 10px', borderRadius: 4, border: '1px solid #e2e8f0', color: '#162399', fontWeight: 600 }}>
-                    {apiUrl}
-                  </code>
-                  <button
-                    className="topbar-circle-btn"
-                    style={{ width: 28, height: 28, borderRadius: 4 }}
-                    title="Copy API URL"
-                    onClick={() => copyToClipboard(apiUrl, 'api_url')}
-                  >
-                    {copiedMap['api_url'] ? <Check size={13} color="#15803d" /> : <Copy size={13} />}
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td>API Key</td>
-              <td>
-                {isAuthenticated ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                    <code style={{ background: '#f1f5f9', padding: '4px 10px', borderRadius: 4, border: '1px solid #cbd5e1', color: '#0f172a', fontWeight: 600, fontFamily: 'monospace' }}>
-                      {apiKey}
-                    </code>
+        {/* Top Info Overview Card (Fully Responsive for Mobile & Desktop) */}
+        <div className="api-overview-card">
+          <div className="api-overview-row">
+            <div className="api-overview-label">HTTP Method</div>
+            <div className="api-overview-value">
+              <span className="api-badge-method">POST</span>
+            </div>
+          </div>
+
+          <div className="api-overview-row">
+            <div className="api-overview-label">API URL</div>
+            <div className="api-overview-value">
+              <div className="api-code-url-wrapper">
+                <code className="api-code-url">{apiUrl}</code>
+                <button
+                  className="topbar-circle-btn"
+                  style={{ width: 32, height: 32, borderRadius: 6, flexShrink: 0 }}
+                  title="Copy API URL"
+                  onClick={() => copyToClipboard(apiUrl, 'api_url')}
+                >
+                  {copiedMap['api_url'] ? <Check size={14} color="#15803d" /> : <Copy size={14} />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="api-overview-row">
+            <div className="api-overview-label">API Key</div>
+            <div className="api-overview-value">
+              {isAuthenticated ? (
+                <div className="api-key-container">
+                  <code className="api-key-box">{apiKey}</code>
+                  <div className="api-key-actions">
                     <button
                       className="btn btn-secondary btn-sm"
                       onClick={() => {
@@ -172,7 +172,7 @@ export const ApiDocs: React.FC = () => {
                       }}
                     >
                       {copiedKey ? <Check size={13} color="#15803d" /> : <Copy size={13} />}
-                      {copiedKey ? 'Copied' : 'Copy Key'}
+                      <span>{copiedKey ? 'Copied' : 'Copy Key'}</span>
                     </button>
                     <button
                       className="btn btn-secondary btn-sm"
@@ -181,45 +181,61 @@ export const ApiDocs: React.FC = () => {
                       title="Regenerate new API key"
                     >
                       <RefreshCw size={13} className={isRotating ? 'spin' : ''} />
-                      Regenerate
+                      <span>Regenerate</span>
                     </button>
                   </div>
-                ) : (
-                  <span style={{ color: '#64748b' }}>
-                    Get an API key on the Account page (or sign in to view your key)
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
+                    Sign in to your account to view or generate your private API key.
                   </span>
-                )}
-              </td>
-            </tr>
-            <tr>
-              <td>Response format</td>
-              <td>
-                <span style={{ fontWeight: 600 }}>JSON</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                  {onNavigate && (
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      onClick={() => onNavigate('/login')}
+                      style={{ padding: '6px 12px', fontSize: '0.80rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                    >
+                      <LogIn size={13} />
+                      <span>Sign In</span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
 
-        {/* 1. Service list matching Screenshot 2 */}
+          <div className="api-overview-row">
+            <div className="api-overview-label">Response format</div>
+            <div className="api-overview-value">
+              <span className="api-badge-format">JSON</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 1. Service list */}
         <h2 className="api-section-header">Service list</h2>
-        <table className="api-endpoint-table">
-          <thead>
-            <tr>
-              <th>Parameters</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>key</td>
-              <td>Your API key</td>
-            </tr>
-            <tr>
-              <td>action</td>
-              <td>services</td>
-            </tr>
-          </tbody>
-        </table>
+        <div className="api-table-wrapper">
+          <table className="api-endpoint-table">
+            <thead>
+              <tr>
+                <th>Parameters</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>key</td>
+                <td>Your API key</td>
+              </tr>
+              <tr>
+                <td>action</td>
+                <td>services</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
         <div className="api-example-heading">Example response</div>
         <div className="api-code-container">
@@ -228,51 +244,53 @@ export const ApiDocs: React.FC = () => {
             onClick={() => copyToClipboard(servicesResponseJson, 'services_res')}
           >
             {copiedMap['services_res'] ? <Check size={12} color="#15803d" /> : <Copy size={12} />}
-            {copiedMap['services_res'] ? 'Copied' : 'Copy'}
+            <span>{copiedMap['services_res'] ? 'Copied' : 'Copy'}</span>
           </button>
           <pre>{servicesResponseJson}</pre>
         </div>
 
-        {/* 2. Add order matching Screenshot 2 */}
+        {/* 2. Add order */}
         <h2 className="api-section-header">Add order</h2>
-        <table className="api-endpoint-table">
-          <thead>
-            <tr>
-              <th>Parameters</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>key</td>
-              <td>Your API key</td>
-            </tr>
-            <tr>
-              <td>action</td>
-              <td>add</td>
-            </tr>
-            <tr>
-              <td>service</td>
-              <td>Service ID</td>
-            </tr>
-            <tr>
-              <td>link</td>
-              <td>Link to page</td>
-            </tr>
-            <tr>
-              <td>quantity</td>
-              <td>Needed quantity</td>
-            </tr>
-            <tr>
-              <td>runs (optional)</td>
-              <td>Runs to deliver</td>
-            </tr>
-            <tr>
-              <td>interval (optional)</td>
-              <td>Interval in minutes</td>
-            </tr>
-          </tbody>
-        </table>
+        <div className="api-table-wrapper">
+          <table className="api-endpoint-table">
+            <thead>
+              <tr>
+                <th>Parameters</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>key</td>
+                <td>Your API key</td>
+              </tr>
+              <tr>
+                <td>action</td>
+                <td>add</td>
+              </tr>
+              <tr>
+                <td>service</td>
+                <td>Service ID</td>
+              </tr>
+              <tr>
+                <td>link</td>
+                <td>Link to page</td>
+              </tr>
+              <tr>
+                <td>quantity</td>
+                <td>Needed quantity</td>
+              </tr>
+              <tr>
+                <td>runs (optional)</td>
+                <td>Runs to deliver</td>
+              </tr>
+              <tr>
+                <td>interval (optional)</td>
+                <td>Interval in minutes</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
         <div className="api-example-heading">Example response</div>
         <div className="api-code-container">
@@ -281,35 +299,37 @@ export const ApiDocs: React.FC = () => {
             onClick={() => copyToClipboard(addOrderResponseJson, 'add_order_res')}
           >
             {copiedMap['add_order_res'] ? <Check size={12} color="#15803d" /> : <Copy size={12} />}
-            {copiedMap['add_order_res'] ? 'Copied' : 'Copy'}
+            <span>{copiedMap['add_order_res'] ? 'Copied' : 'Copy'}</span>
           </button>
           <pre>{addOrderResponseJson}</pre>
         </div>
 
         {/* 3. Order status */}
         <h2 className="api-section-header">Order status</h2>
-        <table className="api-endpoint-table">
-          <thead>
-            <tr>
-              <th>Parameters</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>key</td>
-              <td>Your API key</td>
-            </tr>
-            <tr>
-              <td>action</td>
-              <td>status</td>
-            </tr>
-            <tr>
-              <td>order</td>
-              <td>Order ID</td>
-            </tr>
-          </tbody>
-        </table>
+        <div className="api-table-wrapper">
+          <table className="api-endpoint-table">
+            <thead>
+              <tr>
+                <th>Parameters</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>key</td>
+                <td>Your API key</td>
+              </tr>
+              <tr>
+                <td>action</td>
+                <td>status</td>
+              </tr>
+              <tr>
+                <td>order</td>
+                <td>Order ID</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
         <div className="api-example-heading">Example response</div>
         <div className="api-code-container">
@@ -318,35 +338,37 @@ export const ApiDocs: React.FC = () => {
             onClick={() => copyToClipboard(orderStatusResponseJson, 'status_res')}
           >
             {copiedMap['status_res'] ? <Check size={12} color="#15803d" /> : <Copy size={12} />}
-            {copiedMap['status_res'] ? 'Copied' : 'Copy'}
+            <span>{copiedMap['status_res'] ? 'Copied' : 'Copy'}</span>
           </button>
           <pre>{orderStatusResponseJson}</pre>
         </div>
 
         {/* 4. Multiple orders status */}
         <h2 className="api-section-header">Multiple orders status</h2>
-        <table className="api-endpoint-table">
-          <thead>
-            <tr>
-              <th>Parameters</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>key</td>
-              <td>Your API key</td>
-            </tr>
-            <tr>
-              <td>action</td>
-              <td>status</td>
-            </tr>
-            <tr>
-              <td>orders</td>
-              <td>Order IDs separated by comma (e.g. 1,2,3)</td>
-            </tr>
-          </tbody>
-        </table>
+        <div className="api-table-wrapper">
+          <table className="api-endpoint-table">
+            <thead>
+              <tr>
+                <th>Parameters</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>key</td>
+                <td>Your API key</td>
+              </tr>
+              <tr>
+                <td>action</td>
+                <td>status</td>
+              </tr>
+              <tr>
+                <td>orders</td>
+                <td>Order IDs separated by comma (e.g. 1,2,3)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
         <div className="api-example-heading">Example response</div>
         <div className="api-code-container">
@@ -355,31 +377,33 @@ export const ApiDocs: React.FC = () => {
             onClick={() => copyToClipboard(multiOrdersResponseJson, 'multi_status_res')}
           >
             {copiedMap['multi_status_res'] ? <Check size={12} color="#15803d" /> : <Copy size={12} />}
-            {copiedMap['multi_status_res'] ? 'Copied' : 'Copy'}
+            <span>{copiedMap['multi_status_res'] ? 'Copied' : 'Copy'}</span>
           </button>
           <pre>{multiOrdersResponseJson}</pre>
         </div>
 
         {/* 5. User balance */}
         <h2 className="api-section-header">User balance</h2>
-        <table className="api-endpoint-table">
-          <thead>
-            <tr>
-              <th>Parameters</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>key</td>
-              <td>Your API key</td>
-            </tr>
-            <tr>
-              <td>action</td>
-              <td>balance</td>
-            </tr>
-          </tbody>
-        </table>
+        <div className="api-table-wrapper">
+          <table className="api-endpoint-table">
+            <thead>
+              <tr>
+                <th>Parameters</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>key</td>
+                <td>Your API key</td>
+              </tr>
+              <tr>
+                <td>action</td>
+                <td>balance</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
         <div className="api-example-heading">Example response</div>
         <div className="api-code-container">
@@ -388,25 +412,17 @@ export const ApiDocs: React.FC = () => {
             onClick={() => copyToClipboard(balanceResponseJson, 'balance_res')}
           >
             {copiedMap['balance_res'] ? <Check size={12} color="#15803d" /> : <Copy size={12} />}
-            {copiedMap['balance_res'] ? 'Copied' : 'Copy'}
+            <span>{copiedMap['balance_res'] ? 'Copied' : 'Copy'}</span>
           </button>
           <pre>{balanceResponseJson}</pre>
         </div>
 
-        {/* Interactive Live API Test Console (Developer Bonus) */}
-        <div
-          style={{
-            marginTop: 40,
-            padding: 24,
-            background: '#f8fafc',
-            border: '1px solid #e2e8f0',
-            borderRadius: 'var(--radius-lg)',
-          }}
-        >
+        {/* Interactive Live API Test Console */}
+        <div className="api-live-tester">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Terminal size={18} color="#162399" />
-              <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>
                 Live API Console Tester
               </h3>
             </div>
@@ -416,10 +432,10 @@ export const ApiDocs: React.FC = () => {
               disabled={isTesting}
             >
               <Play size={12} />
-              {isTesting ? 'Sending Request...' : 'Send Live Test Request (Balance)'}
+              <span>{isTesting ? 'Sending Request...' : 'Send Live Test Request (Balance)'}</span>
             </button>
           </div>
-          <p style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: 12 }}>
+          <p style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: 12, marginTop: 0 }}>
             Test your live connection to <code>POST /api/v2</code> with action <code>"balance"</code>.
           </p>
 

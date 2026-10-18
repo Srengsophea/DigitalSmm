@@ -12,6 +12,11 @@ export default defineConfig({
         target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
+        bypass(req) {
+          if (req.headers.accept && req.headers.accept.includes('html')) {
+            return '/index.html';
+          }
+        },
       },
     },
   },

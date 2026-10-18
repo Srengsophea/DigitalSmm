@@ -168,7 +168,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
           {activePage === 'faq' && <FAQView />}
 
           {/* API Reseller Docs */}
-          {activePage === 'api' && <ApiDocs />}
+          {activePage === 'api' && <ApiDocs onNavigate={onNavigate} />}
 
           {/* Tickets Support Page */}
           {activePage === 'tickets' && (
@@ -294,8 +294,8 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ currentPath, onNavigate }) 
         )}
 
         {activePage === 'api' && (
-          <div style={{ maxWidth: 1200, margin: '30px auto', padding: '0 24px' }}>
-            <ApiDocs />
+          <div className="api-page-outer-container">
+            <ApiDocs onNavigate={onNavigate} />
           </div>
         )}
 
