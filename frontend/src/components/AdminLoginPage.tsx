@@ -41,7 +41,18 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onNavigate }) =>
 
     setIsLoading(true);
     try {
-      const user = await login(adminIdentifier.trim(), password);
+      const res = await login(adminIdentifier.trim(), password);
+
+      if (res.requires2FA) {
+        setErrorMessage('Two-Factor Authentication is enabled for this administrator account. Please log in through the main login portal to submit your 2FA security code.');
+        return;
+      }
+
+      const user = res.user;
+      if (!user) {
+        setErrorMessage('Authentication failed: Missing operator profile.');
+        return;
+      }
 
       // Verify that the authenticated account actually has ADMIN privileges
       if (user.role !== 'ADMIN') {

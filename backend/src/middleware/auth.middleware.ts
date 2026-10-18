@@ -11,9 +11,9 @@ export interface AuthenticatedRequest extends Request {
 export const authenticate = (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
   const db = DatabaseService.getInstance();
   const authHeader = req.headers.authorization;
-  const apiKeyHeader = req.headers['x-api-key'] || req.query.api_key;
+  const apiKeyHeader = req.headers['x-api-key'];
 
-  // 1. Check API Key first (for API v2 or reseller clients)
+  // 1. Check API Key header first (for API v2 or reseller clients)
   if (apiKeyHeader && typeof apiKeyHeader === 'string') {
     const user = db.getUserByApiKey(apiKeyHeader);
     if (user && user.status === 'active') {
@@ -33,7 +33,11 @@ export const authenticate = (req: AuthenticatedRequest, res: Response, next: Nex
   const token = authHeader.split(' ')[1];
 
   try {
-    const decoded = jwt.verify(token, ENV.JWT_SECRET) as { userId: string; role: string };
+    const decoded = jwt.verify(token, ENV.JWT_SECRET) as {
+      userId: string;
+      role: string;
+      tokenVersion?: number;
+    };
     const user = db.getUserById(decoded.userId);
 
     if (!user) {
@@ -43,6 +47,15 @@ export const authenticate = (req: AuthenticatedRequest, res: Response, next: Nex
 
     if (user.status !== 'active') {
       res.status(403).json({ success: false, error: 'Account has been suspended' });
+      return;
+    }
+
+    // Dynamic Session Revocation: Reject older JWTs if tokenVersion was incremented on password change
+    if (user.tokenVersion && decoded.tokenVersion !== undefined && decoded.tokenVersion < user.tokenVersion) {
+      res.status(401).json({
+        success: false,
+        error: 'Session has been revoked due to credential changes. Please sign in again.',
+      });
       return;
     }
 

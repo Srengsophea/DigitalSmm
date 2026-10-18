@@ -15,6 +15,7 @@ const totp_service_1 = require("../services/totp.service");
 const pendingSignups = new Map();
 const pendingEmailChanges = new Map();
 const pending2FASetups = new Map();
+const pendingPasswordResets = new Map();
 // Clean expired registrations and pending security requests periodically
 setInterval(() => {
     const now = Date.now();
@@ -31,6 +32,11 @@ setInterval(() => {
     for (const [uid, pending] of pending2FASetups.entries()) {
         if (now > pending.expiresAt) {
             pending2FASetups.delete(uid);
+        }
+    }
+    for (const [email, pending] of pendingPasswordResets.entries()) {
+        if (now > pending.expiresAt) {
+            pendingPasswordResets.delete(email);
         }
     }
 }, 5 * 60 * 1000);
@@ -215,7 +221,7 @@ class AuthController {
      */
     static async login(req, res) {
         const db = db_service_1.DatabaseService.getInstance();
-        const { login, password } = req.body;
+        const { login, password, twoFactorCode } = req.body;
         const cleanLogin = (login || '').trim();
         const user = db.getUserByEmail(cleanLogin) ||
             db.getUserByUsername(cleanLogin);
@@ -227,19 +233,72 @@ class AuthController {
             res.status(403).json({ success: false, error: 'This account has been suspended by administration' });
             return;
         }
+        // Account Lockout Protection (Anti-Credential Stuffing / Distributed Botnets)
+        if (user.lockoutUntil && new Date(user.lockoutUntil).getTime() > Date.now()) {
+            const remainingMinutes = Math.ceil((new Date(user.lockoutUntil).getTime() - Date.now()) / 60000);
+            res.status(429).json({
+                success: false,
+                error: `Account locked due to 5 consecutive failed attempts. Please try again in ${remainingMinutes} minute${remainingMinutes > 1 ? 's' : ''}.`,
+            });
+            return;
+        }
         const isMatch = await bcryptjs_1.default.compare(password, user.passwordHash);
         if (!isMatch) {
+            const failedAttempts = (user.failedLoginAttempts || 0) + 1;
+            const updates = { failedLoginAttempts: failedAttempts };
+            if (failedAttempts >= 5) {
+                updates.lockoutUntil = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+                await db.updateUser(user.id, updates);
+                await db.logAudit('ACCOUNT_LOCKED', `Account ${user.username} locked out after 5 consecutive failed login attempts`, req.ip || '127.0.0.1', user.id, user.username);
+                res.status(429).json({
+                    success: false,
+                    error: 'Account locked for 15 minutes due to 5 consecutive failed login attempts.',
+                });
+                return;
+            }
+            await db.updateUser(user.id, updates);
             res.status(401).json({ success: false, error: 'Invalid email/username or password' });
             return;
         }
-        const token = jsonwebtoken_1.default.sign({ userId: user.id, role: user.role, username: user.username }, env_1.ENV.JWT_SECRET, { expiresIn: '7d' });
-        await db.logAudit('USER_LOGIN', `User signed in: ${user.username}`, req.ip || '127.0.0.1', user.id, user.username);
-        const { passwordHash: _, ...safeUser } = user;
+        // Reset failed login counter on successful password match
+        if (user.failedLoginAttempts || user.lockoutUntil) {
+            await db.updateUser(user.id, {
+                failedLoginAttempts: 0,
+                lockoutUntil: undefined,
+            });
+        }
+        // Two-Factor Authentication (RFC 6238 TOTP) Enforcement
+        if (user.twoFactorEnabled && user.twoFactorSecret) {
+            if (!twoFactorCode || typeof twoFactorCode !== 'string' || twoFactorCode.trim().length === 0) {
+                res.status(200).json({
+                    success: false,
+                    requires2FA: true,
+                    message: 'Two-factor authentication code required',
+                });
+                return;
+            }
+            const is2faValid = totp_service_1.TotpService.verifyToken(twoFactorCode.trim(), user.twoFactorSecret, 1);
+            if (!is2faValid) {
+                res.status(401).json({
+                    success: false,
+                    requires2FA: true,
+                    error: 'Invalid 6-digit authenticator code. Please check your 2FA app.',
+                });
+                return;
+            }
+        }
+        const token = jsonwebtoken_1.default.sign({
+            userId: user.id,
+            role: user.role,
+            username: user.username,
+            tokenVersion: user.tokenVersion || 1,
+        }, env_1.ENV.JWT_SECRET, { expiresIn: '7d' });
+        await db.logAudit(user.twoFactorEnabled ? 'USER_LOGIN_2FA' : 'USER_LOGIN', `User signed in ${user.twoFactorEnabled ? 'with 2FA verification' : ''}: ${user.username}`, req.ip || '127.0.0.1', user.id, user.username);
         res.json({
             success: true,
             message: 'Logged in successfully',
             token,
-            user: safeUser,
+            user: (0, db_service_1.toSafeUser)(user),
         });
     }
     static async getProfile(req, res) {
@@ -253,8 +312,7 @@ class AuthController {
             res.status(404).json({ success: false, error: 'User not found' });
             return;
         }
-        const { passwordHash: _, ...safeUser } = freshUser;
-        res.json({ success: true, user: safeUser });
+        res.json({ success: true, user: (0, db_service_1.toSafeUser)(freshUser) });
     }
     static async regenerateApiKey(req, res) {
         if (!req.user) {
@@ -456,11 +514,170 @@ class AuthController {
         }
         const salt = await bcryptjs_1.default.genSalt(12);
         const newHash = await bcryptjs_1.default.hash(newPassword, salt);
-        await db.updateUser(req.user.id, { passwordHash: newHash });
-        await db.logAudit('PASSWORD_CHANGED', `Password changed for user: ${req.user.username}`, req.ip || '127.0.0.1', req.user.id, req.user.username);
+        const nextTokenVersion = (freshUser.tokenVersion || 1) + 1;
+        // Security Hardening: Increment tokenVersion to immediately invalidate all other active JWT sessions
+        await db.updateUser(req.user.id, {
+            passwordHash: newHash,
+            tokenVersion: nextTokenVersion,
+            failedLoginAttempts: 0,
+            lockoutUntil: undefined,
+        });
+        const newSessionToken = jsonwebtoken_1.default.sign({
+            userId: freshUser.id,
+            role: freshUser.role,
+            username: freshUser.username,
+            tokenVersion: nextTokenVersion,
+        }, env_1.ENV.JWT_SECRET, { expiresIn: '7d' });
+        await db.logAudit('PASSWORD_CHANGED', `Password changed & all prior sessions revoked for user: ${req.user.username} (TokenVersion: ${nextTokenVersion})`, req.ip || '127.0.0.1', req.user.id, req.user.username);
         res.json({
             success: true,
-            message: 'Password changed successfully',
+            message: 'Password changed successfully. All previous sessions have been revoked.',
+            token: newSessionToken,
+        });
+    }
+    /**
+     * Forgot Password - Step 1: Generate & dispatch 6-digit reset code via email
+     */
+    static async forgotPassword(req, res) {
+        const db = db_service_1.DatabaseService.getInstance();
+        const emailService = email_service_1.EmailService.getInstance();
+        const { email } = req.body;
+        const query = (email || '').trim();
+        if (!query) {
+            res.status(400).json({ success: false, error: 'Email or username is required.' });
+            return;
+        }
+        const normalized = query.toLowerCase();
+        const user = db.getUserByEmail(normalized) || db.getUserByUsername(query);
+        if (!user) {
+            res.status(404).json({
+                success: false,
+                error: 'No active account found with that email address or username.',
+            });
+            return;
+        }
+        const userEmail = user.email.toLowerCase().trim();
+        // Rate-limit resend requests if recently dispatched (< 30 seconds)
+        const existing = pendingPasswordResets.get(userEmail);
+        if (existing && Date.now() - existing.lastSentAt < 30 * 1000) {
+            const waitSec = Math.ceil((30 * 1000 - (Date.now() - existing.lastSentAt)) / 1000);
+            res.status(429).json({
+                success: false,
+                error: `Please wait ${waitSec} seconds before requesting another reset code.`,
+            });
+            return;
+        }
+        // Generate cryptographically sound 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        // Store in pending password resets with 15-minute expiration
+        pendingPasswordResets.set(userEmail, {
+            userId: user.id,
+            email: user.email,
+            otp,
+            expiresAt: Date.now() + 15 * 60 * 1000,
+            attempts: 0,
+            lastSentAt: Date.now(),
+        });
+        const emailResult = await emailService.sendPasswordResetOtp(user.email, user.username, otp);
+        await db.logAudit('PASSWORD_RESET_OTP_DISPATCHED', `Password reset code dispatched to ${user.username} (${user.email}) via ${emailResult.deliveryMethod}`, req.ip || '127.0.0.1', user.id, user.username);
+        res.json({
+            success: true,
+            message: `A 6-digit password reset code has been sent to ${user.email}.`,
+            email: user.email,
+            expiresInSeconds: 900,
+            deliveryMethod: emailResult.deliveryMethod,
+        });
+    }
+    /**
+     * Forgot Password - Step 2: Verify reset OTP code and set new password
+     */
+    static async resetPassword(req, res) {
+        const db = db_service_1.DatabaseService.getInstance();
+        const { email, otp, newPassword } = req.body;
+        const query = (email || '').trim();
+        const cleanOtp = (otp || '').toString().trim();
+        if (!query || !cleanOtp || !newPassword) {
+            res.status(400).json({ success: false, error: 'Email, verification code, and new password are required.' });
+            return;
+        }
+        if (typeof newPassword !== 'string' || newPassword.length < 6) {
+            res.status(400).json({ success: false, error: 'New password must be at least 6 characters long.' });
+            return;
+        }
+        // Find the pending reset record by checking either direct email or finding the user by username
+        let targetEmail = query.toLowerCase();
+        let pending = pendingPasswordResets.get(targetEmail);
+        if (!pending) {
+            const userByUname = db.getUserByUsername(query);
+            if (userByUname) {
+                targetEmail = userByUname.email.toLowerCase();
+                pending = pendingPasswordResets.get(targetEmail);
+            }
+        }
+        if (!pending) {
+            res.status(400).json({
+                success: false,
+                error: 'No active password reset request found, or the code has expired. Please request a new code.',
+            });
+            return;
+        }
+        if (Date.now() > pending.expiresAt) {
+            pendingPasswordResets.delete(targetEmail);
+            res.status(400).json({
+                success: false,
+                error: 'The password reset code has expired. Please request a new code.',
+            });
+            return;
+        }
+        pending.attempts += 1;
+        if (pending.attempts > 5) {
+            pendingPasswordResets.delete(targetEmail);
+            res.status(429).json({
+                success: false,
+                error: 'Too many incorrect verification attempts. Please request a new code.',
+            });
+            return;
+        }
+        if (pending.otp !== cleanOtp) {
+            const attemptsLeft = 5 - pending.attempts;
+            res.status(400).json({
+                success: false,
+                error: `Invalid verification code. ${attemptsLeft} attempt${attemptsLeft === 1 ? '' : 's'} remaining.`,
+            });
+            return;
+        }
+        // OTP is valid! Retrieve target user
+        const user = db.getUserById(pending.userId);
+        if (!user) {
+            pendingPasswordResets.delete(targetEmail);
+            res.status(404).json({ success: false, error: 'User account could not be found.' });
+            return;
+        }
+        const salt = await bcryptjs_1.default.genSalt(12);
+        const newHash = await bcryptjs_1.default.hash(newPassword, salt);
+        const nextTokenVersion = (user.tokenVersion || 1) + 1;
+        // Invalidate old sessions, update hash, reset lockouts
+        const updatedUser = await db.updateUser(user.id, {
+            passwordHash: newHash,
+            tokenVersion: nextTokenVersion,
+            failedLoginAttempts: 0,
+            lockoutUntil: undefined,
+        });
+        // Remove pending reset record
+        pendingPasswordResets.delete(targetEmail);
+        const newSessionToken = jsonwebtoken_1.default.sign({
+            userId: user.id,
+            role: user.role,
+            username: user.username,
+            tokenVersion: nextTokenVersion,
+        }, env_1.ENV.JWT_SECRET, { expiresIn: '7d' });
+        await db.logAudit('PASSWORD_RESET_SUCCESS', `Password successfully reset for ${user.username} (${user.email}). All prior sessions revoked.`, req.ip || '127.0.0.1', user.id, user.username);
+        const safeUser = updatedUser ? (0, db_service_1.toSafeUser)(updatedUser) : (0, db_service_1.toSafeUser)(user);
+        res.json({
+            success: true,
+            message: 'Your password has been successfully reset. You can now log in.',
+            token: newSessionToken,
+            user: safeUser,
         });
     }
     /**
@@ -613,34 +830,35 @@ class AuthController {
      */
     static async googleAuth(req, res) {
         const db = db_service_1.DatabaseService.getInstance();
-        const { email, name, credential, accessToken } = req.body;
-        let targetEmail = email;
-        let targetName = name;
-        // Decode Google ID Token if present from Google Identity Services
+        const { credential, accessToken, twoFactorCode } = req.body;
+        let targetEmail = null;
+        let targetName = null;
+        // 1. Verify Google ID Token (Google Identity Services) cryptographically via Google's tokeninfo API
         if (credential && typeof credential === 'string') {
             try {
-                const parts = credential.split('.');
-                if (parts.length === 3) {
-                    const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
-                    if (payload.email) {
+                const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential.trim())}`);
+                if (verifyRes.ok) {
+                    const payload = await verifyRes.json();
+                    // Verify that email is present and verified by Google
+                    if (payload.email && (payload.email_verified === 'true' || payload.email_verified === true)) {
                         targetEmail = payload.email;
                         targetName = payload.name || payload.given_name || payload.email.split('@')[0];
                     }
                 }
             }
             catch (e) {
-                console.error('Failed to parse Google credential token:', e);
+                console.error('Failed to verify Google ID token cryptographically:', e);
             }
         }
-        // Support Google OAuth2 Access Token verification via Google UserInfo API
-        if (accessToken && typeof accessToken === 'string') {
+        // 2. Verify Google OAuth2 Access Token via Google UserInfo API
+        if (!targetEmail && accessToken && typeof accessToken === 'string') {
             try {
                 const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                    headers: { Authorization: `Bearer ${accessToken}` },
+                    headers: { Authorization: `Bearer ${accessToken.trim()}` },
                 });
                 if (userInfoRes.ok) {
                     const info = await userInfoRes.json();
-                    if (info.email) {
+                    if (info.email && info.email_verified !== false) {
                         targetEmail = info.email;
                         targetName = info.name || info.given_name || info.email.split('@')[0];
                     }
@@ -650,8 +868,12 @@ class AuthController {
                 console.error('Failed to verify Google access token:', e);
             }
         }
+        // Security check: NEVER accept unverified email strings from client body
         if (!targetEmail || typeof targetEmail !== 'string' || !targetEmail.includes('@')) {
-            res.status(400).json({ success: false, error: 'Valid Google / Gmail address is required' });
+            res.status(401).json({
+                success: false,
+                error: 'Cryptographic Google token verification failed. Unauthenticated sign-in rejected.',
+            });
             return;
         }
         targetEmail = targetEmail.toLowerCase().trim();
@@ -684,15 +906,39 @@ class AuthController {
                 res.status(403).json({ success: false, error: 'This account has been suspended by administration' });
                 return;
             }
+            // Enforce 2FA if enabled on this account
+            if (user.twoFactorEnabled && user.twoFactorSecret) {
+                if (!twoFactorCode || typeof twoFactorCode !== 'string' || twoFactorCode.trim().length === 0) {
+                    res.status(200).json({
+                        success: false,
+                        requires2FA: true,
+                        message: 'Two-factor authentication code required',
+                    });
+                    return;
+                }
+                const is2faValid = totp_service_1.TotpService.verifyToken(twoFactorCode.trim(), user.twoFactorSecret, 1);
+                if (!is2faValid) {
+                    res.status(401).json({
+                        success: false,
+                        requires2FA: true,
+                        error: 'Invalid 6-digit authenticator code. Please check your 2FA app.',
+                    });
+                    return;
+                }
+            }
             await db.logAudit('GOOGLE_LOGIN', `User signed in with Google: ${user.username} (${targetEmail})`, req.ip || '127.0.0.1', user.id, user.username);
         }
-        const token = jsonwebtoken_1.default.sign({ userId: user.id, role: user.role, username: user.username }, env_1.ENV.JWT_SECRET, { expiresIn: '7d' });
-        const { passwordHash: _, ...safeUser } = user;
+        const token = jsonwebtoken_1.default.sign({
+            userId: user.id,
+            role: user.role,
+            username: user.username,
+            tokenVersion: user.tokenVersion || 1,
+        }, env_1.ENV.JWT_SECRET, { expiresIn: '7d' });
         res.json({
             success: true,
             message: 'Signed in with Google successfully!',
             token,
-            user: safeUser,
+            user: (0, db_service_1.toSafeUser)(user),
         });
     }
 }

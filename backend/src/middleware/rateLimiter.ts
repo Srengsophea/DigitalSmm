@@ -12,15 +12,27 @@ export const apiLimiter = rateLimit({
   },
 });
 
-// Auth endpoints rate limit: 15 attempts per 15 minutes
+// Auth endpoints rate limit: 30 attempts per 15 minutes (Anti-Brute Force)
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20,
+  max: 30,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
     success: false,
-    error: 'Too many authentication attempts, please try again later.',
+    error: 'Too many authentication attempts from this IP address. Please wait 15 minutes.',
+  },
+});
+
+// Strict Email OTP Dispatch Limiter: max 5 OTP requests per 15 minutes (Anti-Email Flooding / SMTP exhaustion)
+export const otpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: 'Verification code request limit reached. Please wait 15 minutes before requesting more codes.',
   },
 });
 

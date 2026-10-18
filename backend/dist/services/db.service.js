@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DatabaseService = void 0;
+exports.toSafeUser = toSafeUser;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const crypto_1 = __importDefault(require("crypto"));
@@ -11,6 +12,13 @@ const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const env_1 = require("../config/env");
 const encryption_service_1 = require("./encryption.service");
 const smmfollows_service_1 = require("./smmfollows.service");
+/**
+ * Strips password hashes, TOTP secrets, and internal security counters before sending user data over wire.
+ */
+function toSafeUser(user) {
+    const { passwordHash: _, twoFactorSecret: __, failedLoginAttempts: ___, lockoutUntil: ____, ...safe } = user;
+    return safe;
+}
 class DatabaseService {
     static instance;
     filePath;
@@ -237,7 +245,17 @@ class DatabaseService {
         return this.data.users.find((u) => u.username.toLowerCase() === username.toLowerCase());
     }
     getUserByApiKey(apiKey) {
-        return this.data.users.find((u) => u.apiKey === apiKey);
+        if (!apiKey || typeof apiKey !== 'string')
+            return undefined;
+        const targetBuffer = Buffer.from(apiKey);
+        return this.data.users.find((u) => {
+            if (!u.apiKey)
+                return false;
+            const userKeyBuffer = Buffer.from(u.apiKey);
+            if (userKeyBuffer.length !== targetBuffer.length)
+                return false;
+            return crypto_1.default.timingSafeEqual(userKeyBuffer, targetBuffer);
+        });
     }
     async createUser(user) {
         const newUser = {

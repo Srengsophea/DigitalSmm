@@ -47,6 +47,16 @@ export class WalletController {
     const db = DatabaseService.getInstance();
     const { amount, method } = req.body;
 
+    // Security Guard: Direct unverified deposits are strictly restricted to ADMIN accounts for sandbox testing.
+    // Real users must top up via cryptographic/banking settlements (Bakong KHQR).
+    if (req.user.role !== 'ADMIN') {
+      res.status(403).json({
+        success: false,
+        error: 'Direct unverified deposits are restricted. Please top up your wallet using Bakong KHQR.',
+      });
+      return;
+    }
+
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount < 1) {
       res.status(400).json({ success: false, error: 'Minimum deposit is $1.00' });
@@ -155,16 +165,16 @@ export class WalletController {
     const numAmount = parseFloat(amount) || 5.0;
     const bakong = BakongService.getInstance();
 
-    // Check if this payment was already credited (prevent double-credit)
-    const userTransactions = db.getTransactionsByUserId(req.user.id);
-    const alreadyCredited = userTransactions.some((tx) => tx.referenceId === md5);
+    // Security check: Verify globally across ALL users to prevent cross-account replay / double-crediting
+    const allTransactions = db.getTransactions();
+    const alreadyCredited = allTransactions.some((tx) => tx.referenceId === md5);
     if (alreadyCredited) {
       const refreshedUser = db.getUserById(req.user.id);
       res.json({
         success: true,
         confirmed: true,
         alreadyProcessed: true,
-        message: 'Payment has already been credited to your wallet.',
+        message: 'This payment transaction has already been credited to a wallet.',
         newBalance: refreshedUser?.balance ?? req.user.balance,
       });
       return;

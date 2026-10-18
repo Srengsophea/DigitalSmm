@@ -123,6 +123,95 @@ class EmailService {
         return { success: true, deliveryMethod: 'console' };
     }
     /**
+     * Send a branded 6-digit email password reset OTP code
+     */
+    async sendPasswordResetOtp(email, username, otp) {
+        const { host, port, user, pass, from, secure } = this.getSmtpConfig();
+        console.log('\n===========================================================================');
+        console.log('🔐 [DIGITALSMM PASSWORD RESET OTP CODE]');
+        console.log(`   To User:     ${username} <${email}>`);
+        console.log(`   Reset Code:  ${otp}`);
+        console.log(`   Valid For:   15 minutes`);
+        console.log(`   SMTP Sender: ${user || '(none - console mode)'}`);
+        console.log('===========================================================================\n');
+        if (host && user && pass) {
+            try {
+                const transporter = nodemailer_1.default.createTransport({
+                    host,
+                    port,
+                    secure,
+                    auth: {
+                        user,
+                        pass,
+                    },
+                    tls: {
+                        rejectUnauthorized: false,
+                    },
+                });
+                const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Reset Your DigitalSMM Password</title>
+  <style>
+    body { margin: 0; padding: 0; background-color: #0b1021; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f8fafc; }
+    .container { max-width: 540px; margin: 40px auto; background: #131b34; border: 1px solid #1e294b; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+    .header { background: linear-gradient(135deg, #e11d48 0%, #7c3aed 100%); padding: 32px 24px; text-align: center; }
+    .logo-text { font-size: 24px; font-weight: 800; letter-spacing: 2px; color: #ffffff; text-transform: uppercase; margin: 0; }
+    .body-content { padding: 36px 32px; text-align: center; }
+    .greeting { font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 12px; }
+    .desc { font-size: 15px; color: #94a3b8; line-height: 1.6; margin-bottom: 28px; }
+    .code-box { background: #0b1126; border: 2px dashed #f43f5e; border-radius: 12px; padding: 18px 24px; display: inline-block; margin-bottom: 28px; }
+    .code { font-size: 38px; font-weight: 900; letter-spacing: 10px; color: #fb7185; font-family: 'Courier New', Courier, monospace; margin-left: 10px; }
+    .expiry { font-size: 13px; color: #f59e0b; font-weight: 600; margin-bottom: 24px; }
+    .footer { background: #0a0e1c; padding: 20px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #17203d; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo-text">⚡ DIGITALSMM</div>
+      <div style="color: #ffe4e6; font-size: 13px; margin-top: 4px;">Password Recovery Verification</div>
+    </div>
+    <div class="body-content">
+      <div class="greeting">Reset Password for ${username}</div>
+      <div class="desc">We received a request to reset the password for your DigitalSMM account. Use the 6-digit verification code below to authorize your password reset:</div>
+      
+      <div class="code-box">
+        <div class="code">${otp}</div>
+      </div>
+      
+      <div class="expiry">⏱️ This code expires in 15 minutes.</div>
+      <div style="font-size: 13px; color: #64748b; line-height: 1.5;">
+        If you did not request a password reset, please disregard this email. Your current password remains completely unchanged and secure.
+      </div>
+    </div>
+    <div class="footer">
+      © ${new Date().getFullYear()} DigitalSMM Security. Automated Password Recovery Service.
+    </div>
+  </div>
+</body>
+</html>
+        `;
+                await transporter.sendMail({
+                    from,
+                    to: email,
+                    subject: `${otp} is your DigitalSMM password reset code`,
+                    text: `Hello ${username}! Your password reset code is: ${otp}. It expires in 15 minutes. If you did not request this, please ignore this email.`,
+                    html,
+                });
+                console.log(`✅ Password reset email dispatched via SMTP to ${email}`);
+                return { success: true, deliveryMethod: 'smtp' };
+            }
+            catch (err) {
+                console.error('❌ Failed to dispatch password reset email via SMTP:', err.message);
+                return { success: true, deliveryMethod: 'console', error: err.message };
+            }
+        }
+        return { success: true, deliveryMethod: 'console' };
+    }
+    /**
      * Send a branded security verification code for account settings (change email, etc.)
      */
     async sendSecurityOtp(email, username, otp, title, actionDescription) {

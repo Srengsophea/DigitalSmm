@@ -27,6 +27,7 @@ import {
 import { PublicNavbar } from './PublicNavbar';
 import { GoogleAccountPickerModal } from './GoogleAccountPickerModal';
 import { hasGoogleClientId, requestGoogleAccessToken, initGoogleIdentityServices } from '../services/googleAuth';
+import { api } from '../services/api';
 
 interface AuthPageProps {
   initialMode?: 'login' | 'signup';
@@ -54,6 +55,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
+  // 2FA TOTP verification state during login
+  const [is2FAPrompt, setIs2FAPrompt] = useState(false);
+  const [twoFactorCode, setTwoFactorCode] = useState('');
+
   // Resend OTP Countdown timer
   const [resendCooldown, setResendCooldown] = useState(0);
 
@@ -65,14 +70,25 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   // Google sign in modal state
   const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
 
-  // Forgot password modal
+  // Forgot password modal state
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
+  const [forgotStep, setForgotStep] = useState<'email' | 'otp' | 'success'>('email');
   const [forgotEmail, setForgotEmail] = useState('');
-  const [forgotSuccess, setForgotSuccess] = useState(false);
+  const [forgotOtp, setForgotOtp] = useState('');
+  const [forgotNewPassword, setForgotNewPassword] = useState('');
+  const [forgotConfirmPassword, setForgotConfirmPassword] = useState('');
+  const [showForgotNewPass, setShowForgotNewPass] = useState(false);
+  const [showForgotConfirmPass, setShowForgotConfirmPass] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotError, setForgotError] = useState<string | null>(null);
+  const [forgotSuccessMsg, setForgotSuccessMsg] = useState<string | null>(null);
+  const [forgotCooldown, setForgotCooldown] = useState(0);
 
   useEffect(() => {
     setMode(initialMode);
     setSignupStep('details');
+    setIs2FAPrompt(false);
+    setTwoFactorCode('');
     setErrorMessage(null);
     setSuccessMessage(null);
   }, [initialMode]);
@@ -85,6 +101,108 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     }, 1000);
     return () => clearInterval(timer);
   }, [resendCooldown]);
+
+  // Forgot password cooldown timer effect
+  useEffect(() => {
+    if (forgotCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setForgotCooldown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [forgotCooldown]);
+
+  // Open Forgot Password modal with clean state
+  const handleOpenForgotModal = () => {
+    setIsForgotModalOpen(true);
+    setForgotStep('email');
+    setForgotEmail(loginIdentifier.trim());
+    setForgotOtp('');
+    setForgotNewPassword('');
+    setForgotConfirmPassword('');
+    setShowForgotNewPass(false);
+    setShowForgotConfirmPass(false);
+    setForgotError(null);
+    setForgotSuccessMsg(null);
+  };
+
+  // Step 1: Request Password Reset OTP
+  const handleForgotSendOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const query = forgotEmail.trim();
+    if (!query) {
+      setForgotError('Please enter your account email address or username.');
+      return;
+    }
+    setForgotError(null);
+    setForgotSuccessMsg(null);
+    setForgotLoading(true);
+
+    try {
+      const res = await api.auth.forgotPassword(query);
+      setForgotStep('otp');
+      setForgotCooldown(60);
+      setForgotSuccessMsg(res.message || `A verification code has been dispatched to ${res.email || query}.`);
+    } catch (err: any) {
+      setForgotError(err.message || 'Failed to dispatch verification code. Please verify your email.');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  // Resend OTP during reset process
+  const handleForgotResendOtp = async () => {
+    if (forgotCooldown > 0 || forgotLoading) return;
+    const query = forgotEmail.trim();
+    if (!query) return;
+
+    setForgotError(null);
+    setForgotLoading(true);
+    try {
+      const res = await api.auth.forgotPassword(query);
+      setForgotCooldown(60);
+      setForgotSuccessMsg(res.message || 'A fresh verification code has been dispatched.');
+    } catch (err: any) {
+      setForgotError(err.message || 'Failed to resend verification code.');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  // Step 2: Verify OTP and apply new password
+  const handleForgotResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const query = forgotEmail.trim();
+    const otp = forgotOtp.trim();
+
+    if (!otp || otp.length < 4) {
+      setForgotError('Please enter the 6-digit verification code.');
+      return;
+    }
+    if (!forgotNewPassword || forgotNewPassword.length < 6) {
+      setForgotError('New password must be at least 6 characters long.');
+      return;
+    }
+    if (forgotNewPassword !== forgotConfirmPassword) {
+      setForgotError('Passwords do not match. Please verify your new password.');
+      return;
+    }
+
+    setForgotError(null);
+    setForgotSuccessMsg(null);
+    setForgotLoading(true);
+
+    try {
+      const res = await api.auth.resetPassword(query, otp, forgotNewPassword);
+      setForgotStep('success');
+      setForgotSuccessMsg(res.message || 'Your password has been successfully reset.');
+      setLoginIdentifier(query);
+      setPassword('');
+    } catch (err: any) {
+      setForgotError(err.message || 'Failed to reset password. Please verify your code.');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
 
   // Handle Login or Step 1 Signup Submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -143,23 +261,42 @@ export const AuthPage: React.FC<AuthPageProps> = ({
         }
       }
     } else {
-      // User / Password Login
+      // User / Password Login & 2FA Challenge
       if (!loginIdentifier.trim() || !password) {
         setErrorMessage('Please enter your username/email and password.');
         return;
       }
 
+      if (is2FAPrompt && (!twoFactorCode.trim() || twoFactorCode.trim().length < 6)) {
+        setErrorMessage('Please enter the 6-digit authenticator code.');
+        return;
+      }
+
       setIsLoading(true);
       try {
-        const user = await login(loginIdentifier.trim(), password);
-        setSuccessMessage(`Welcome back, ${user.username}! Redirecting...`);
-        setTimeout(() => {
-          if (user.role === 'ADMIN') {
-            onNavigate('/admin');
-          } else {
-            onNavigate('/new-order');
-          }
-        }, 600);
+        const res = await login(
+          loginIdentifier.trim(),
+          password,
+          is2FAPrompt ? twoFactorCode.trim() : undefined
+        );
+
+        if (res.requires2FA) {
+          setIs2FAPrompt(true);
+          setErrorMessage(null);
+          setSuccessMessage('Two-Factor Authentication is active. Enter the 6-digit code from your authenticator app.');
+          return;
+        }
+
+        if (res.user) {
+          setSuccessMessage(`Welcome back, ${res.user.username}! Redirecting...`);
+          setTimeout(() => {
+            if (res.user?.role === 'ADMIN') {
+              onNavigate('/admin');
+            } else {
+              onNavigate('/new-order');
+            }
+          }, 600);
+        }
       } catch (err: any) {
         setErrorMessage(err.message || 'Invalid credentials. Please verify your username and password.');
       } finally {
@@ -332,6 +469,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 onClick={() => {
                   setMode('login');
                   setSignupStep('details');
+                  setIs2FAPrompt(false);
+                  setTwoFactorCode('');
                   setErrorMessage(null);
                   setSuccessMessage(null);
                 }}
@@ -345,6 +484,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 onClick={() => {
                   setMode('signup');
                   setSignupStep('details');
+                  setIs2FAPrompt(false);
+                  setTwoFactorCode('');
                   setErrorMessage(null);
                   setSuccessMessage(null);
                 }}
@@ -355,7 +496,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             </div>
 
             {/* Google / Gmail 1-Click SSO Button */}
-            {signupStep !== 'otp' && (
+            {signupStep !== 'otp' && !is2FAPrompt && (
               <>
                 <button
                   type="button"
@@ -671,115 +812,227 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 )
               ) : (
                 /* Login Mode */
-                <>
-                  {/* Login Identifier */}
-                  <div className="auth-form-group">
-                    <label className="auth-form-label">Username or Email</label>
-                    <div className="auth-input-wrapper">
-                      <Mail size={16} className="auth-input-icon" />
-                      <input
-                        type="text"
-                        className="auth-form-input"
-                        placeholder="your_username or email"
-                        value={loginIdentifier}
-                        onChange={(e) => setLoginIdentifier(e.target.value)}
-                        required
-                      />
+                is2FAPrompt ? (
+                  <div style={{ animation: 'fadeIn 0.25s ease' }}>
+                    <div
+                      style={{
+                        background: '#eff6ff',
+                        border: '1px solid #bfdbfe',
+                        borderRadius: 12,
+                        padding: '18px 16px',
+                        marginBottom: 20,
+                        textAlign: 'center',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 48,
+                          height: 48,
+                          borderRadius: '50%',
+                          background: '#162399',
+                          color: '#ffffff',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          margin: '0 auto 10px',
+                          boxShadow: '0 4px 12px rgba(22, 35, 153, 0.2)',
+                        }}
+                      >
+                        <Shield size={26} />
+                      </div>
+                      <h4 style={{ margin: '0 0 6px 0', fontSize: '1.05rem', color: '#0f172a', fontWeight: 700 }}>
+                        Two-Factor Authentication
+                      </h4>
+                      <p style={{ margin: 0, fontSize: '0.84rem', color: '#475569', lineHeight: 1.5 }}>
+                        Enter the 6-digit verification code from your authenticator app for <strong style={{ color: '#162399' }}>{loginIdentifier}</strong>
+                      </p>
                     </div>
-                  </div>
 
-                  {/* Password */}
-                  <div className="auth-form-group">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                      <label className="auth-form-label" style={{ margin: 0 }}>Password</label>
+                    {/* 2FA Code Input */}
+                    <div className="auth-form-group">
+                      <label className="auth-form-label" style={{ textAlign: 'center', display: 'block' }}>
+                        6-Digit Authenticator Code
+                      </label>
+                      <div style={{ position: 'relative' }}>
+                        <KeyRound size={18} className="auth-input-icon" />
+                        <input
+                          type="text"
+                          maxLength={6}
+                          autoFocus
+                          className="auth-form-input"
+                          style={{
+                            textAlign: 'center',
+                            fontSize: '1.4rem',
+                            letterSpacing: '8px',
+                            fontWeight: 800,
+                            fontFamily: 'monospace',
+                            paddingLeft: 42,
+                          }}
+                          placeholder="••••••"
+                          value={twoFactorCode}
+                          onChange={(e) => setTwoFactorCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                          required
+                        />
+                      </div>
+                      <div style={{ textAlign: 'center', marginTop: 8, fontSize: '0.78rem', color: '#64748b' }}>
+                        Open Google Authenticator, 2FA.cn, or Microsoft Authenticator
+                      </div>
+                    </div>
+
+                    {/* Verify & Sign In Button */}
+                    <button
+                      type="submit"
+                      className="btn-auth-submit"
+                      disabled={isLoading || twoFactorCode.length < 6}
+                    >
+                      {isLoading ? (
+                        <span>Verifying security code...</span>
+                      ) : (
+                        <>
+                          <span>Verify & Sign In</span>
+                          <CheckCircle2 size={16} />
+                        </>
+                      )}
+                    </button>
+
+                    {/* Cancel / Back Button */}
+                    <div style={{ textAlign: 'center', marginTop: 16 }}>
                       <button
                         type="button"
                         onClick={() => {
-                          setIsForgotModalOpen(true);
-                          setForgotEmail(loginIdentifier);
+                          setIs2FAPrompt(false);
+                          setTwoFactorCode('');
+                          setErrorMessage(null);
                         }}
                         style={{
                           background: 'none',
                           border: 'none',
-                          color: '#0284c7',
-                          fontSize: '0.78rem',
-                          fontWeight: 600,
+                          color: '#64748b',
+                          fontSize: '0.82rem',
                           cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          fontWeight: 500,
                         }}
                       >
-                        Forgot password?
+                        <ArrowLeft size={14} />
+                        <span>Back to username & password</span>
                       </button>
                     </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Login Identifier */}
+                    <div className="auth-form-group">
+                      <label className="auth-form-label">Username or Email</label>
+                      <div className="auth-input-wrapper">
+                        <Mail size={16} className="auth-input-icon" />
+                        <input
+                          type="text"
+                          className="auth-form-input"
+                          placeholder="your_username or email"
+                          value={loginIdentifier}
+                          onChange={(e) => setLoginIdentifier(e.target.value)}
+                          required
+                        />
+                      </div>
+                    </div>
 
-                    <div className="auth-input-wrapper">
-                      <Lock size={16} className="auth-input-icon" />
+                    {/* Password */}
+                    <div className="auth-form-group">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                        <label className="auth-form-label" style={{ margin: 0 }}>Password</label>
+                        <button
+                          type="button"
+                          onClick={handleOpenForgotModal}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#0284c7',
+                            fontSize: '0.78rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Forgot password?
+                        </button>
+                      </div>
+
+                      <div className="auth-input-wrapper">
+                        <Lock size={16} className="auth-input-icon" />
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          className="auth-form-input"
+                          placeholder="••••••••"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                        />
+                        <button
+                          type="button"
+                          className="auth-toggle-pwd"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Remember Me */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18, fontSize: '0.82rem', color: '#64748b' }}>
                       <input
-                        type={showPassword ? 'text' : 'password'}
-                        className="auth-form-input"
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
+                        type="checkbox"
+                        id="remember-checkbox"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                        style={{ cursor: 'pointer', accentColor: '#162399' }}
                       />
-                      <button
-                        type="button"
-                        className="auth-toggle-pwd"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
+                      <label htmlFor="remember-checkbox" style={{ cursor: 'pointer' }}>
+                        Remember me for 30 days
+                      </label>
                     </div>
-                  </div>
 
-                  {/* Remember Me */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18, fontSize: '0.82rem', color: '#64748b' }}>
-                    <input
-                      type="checkbox"
-                      id="remember-checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      style={{ cursor: 'pointer', accentColor: '#162399' }}
-                    />
-                    <label htmlFor="remember-checkbox" style={{ cursor: 'pointer' }}>
-                      Remember me for 30 days
-                    </label>
-                  </div>
-
-                  {/* Submit CTA Button */}
-                  <button
-                    type="submit"
-                    className="btn-auth-submit"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <span>Signing in...</span>
-                    ) : (
-                      <>
-                        <span>Sign In to Account</span>
-                        <ArrowRight size={16} />
-                      </>
-                    )}
-                  </button>
-                </>
+                    {/* Submit CTA Button */}
+                    <button
+                      type="submit"
+                      className="btn-auth-submit"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (
+                        <span>Signing in...</span>
+                      ) : (
+                        <>
+                          <span>Sign In to Account</span>
+                          <ArrowRight size={16} />
+                        </>
+                      )}
+                    </button>
+                  </>
+                )
               )}
 
               {/* Toggle Mode Footer Link */}
               <div style={{ textAlign: 'center', marginTop: 22, fontSize: '0.84rem', color: '#64748b' }}>
                 {mode === 'login' ? (
-                  <>
-                    Don't have an account?{' '}
-                    <span
-                      onClick={() => {
-                        setMode('signup');
-                        setSignupStep('details');
-                        setErrorMessage(null);
-                        setSuccessMessage(null);
-                      }}
-                      style={{ color: '#0284c7', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
-                    >
-                      Sign up for free
-                    </span>
-                  </>
+                  !is2FAPrompt && (
+                    <>
+                      Don't have an account?{' '}
+                      <span
+                        onClick={() => {
+                          setMode('signup');
+                          setSignupStep('details');
+                          setIs2FAPrompt(false);
+                          setTwoFactorCode('');
+                          setErrorMessage(null);
+                          setSuccessMessage(null);
+                        }}
+                        style={{ color: '#0284c7', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
+                      >
+                        Sign up for free
+                      </span>
+                    </>
+                  )
                 ) : (
                   <>
                     Already have an account?{' '}
@@ -787,6 +1040,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                       onClick={() => {
                         setMode('login');
                         setSignupStep('details');
+                        setIs2FAPrompt(false);
+                        setTwoFactorCode('');
                         setErrorMessage(null);
                         setSuccessMessage(null);
                       }}
@@ -813,66 +1068,422 @@ export const AuthPage: React.FC<AuthPageProps> = ({
       {/* ================= MODAL: FORGOT PASSWORD ================= */}
       {isForgotModalOpen && (
         <div className="service-details-backdrop" onClick={() => setIsForgotModalOpen(false)}>
-          <div className="service-details-card" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
-            <div className="service-details-header">
-              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#0f172a' }}>Reset Your Password</h3>
+          <div
+            className="service-details-card"
+            style={{ maxWidth: 460, borderRadius: 16, overflow: 'hidden' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="service-details-header" style={{ padding: '18px 24px', borderBottom: '1px solid #f1f5f9' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    background: 'linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#0284c7',
+                  }}
+                >
+                  <KeyRound size={20} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>
+                    {forgotStep === 'success'
+                      ? 'Password Reset Complete'
+                      : forgotStep === 'otp'
+                      ? 'Set New Password'
+                      : 'Recover Account Password'}
+                  </h3>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 2 }}>
+                    {forgotStep === 'success'
+                      ? 'Account successfully secured'
+                      : forgotStep === 'otp'
+                      ? 'Step 2 of 2: Code Verification'
+                      : 'Step 1 of 2: Identity Verification'}
+                  </div>
+                </div>
+              </div>
               <button
                 type="button"
                 onClick={() => setIsForgotModalOpen(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#94a3b8',
+                  padding: 4,
+                  display: 'flex',
+                  alignItems: 'center',
+                  borderRadius: 6,
+                }}
               >
-                <X size={18} />
+                <X size={20} />
               </button>
             </div>
 
-            <div className="service-details-body">
-              {forgotSuccess ? (
-                <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                  <CheckCircle2 size={40} color="#16a34a" style={{ margin: '0 auto 12px' }} />
-                  <h4 style={{ margin: '0 0 6px 0', color: '#0f172a' }}>Reset Link Dispatched</h4>
-                  <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>
-                    We have dispatched password reset instructions to <strong>{forgotEmail}</strong>.
+            <div className="service-details-body" style={{ padding: '24px' }}>
+              {/* Error Alert */}
+              {forgotError && (
+                <div
+                  style={{
+                    background: '#fef2f2',
+                    border: '1px solid #fecaca',
+                    padding: '12px 14px',
+                    borderRadius: 10,
+                    color: '#b91c1c',
+                    fontSize: '0.85rem',
+                    marginBottom: 16,
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 10,
+                  }}
+                >
+                  <AlertCircle size={18} style={{ flexShrink: 0, marginTop: 1 }} />
+                  <span style={{ lineHeight: 1.4 }}>{forgotError}</span>
+                </div>
+              )}
+
+              {/* Success / Info Message */}
+              {forgotSuccessMsg && forgotStep !== 'success' && (
+                <div
+                  style={{
+                    background: '#f0fdf4',
+                    border: '1px solid #bbf7d0',
+                    padding: '12px 14px',
+                    borderRadius: 10,
+                    color: '#15803d',
+                    fontSize: '0.85rem',
+                    marginBottom: 16,
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 10,
+                  }}
+                >
+                  <CheckCircle2 size={18} style={{ flexShrink: 0, marginTop: 1 }} />
+                  <span style={{ lineHeight: 1.4 }}>{forgotSuccessMsg}</span>
+                </div>
+              )}
+
+              {/* STEP 3: SUCCESS STATE */}
+              {forgotStep === 'success' ? (
+                <div style={{ textAlign: 'center', padding: '16px 0 8px' }}>
+                  <div
+                    style={{
+                      width: 64,
+                      height: 64,
+                      borderRadius: '50%',
+                      background: '#dcfce7',
+                      color: '#16a34a',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto 16px',
+                      boxShadow: '0 0 20px rgba(22, 163, 74, 0.2)',
+                    }}
+                  >
+                    <CheckCircle2 size={36} />
+                  </div>
+                  <h4 style={{ margin: '0 0 8px 0', fontSize: '1.15rem', color: '#0f172a', fontWeight: 800 }}>
+                    Password Updated!
+                  </h4>
+                  <p style={{ fontSize: '0.88rem', color: '#64748b', margin: '0 0 24px 0', lineHeight: 1.5 }}>
+                    Your password has been securely reset. You can now log into your account with your new credentials.
                   </p>
                   <button
                     type="button"
-                    className="btn-admin-primary"
-                    style={{ marginTop: 18 }}
-                    onClick={() => setIsForgotModalOpen(false)}
+                    className="btn-auth-submit"
+                    style={{
+                      width: '100%',
+                      height: 44,
+                      fontSize: '0.92rem',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                    }}
+                    onClick={() => {
+                      setIsForgotModalOpen(false);
+                      setMode('login');
+                      setSuccessMessage('Password reset successfully! Please sign in with your new password.');
+                    }}
                   >
-                    Back to Sign In
+                    <LogIn size={18} />
+                    <span>Proceed to Sign In</span>
                   </button>
                 </div>
-              ) : (
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    setForgotSuccess(true);
-                  }}
-                >
-                  <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: 0, marginBottom: 14 }}>
-                    Enter your account email address and we will dispatch a secure reset token link.
-                  </p>
+              ) : forgotStep === 'otp' ? (
+                /* STEP 2: ENTER OTP & NEW PASSWORD */
+                <form onSubmit={handleForgotResetPassword}>
+                  <div
+                    style={{
+                      background: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: 10,
+                      padding: '12px 14px',
+                      marginBottom: 16,
+                      fontSize: '0.82rem',
+                      color: '#475569',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                    }}
+                  >
+                    <MailCheck size={20} color="#0284c7" style={{ flexShrink: 0 }} />
+                    <div>
+                      We dispatched a 6-digit code to <strong>{forgotEmail}</strong>.
+                    </div>
+                  </div>
+
+                  {/* 6-Digit Code */}
                   <div style={{ marginBottom: 16 }}>
-                    <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
-                      Email Address
-                    </label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <label style={{ fontSize: '0.80rem', fontWeight: 700, color: '#334155' }}>
+                        Verification Code
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleForgotResendOtp}
+                        disabled={forgotCooldown > 0 || forgotLoading}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: forgotCooldown > 0 ? '#94a3b8' : '#0284c7',
+                          fontSize: '0.78rem',
+                          fontWeight: 600,
+                          cursor: forgotCooldown > 0 ? 'default' : 'pointer',
+                        }}
+                      >
+                        {forgotCooldown > 0 ? `Resend code (${forgotCooldown}s)` : 'Resend code'}
+                      </button>
+                    </div>
                     <input
-                      type="email"
+                      type="text"
+                      maxLength={6}
+                      autoFocus
                       className="form-input"
-                      style={{ width: '100%', height: 40, padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: 8 }}
-                      value={forgotEmail}
-                      onChange={(e) => setForgotEmail(e.target.value)}
-                      placeholder="account@domain.com"
+                      style={{
+                        width: '100%',
+                        height: 46,
+                        textAlign: 'center',
+                        fontSize: '1.35rem',
+                        letterSpacing: '8px',
+                        fontWeight: 800,
+                        fontFamily: 'monospace',
+                        border: '2px solid #cbd5e1',
+                        borderRadius: 10,
+                        background: '#ffffff',
+                      }}
+                      placeholder="••••••"
+                      value={forgotOtp}
+                      onChange={(e) => setForgotOtp(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
                       required
                     />
                   </div>
+
+                  {/* New Password */}
+                  <div style={{ marginBottom: 14 }}>
+                    <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                      New Password
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showForgotNewPass ? 'text' : 'password'}
+                        className="form-input"
+                        style={{ width: '100%', height: 42, padding: '8px 38px 8px 12px', border: '1px solid #cbd5e1', borderRadius: 8 }}
+                        placeholder="At least 6 characters"
+                        value={forgotNewPassword}
+                        onChange={(e) => setForgotNewPassword(e.target.value)}
+                        required
+                        minLength={6}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowForgotNewPass(!showForgotNewPass)}
+                        style={{
+                          position: 'absolute',
+                          right: 10,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          color: '#94a3b8',
+                          cursor: 'pointer',
+                          padding: 2,
+                        }}
+                      >
+                        {showForgotNewPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Confirm New Password */}
+                  <div style={{ marginBottom: 20 }}>
+                    <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                      Confirm New Password
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showForgotConfirmPass ? 'text' : 'password'}
+                        className="form-input"
+                        style={{ width: '100%', height: 42, padding: '8px 38px 8px 12px', border: '1px solid #cbd5e1', borderRadius: 8 }}
+                        placeholder="Re-type new password"
+                        value={forgotConfirmPassword}
+                        onChange={(e) => setForgotConfirmPassword(e.target.value)}
+                        required
+                        minLength={6}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowForgotConfirmPass(!showForgotConfirmPass)}
+                        style={{
+                          position: 'absolute',
+                          right: 10,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          color: '#94a3b8',
+                          cursor: 'pointer',
+                          padding: 2,
+                        }}
+                      >
+                        {showForgotConfirmPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
                   <button
                     type="submit"
                     className="btn-auth-submit"
-                    style={{ height: 42 }}
+                    style={{
+                      width: '100%',
+                      height: 44,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      fontWeight: 700,
+                    }}
+                    disabled={forgotLoading || forgotOtp.length < 4}
                   >
-                    Dispatch Reset Link
+                    {forgotLoading ? (
+                      <>
+                        <RotateCw size={16} className="spin" />
+                        <span>Updating Password...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Shield size={16} />
+                        <span>Update Password</span>
+                      </>
+                    )}
                   </button>
+
+                  <div style={{ textAlign: 'center', marginTop: 14 }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setForgotStep('email');
+                        setForgotError(null);
+                      }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#64748b',
+                        fontSize: '0.80rem',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                      }}
+                    >
+                      <ArrowLeft size={14} />
+                      <span>Back to change email/username</span>
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                /* STEP 1: ENTER EMAIL OR USERNAME */
+                <form onSubmit={handleForgotSendOtp}>
+                  <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: 0, marginBottom: 16, lineHeight: 1.5 }}>
+                    Enter your account email address or username. We will dispatch a 6-digit security code to verify your identity.
+                  </p>
+                  <div style={{ marginBottom: 18 }}>
+                    <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                      Account Email or Username
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type="text"
+                        className="form-input"
+                        style={{
+                          width: '100%',
+                          height: 42,
+                          padding: '8px 12px 8px 38px',
+                          border: '1px solid #cbd5e1',
+                          borderRadius: 8,
+                          fontSize: '0.90rem',
+                        }}
+                        value={forgotEmail}
+                        onChange={(e) => setForgotEmail(e.target.value)}
+                        placeholder="user@example.com or username"
+                        required
+                        autoFocus
+                      />
+                      <Mail
+                        size={16}
+                        color="#94a3b8"
+                        style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="btn-auth-submit"
+                    style={{
+                      width: '100%',
+                      height: 44,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      fontWeight: 700,
+                    }}
+                    disabled={forgotLoading || !forgotEmail.trim()}
+                  >
+                    {forgotLoading ? (
+                      <>
+                        <RotateCw size={16} className="spin" />
+                        <span>Dispatching Code...</span>
+                      </>
+                    ) : (
+                      <>
+                        <ArrowRight size={16} />
+                        <span>Send Verification Code</span>
+                      </>
+                    )}
+                  </button>
+
+                  <div style={{ textAlign: 'center', marginTop: 16 }}>
+                    <button
+                      type="button"
+                      onClick={() => setIsForgotModalOpen(false)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#64748b',
+                        fontSize: '0.82rem',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Remember your password? <strong>Sign in</strong>
+                    </button>
+                  </div>
                 </form>
               )}
             </div>

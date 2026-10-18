@@ -27,7 +27,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
-  login: (login: string, pass: string) => Promise<User>;
+  login: (login: string, pass: string, twoFactorCode?: string) => Promise<{ user?: User; requires2FA?: boolean }>;
   register: (username: string, email: string, pass: string, otp?: string) => Promise<User>;
   sendSignupOtp: (username: string, email: string, pass: string) => Promise<{ success: boolean; message: string; email: string; deliveryMethod: string }>;
   verifySignupOtp: (email: string, otp: string) => Promise<User>;
@@ -94,14 +94,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initAuth();
   }, [token]);
 
-  const login = async (loginStr: string, pass: string): Promise<User> => {
-    const data = await api.auth.login(loginStr, pass);
+  const login = async (
+    loginStr: string,
+    pass: string,
+    twoFactorCode?: string
+  ): Promise<{ user?: User; requires2FA?: boolean }> => {
+    const data = await api.auth.login(loginStr, pass, twoFactorCode);
+
+    if (data.requires2FA) {
+      return { requires2FA: true };
+    }
+
     if (data.token && data.user) {
       localStorage.setItem('digitalsmm_token', data.token);
       setToken(data.token);
       setUser(data.user);
       showToast(`Welcome back, ${data.user.username}!`, 'success');
-      return data.user;
+      return { user: data.user };
     }
     throw new Error('Authentication failed: Missing user session');
   };

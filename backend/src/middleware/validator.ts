@@ -59,9 +59,20 @@ export const resendOtpSchema = z.object({
   email: z.string().email('Please provide a valid email address'),
 });
 
+export const forgotPasswordSchema = z.object({
+  email: z.string().min(1, 'Email or username is required'),
+});
+
+export const resetPasswordSchema = z.object({
+  email: z.string().min(1, 'Email or username is required'),
+  otp: z.string().min(4, 'Verification code is required').max(10),
+  newPassword: z.string().min(6, 'Password must be at least 6 characters').max(100, 'Password is too long'),
+});
+
 export const loginSchema = z.object({
   login: z.string().min(1, 'Email or username is required'),
   password: z.string().min(1, 'Password is required'),
+  twoFactorCode: z.string().optional(),
 });
 
 export const createOrderSchema = z.object({

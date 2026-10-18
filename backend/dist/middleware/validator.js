@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateProviderSettingsSchema = exports.updateIndividualServiceSchema = exports.bulkStatusSchema = exports.updateServiceMarkupSchema = exports.depositSchema = exports.createOrderSchema = exports.loginSchema = exports.resendOtpSchema = exports.verifySignupOtpSchema = exports.sendSignupOtpSchema = exports.registerSchema = exports.validateBody = void 0;
+exports.updateProviderSettingsSchema = exports.updateIndividualServiceSchema = exports.bulkStatusSchema = exports.updateServiceMarkupSchema = exports.depositSchema = exports.createOrderSchema = exports.loginSchema = exports.resetPasswordSchema = exports.forgotPasswordSchema = exports.resendOtpSchema = exports.verifySignupOtpSchema = exports.sendSignupOtpSchema = exports.registerSchema = exports.validateBody = void 0;
 const zod_1 = require("zod");
 const validateBody = (schema) => {
     return (req, res, next) => {
@@ -57,9 +57,18 @@ exports.verifySignupOtpSchema = zod_1.z.object({
 exports.resendOtpSchema = zod_1.z.object({
     email: zod_1.z.string().email('Please provide a valid email address'),
 });
+exports.forgotPasswordSchema = zod_1.z.object({
+    email: zod_1.z.string().min(1, 'Email or username is required'),
+});
+exports.resetPasswordSchema = zod_1.z.object({
+    email: zod_1.z.string().min(1, 'Email or username is required'),
+    otp: zod_1.z.string().min(4, 'Verification code is required').max(10),
+    newPassword: zod_1.z.string().min(6, 'Password must be at least 6 characters').max(100, 'Password is too long'),
+});
 exports.loginSchema = zod_1.z.object({
     login: zod_1.z.string().min(1, 'Email or username is required'),
     password: zod_1.z.string().min(1, 'Password is required'),
+    twoFactorCode: zod_1.z.string().optional(),
 });
 exports.createOrderSchema = zod_1.z.object({
     serviceId: zod_1.z.string().min(1, 'Service ID is required'),

@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs';
 import { ENV } from '../config/env';
 import {
   User,
+  SafeUser,
   ServiceItem,
   ServiceOverride,
   Order,
@@ -16,6 +17,14 @@ import {
 } from '../models/types';
 import { EncryptionService } from './encryption.service';
 import { SMMFollowsService } from './smmfollows.service';
+
+/**
+ * Strips password hashes, TOTP secrets, and internal security counters before sending user data over wire.
+ */
+export function toSafeUser(user: User): SafeUser {
+  const { passwordHash: _, twoFactorSecret: __, failedLoginAttempts: ___, lockoutUntil: ____, ...safe } = user;
+  return safe;
+}
 
 interface DatabaseSchema {
   users: User[];
@@ -271,7 +280,14 @@ export class DatabaseService {
   }
 
   public getUserByApiKey(apiKey: string): User | undefined {
-    return this.data.users.find((u) => u.apiKey === apiKey);
+    if (!apiKey || typeof apiKey !== 'string') return undefined;
+    const targetBuffer = Buffer.from(apiKey);
+    return this.data.users.find((u) => {
+      if (!u.apiKey) return false;
+      const userKeyBuffer = Buffer.from(u.apiKey);
+      if (userKeyBuffer.length !== targetBuffer.length) return false;
+      return crypto.timingSafeEqual(userKeyBuffer, targetBuffer);
+    });
   }
 
   public async createUser(user: Omit<User, 'id' | 'createdAt' | 'updatedAt' | 'apiKey'>): Promise<User> {

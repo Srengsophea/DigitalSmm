@@ -11,11 +11,16 @@ export interface User {
   apiKey: string;
   twoFactorEnabled?: boolean;
   twoFactorSecret?: string;
+  tokenVersion?: number;
+  failedLoginAttempts?: number;
+  lockoutUntil?: string;
   timezone?: string;
   apiKeyCreatedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
+
+export type SafeUser = Omit<User, 'passwordHash' | 'twoFactorSecret' | 'failedLoginAttempts' | 'lockoutUntil'>;
 
 export type PlatformType =
   | 'Instagram'

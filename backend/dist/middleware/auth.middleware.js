@@ -10,8 +10,8 @@ const db_service_1 = require("../services/db.service");
 const authenticate = (req, res, next) => {
     const db = db_service_1.DatabaseService.getInstance();
     const authHeader = req.headers.authorization;
-    const apiKeyHeader = req.headers['x-api-key'] || req.query.api_key;
-    // 1. Check API Key first (for API v2 or reseller clients)
+    const apiKeyHeader = req.headers['x-api-key'];
+    // 1. Check API Key header first (for API v2 or reseller clients)
     if (apiKeyHeader && typeof apiKeyHeader === 'string') {
         const user = db.getUserByApiKey(apiKeyHeader);
         if (user && user.status === 'active') {
@@ -36,6 +36,14 @@ const authenticate = (req, res, next) => {
         }
         if (user.status !== 'active') {
             res.status(403).json({ success: false, error: 'Account has been suspended' });
+            return;
+        }
+        // Dynamic Session Revocation: Reject older JWTs if tokenVersion was incremented on password change
+        if (user.tokenVersion && decoded.tokenVersion !== undefined && decoded.tokenVersion < user.tokenVersion) {
+            res.status(401).json({
+                success: false,
+                error: 'Session has been revoked due to credential changes. Please sign in again.',
+            });
             return;
         }
         req.user = user;

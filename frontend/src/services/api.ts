@@ -17,11 +17,11 @@ async function handleResponse<T>(res: Response): Promise<T> {
 export const api = {
   // ================= AUTH =================
   auth: {
-    async login(login: string, password: string) {
+    async login(login: string, password: string, twoFactorCode?: string) {
       const res = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ login, password }),
+        body: JSON.stringify({ login, password, twoFactorCode }),
       });
       return handleResponse<any>(res);
     },
@@ -46,6 +46,22 @@ export const api = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
+      });
+      return handleResponse<any>(res);
+    },
+    async forgotPassword(email: string) {
+      const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      return handleResponse<any>(res);
+    },
+    async resetPassword(email: string, otp: string, newPassword: string) {
+      const res = await fetch(`${API_BASE}/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp, newPassword }),
       });
       return handleResponse<any>(res);
     },

@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Environment Variables & Secrets (CRITICAL SECURITY)
+.env
+*.env
+.env.*
+!.env.example
+backend/.env
+frontend/.env
+
+# Local Database & User Records (Contains passwords & 2FA secrets)
+backend/data/*.json
+backend/data/*.tmp*
+
+# Build Outputs
+dist/
+*/dist/
+build/
+*/build/
+
+# Logs & Runtime
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# OS & Editor metadata
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Temporary browser captures
+.tempmediaStorage/

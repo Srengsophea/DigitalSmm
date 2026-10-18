@@ -14,31 +14,52 @@ import { DatabaseService } from './services/db.service';
 
 const app = express();
 
-// Security HTTP headers
+// Security HTTP headers (XSS filter, Clickjacking denial, NoSniff, HSTS)
 app.use(
   helmet({
     contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
+    dnsPrefetchControl: { allow: false },
+    frameguard: { action: 'deny' },
+    hidePoweredBy: true,
+    hsts: { maxAge: 31536000, includeSubDomains: true },
+    ieNoOpen: true,
+    noSniff: true,
+    xssFilter: true,
   })
 );
 
-// Cross-Origin Resource Sharing
+// Restrict browser hardware access and enforce strict referrer isolation
+app.use((req: Request, res: Response, next: NextFunction) => {
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
+
+// Cross-Origin Resource Sharing with strict domain whitelist
+const allowedOrigins: string[] = Array.isArray(ENV.CORS_ORIGIN)
+  ? ENV.CORS_ORIGIN.map((o: string) => o.trim())
+  : ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173', 'http://localhost:5000'];
+
 app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
-      if (!origin) return callback(null, true);
-      return callback(null, true);
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error(`Blocked by CORS policy: Origin ${origin} is not allowed`));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
+    maxAge: 86400, // Cache preflight for 24h
   })
 );
 
-// Body parsing with safe size limit
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Body parsing with safe size limit (500kb to mitigate memory exhaustion DoS)
+app.use(express.json({ limit: '500kb' }));
+app.use(express.urlencoded({ extended: true, limit: '500kb' }));
 
 // Apply rate limiting across general API
 app.use('/api', apiLimiter);
@@ -82,12 +103,17 @@ DatabaseService.getInstance();
 const server = app.listen(ENV.PORT, () => {
   console.log('====================================================');
   console.log(`🚀 DigitalSMM Backend running on port ${ENV.PORT}`);
-  console.log(`🔒 Security: AES-256-GCM Encryption & BCrypt Hashing Active`);
+  console.log(`🔒 Security: AES-256-GCM Encryption, BCrypt & Strict CORS Active`);
   console.log(`🌐 Provider: SMMFollows API Connected`);
   console.log(`🔑 Reseller API v2 Ready at: http://localhost:${ENV.PORT}/api/v2`);
-  console.log(`👤 Default Admin: ${ENV.ADMIN_EMAIL} / ${ENV.ADMIN_PASSWORD}`);
+  console.log(`👤 Admin: ${ENV.ADMIN_EMAIL} (Password protected in secure env)`);
   console.log('====================================================');
 });
+
+// Anti-Slowloris / HTTP socket timeout protection
+server.setTimeout(30000);
+server.keepAliveTimeout = 65000;
+server.headersTimeout = 66000;
 
 // Graceful shutdown
 process.on('SIGINT', () => {
