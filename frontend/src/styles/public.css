@@ -16,11 +16,14 @@
 .public-navbar {
   position: sticky;
   top: 0;
-  z-index: 999;
+  z-index: 1000;
   height: 72px;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid #e2e8f0;
   box-shadow: 0 2px 12px rgba(0, 20, 80, 0.04);
+  transition: height 0.2s ease, background 0.2s ease;
 }
 
 .public-navbar-inner {
@@ -31,6 +34,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
 }
 
 .public-brand {
@@ -39,6 +43,8 @@
   gap: 12px;
   text-decoration: none;
   cursor: pointer;
+  flex-shrink: 0;
+  user-select: none;
 }
 
 .public-brand-icon {
@@ -66,6 +72,8 @@
 .public-brand-text {
   display: flex;
   flex-direction: column;
+  justify-content: center;
+  white-space: nowrap;
 }
 
 .public-brand-name {
@@ -74,6 +82,7 @@
   color: #162399;
   letter-spacing: -0.03em;
   line-height: 1.1;
+  white-space: nowrap;
 }
 
 .public-brand-name span {
@@ -86,9 +95,10 @@
   color: #64748b;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
-/* Nav Menu Links */
+/* Nav Menu Links (Desktop) */
 .public-nav-menu {
   display: flex;
   align-items: center;
@@ -98,7 +108,7 @@
 .public-nav-link {
   background: none;
   border: none;
-  padding: 8px 16px;
+  padding: 8px 14px;
   font-size: 0.90rem;
   font-weight: 600;
   color: #475569;
@@ -109,6 +119,7 @@
   align-items: center;
   gap: 6px;
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .public-nav-link:hover {
@@ -127,7 +138,7 @@
   color: #1e40af;
   font-size: 0.68rem;
   font-weight: 800;
-  padding: 2px 6px;
+  padding: 2px 7px;
   border-radius: 10px;
 }
 
@@ -135,7 +146,8 @@
 .public-nav-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 .btn-public-signin {
@@ -149,8 +161,12 @@
   cursor: pointer;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   transition: all 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1;
 }
 
 .btn-public-signin:hover {
@@ -170,9 +186,13 @@
   cursor: pointer;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   box-shadow: 0 4px 14px rgba(22, 35, 153, 0.28);
   transition: all 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1;
 }
 
 .btn-public-signup:hover {
@@ -188,6 +208,242 @@
   padding: 2px 7px;
   border-radius: 10px;
   letter-spacing: 0.02em;
+}
+
+/* Mobile Hamburger Toggle Button */
+.mobile-hamburger-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  color: #1e293b;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.mobile-hamburger-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #162399;
+}
+
+.mobile-hamburger-btn.active {
+  background: #e8ecfc;
+  border-color: #162399;
+  color: #162399;
+}
+
+/* Mobile Backdrop */
+.public-mobile-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 998;
+  animation: publicFadeIn 0.2s ease forwards;
+}
+
+/* Mobile Drawer Dropdown */
+.public-mobile-drawer {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 20px 40px rgba(0, 20, 80, 0.14);
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 20px 24px;
+  gap: 16px;
+  max-height: calc(100vh - 72px);
+  overflow-y: auto;
+  animation: publicDrawerSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes publicDrawerSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes publicFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.mobile-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.mobile-drawer-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.mobile-drawer-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mobile-drawer-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+  text-align: left;
+}
+
+.mobile-drawer-link-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mobile-drawer-link-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #162399;
+  flex-shrink: 0;
+}
+
+.mobile-drawer-chevron {
+  color: #94a3b8;
+  transition: transform 0.15s ease;
+}
+
+.mobile-drawer-link:hover,
+.mobile-drawer-link.active {
+  background: #e8ecfc;
+  border-color: #bfdbfe;
+  color: #162399;
+}
+
+.mobile-drawer-link.active .mobile-drawer-link-icon {
+  background: #162399;
+  color: #ffffff;
+  border-color: #162399;
+}
+
+.mobile-drawer-api-tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #0284c7;
+  background: #e0f2fe;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.mobile-drawer-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.btn-mobile-signup {
+  background: linear-gradient(135deg, #162399 0%, #101c80 100%);
+  color: #ffffff;
+  border: none;
+  padding: 13px 20px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 4px 16px rgba(22, 35, 153, 0.28);
+  transition: all 0.15s ease;
+  width: 100%;
+}
+
+.btn-mobile-signup:hover {
+  box-shadow: 0 6px 20px rgba(22, 35, 153, 0.35);
+}
+
+.btn-mobile-signin {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  color: #1e293b;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+  width: 100%;
+}
+
+.btn-mobile-signin:hover {
+  border-color: #162399;
+  color: #162399;
+  background: #f8fafc;
+}
+
+.mobile-drawer-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.74rem;
+  color: #64748b;
+  font-weight: 600;
+  padding-top: 4px;
 }
 
 /* Public Main Content Area */
@@ -864,6 +1120,15 @@
   color: #0284c7;
 }
 
+@media (max-width: 992px) {
+  .public-nav-menu {
+    display: none;
+  }
+  .mobile-hamburger-btn {
+    display: flex;
+  }
+}
+
 @media (max-width: 860px) {
   .auth-panel-card {
     grid-template-columns: 1fr;
@@ -874,7 +1139,84 @@
   .auth-mobile-brand {
     display: flex;
   }
-  .public-nav-menu {
-    display: none;
+}
+
+@media (max-width: 768px) {
+  .public-navbar {
+    height: 64px;
+  }
+  .public-navbar-inner {
+    padding: 0 16px;
+    gap: 12px;
+  }
+  .public-brand {
+    gap: 10px;
+  }
+  .public-brand-icon {
+    width: 38px;
+    height: 38px;
+  }
+  .public-brand-name {
+    font-size: 1.22rem;
+  }
+  .public-brand-tagline {
+    font-size: 0.58rem;
+    letter-spacing: 0.05em;
+  }
+  .public-mobile-drawer {
+    max-height: calc(100vh - 64px);
+    padding: 14px 16px 20px;
   }
 }
+
+@media (max-width: 640px) {
+  .public-brand-tagline {
+    display: none;
+  }
+  /* On mobile phones, hide Sign Up from the cramped header bar;
+     it is placed front-and-center as the primary CTA in the mobile drawer */
+  .btn-public-signup {
+    display: none;
+  }
+  .btn-public-signin {
+    padding: 7px 13px;
+    font-size: 0.82rem;
+    border-radius: 7px;
+    gap: 5px;
+  }
+  .mobile-hamburger-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 7px;
+  }
+}
+
+@media (max-width: 400px) {
+  .public-navbar {
+    height: 60px;
+  }
+  .public-navbar-inner {
+    padding: 0 10px;
+    gap: 8px;
+  }
+  .public-brand {
+    gap: 8px;
+  }
+  .public-brand-icon {
+    width: 32px;
+    height: 32px;
+  }
+  .public-brand-name {
+    font-size: 1.08rem;
+  }
+  .btn-public-signin {
+    padding: 6px 9px;
+    font-size: 0.78rem;
+    gap: 4px;
+  }
+  .mobile-hamburger-btn {
+    width: 36px;
+    height: 36px;
+  }
+}
+
