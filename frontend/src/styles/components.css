@@ -277,6 +277,13 @@
   border: 1px solid #ede9fe;
 }
 
+/* Total Orders Card */
+.stat-card-orders .orders-icon-bg {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #dbeafe;
+}
+
 /* 4. Balance Card (Interactive with Top-up Action) */
 .stat-card-balance {
   cursor: pointer;

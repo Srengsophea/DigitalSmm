@@ -168,12 +168,11 @@ class AuthController {
         await db.logAudit('USER_REGISTER_VERIFIED', `New real account verified & created: ${newUser.username} (${newUser.email})`, req.ip || '127.0.0.1', newUser.id, newUser.username);
         // Issue JWT session token (7-day validity)
         const token = jsonwebtoken_1.default.sign({ userId: newUser.id, role: newUser.role, username: newUser.username }, env_1.ENV.JWT_SECRET, { expiresIn: '7d' });
-        const { passwordHash: _, ...safeUser } = newUser;
         res.status(201).json({
             success: true,
             message: 'Account verified and created successfully!',
             token,
-            user: safeUser,
+            user: (0, db_service_1.toSafeUser)(newUser),
         });
     }
     /**

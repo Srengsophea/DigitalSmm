@@ -152,7 +152,7 @@ export class OrdersController {
 
     res.status(400).json({
       success: false,
-      error: `Provider error: ${providerResult.error || 'Failed to place order'}. Your wallet was refunded $${charge.toFixed(2)}.`,
+      error: `Provider error: ${providerResult.error || 'Failed to place order'}. Your wallet was refunded $${charge.toFixed(3)}.`,
       order: refundedOrder,
       newBalance: debitResult.newBalance + charge,
     });

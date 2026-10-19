@@ -392,7 +392,7 @@ export const AdminDashboard: React.FC = () => {
         platform: batchFixedPlatform !== 'All' ? batchFixedPlatform : undefined,
       });
       if (res?.success) {
-        showToast(res.message || `Added +$${adder.toFixed(2)} margin!`, 'success');
+        showToast(res.message || `Added +$${adder.toFixed(3)} margin!`, 'success');
         await fetchServices();
       }
     } catch (err: any) {
@@ -530,7 +530,7 @@ export const AdminDashboard: React.FC = () => {
             <span className="admin-kpi-label">Total Volume Sold</span>
             <div className="admin-kpi-icon blue"><DollarSign size={20} /></div>
           </div>
-          <div className="admin-kpi-value">${stats?.totalRevenue?.toFixed(2) || '0.00'}</div>
+          <div className="admin-kpi-value">${stats?.totalRevenue?.toFixed(3) || '0.000'}</div>
           <div className="admin-kpi-sub">Lifetime customer orders</div>
         </div>
 
@@ -541,7 +541,7 @@ export const AdminDashboard: React.FC = () => {
             <div className="admin-kpi-icon emerald"><TrendingUp size={20} /></div>
           </div>
           <div className="admin-kpi-value" style={{ color: '#16a34a' }}>
-            ${stats?.estimatedProfit?.toFixed(2) || '0.00'}
+            ${stats?.estimatedProfit?.toFixed(3) || '0.000'}
           </div>
           <div className="admin-kpi-sub">Total profit earned from margins</div>
         </div>
@@ -1197,7 +1197,7 @@ export const AdminDashboard: React.FC = () => {
                       </td>
                       <td>
                         <span style={{ color: '#16a34a', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
-                          ${u.balance?.toFixed(2)}
+                          ${u.balance?.toFixed(3)}
                         </span>
                       </td>
                       <td>
@@ -1630,7 +1630,7 @@ export const AdminDashboard: React.FC = () => {
                   <div style={{ marginTop: 8, fontSize: '0.85rem' }}>
                     Current Balance:{' '}
                     <strong style={{ color: '#16a34a', fontFamily: 'var(--font-mono)' }}>
-                      ${selectedUser.balance?.toFixed(2)}
+                      ${selectedUser.balance?.toFixed(3)}
                     </strong>
                   </div>
                 </div>

@@ -711,11 +711,11 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
     const cleanName = decodeHtmlEntities(s.name);
     const badges = `${s.refill ? ' | ♻️ Refill' : ''}${s.cancel ? ' | 🚫 Cancel' : ''}`;
     if (s.name.includes('|')) {
-      return `${cleanName}${badges} - $${s.customRate.toFixed(2)} per 1000`;
+      return `${cleanName}${badges} - $${s.customRate.toFixed(3)} per 1000`;
     }
     const maxStr = s.max ? (s.max >= 1000000 ? `${(s.max / 1000000).toLocaleString()}M` : s.max >= 1000 ? `${(s.max / 1000).toLocaleString()}K` : s.max) : '100K';
     const minStr = s.min ? s.min.toLocaleString() : '10';
-    return `${cleanName}${badges} | ✅ Quality: High Quality | ⚡ Start: Instant - 15 Min | 🚀 Speed: Fast | ⬇️ Min: ${minStr} | 🔝 Max: ${maxStr} - $${s.customRate.toFixed(2)} per 1000`;
+    return `${cleanName}${badges} | ✅ Quality: High Quality | ⚡ Start: Instant - 15 Min | 🚀 Speed: Fast | ⬇️ Min: ${minStr} | 🔝 Max: ${maxStr} - $${s.customRate.toFixed(3)} per 1000`;
   };
 
   const handleSelectSearchService = (s: ServiceItem) => {
@@ -760,7 +760,7 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
 
     if (user && user.balance < charge) {
       setMessage({
-        text: `Insufficient balance ($${user.balance.toFixed(2)}). Need $${charge.toFixed(2)}. Please add funds.`,
+        text: `Insufficient balance ($${user.balance.toFixed(3)}). Need $${charge.toFixed(3)}. Please add funds.`,
         type: 'error',
       });
       return;
@@ -1167,7 +1167,7 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                     type="text"
                     readOnly
                     className="form-input"
-                    value={charge > 0 ? `$${charge.toFixed(4)}` : '$0.00'}
+                    value={charge > 0 ? `$${charge.toFixed(3)}` : '$0.000'}
                     style={{
                       background: '#f8fafc',
                       borderRadius: 8,

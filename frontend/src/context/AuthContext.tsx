@@ -6,6 +6,8 @@ export interface User {
   username: string;
   email: string;
   balance: number;
+  totalSpent?: number;
+  totalOrders?: number;
   role: 'USER' | 'ADMIN';
   status: 'active' | 'suspended';
   apiKey: string;

@@ -29,7 +29,7 @@ export class WalletController {
       success: true,
       balance: user.balance,
       totalOrders: orders.length,
-      totalSpent: Number(totalSpent.toFixed(2)),
+      totalSpent: Number(totalSpent.toFixed(3)),
       accountPoints: 0,
       statusTier: user.role === 'ADMIN' ? 'VIP Admin' : 'New',
     });
@@ -80,7 +80,7 @@ export class WalletController {
 
     await db.logAudit(
       'DEPOSIT_COMPLETED',
-      `Deposit of $${numAmount.toFixed(2)} completed via ${method} (Ref: ${paymentReference})`,
+      `Deposit of $${numAmount.toFixed(3)} completed via ${method} (Ref: ${paymentReference})`,
       req.ip || '127.0.0.1',
       req.user.id,
       req.user.username
@@ -88,7 +88,7 @@ export class WalletController {
 
     res.json({
       success: true,
-      message: `Successfully added $${numAmount.toFixed(2)} to your balance!`,
+      message: `Successfully added $${numAmount.toFixed(3)} to your balance!`,
       newBalance: result.newBalance,
       reference: paymentReference,
     });
@@ -196,7 +196,7 @@ export class WalletController {
 
         await db.logAudit(
           'KHQR_PAYMENT_CONFIRMED',
-          `Bakong payment of $${creditAmount.toFixed(2)} confirmed & credited to ${req.user.username} (MD5: ${md5})`,
+          `Bakong payment of $${creditAmount.toFixed(3)} confirmed & credited to ${req.user.username} (MD5: ${md5})`,
           req.ip || '127.0.0.1',
           req.user.id,
           req.user.username

@@ -235,13 +235,11 @@ export class AuthController {
       { expiresIn: '7d' }
     );
 
-    const { passwordHash: _, ...safeUser } = newUser;
-
     res.status(201).json({
       success: true,
       message: 'Account verified and created successfully!',
       token,
-      user: safeUser,
+      user: toSafeUser(newUser),
     });
   }
 

@@ -113,7 +113,7 @@ export const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({
             <div className="spec-box">
               <div className="spec-box-label">Rate per 1,000 units</div>
               <div className="spec-box-val" style={{ color: '#162399' }}>
-                ${service.customRate.toFixed(2)}
+                ${service.customRate.toFixed(3)}
               </div>
             </div>
 

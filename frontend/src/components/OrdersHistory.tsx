@@ -237,7 +237,7 @@ export const OrdersHistory: React.FC = () => {
                   {/* Charge */}
                   <td>
                     <span style={{ color: 'var(--cyan-light)', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
-                      ${order.charge.toFixed(2)}
+                      ${order.charge.toFixed(3)}
                     </span>
                   </td>
 

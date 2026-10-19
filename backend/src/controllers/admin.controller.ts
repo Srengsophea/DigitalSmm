@@ -58,9 +58,9 @@ export class AdminController {
         totalOrders: orders.length,
         totalServices: services.length,
         activeServices: services.filter((s) => s.isActive).length,
-        totalRevenue: Number(totalRevenue.toFixed(2)),
-        totalCost: Number(totalCost.toFixed(2)),
-        estimatedProfit: Number(estimatedProfit.toFixed(2)),
+        totalRevenue: Number(totalRevenue.toFixed(3)),
+        totalCost: Number(totalCost.toFixed(3)),
+        estimatedProfit: Number(estimatedProfit.toFixed(3)),
         orderCounts,
         provider: {
           name: 'SMMFollows',
@@ -120,7 +120,7 @@ export class AdminController {
 
     await db.logAudit(
       'ADMIN_BALANCE_ADJUST',
-      `Admin ${req.user?.username} adjusted balance of ${targetUser.username} by $${numAmount.toFixed(2)} (${reason || 'No note'})`,
+      `Admin ${req.user?.username} adjusted balance of ${targetUser.username} by $${numAmount.toFixed(3)} (${reason || 'No note'})`,
       req.ip || '127.0.0.1',
       req.user?.id,
       req.user?.username

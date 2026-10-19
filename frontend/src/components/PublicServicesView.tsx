@@ -317,7 +317,7 @@ export const PublicServicesView: React.FC<PublicServicesViewProps> = ({
 
                       {/* Rate */}
                       <td className="rate-text" style={{ fontWeight: 800, color: '#162399', fontFamily: 'var(--font-mono)' }}>
-                        ${service.customRate.toFixed(2)}
+                        ${service.customRate.toFixed(3)}
                       </td>
 
                       {/* Min Order */}

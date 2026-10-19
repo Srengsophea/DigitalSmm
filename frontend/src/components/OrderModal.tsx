@@ -64,7 +64,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
     }
 
     if (!hasEnoughBalance) {
-      setErrorMessage(`Insufficient balance. Please deposit at least $${(totalCharge - (user?.balance || 0)).toFixed(2)} to place this order.`);
+      setErrorMessage(`Insufficient balance. Please deposit at least $${(totalCharge - (user?.balance || 0)).toFixed(3)} to place this order.`);
       return;
     }
 
@@ -206,12 +206,12 @@ export const OrderModal: React.FC<OrderModalProps> = ({
               <div className="summary-row">
                 <span style={{ color: 'var(--text-secondary)' }}>Your Available Balance:</span>
                 <span style={{ color: isAuthenticated ? 'var(--success-light)' : 'var(--text-muted)', fontWeight: 600 }}>
-                  {isAuthenticated ? `$${user?.balance.toFixed(2)}` : 'Not signed in'}
+                  {isAuthenticated ? `$${user?.balance.toFixed(3)}` : 'Not signed in'}
                 </span>
               </div>
               <div className="summary-row total">
                 <span>Total Charge:</span>
-                <span className="summary-total-price">${totalCharge.toFixed(2)}</span>
+                <span className="summary-total-price">${totalCharge.toFixed(3)}</span>
               </div>
             </div>
 
@@ -292,7 +292,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                 className="btn btn-primary"
                 disabled={isSubmitting || !hasEnoughBalance}
               >
-                {isSubmitting ? 'Dispatching Order...' : `Confirm & Pay $${totalCharge.toFixed(2)}`}
+                {isSubmitting ? 'Dispatching Order...' : `Confirm & Pay $${totalCharge.toFixed(3)}`}
                 <ArrowRight size={16} />
               </button>
             )}

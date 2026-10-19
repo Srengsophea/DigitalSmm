@@ -318,7 +318,7 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
 
                       {/* Rate */}
                       <td className="rate-text">
-                        ${service.customRate.toFixed(2)}
+                        ${service.customRate.toFixed(3)}
                       </td>
 
                       {/* Min Order Peach Pill */}

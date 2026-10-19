@@ -54,7 +54,7 @@ export const AddFundsKhqr: React.FC = () => {
         const check = await api.wallet.verifyKhqr(khqrData.md5, khqrData.amount);
         if (check.success && check.confirmed) {
           setIsPaid(true);
-          showToast(`Payment received! $${khqrData.amount.toFixed(2)} credited to your wallet.`, 'success');
+          showToast(`Payment received! $${khqrData.amount.toFixed(3)} credited to your wallet.`, 'success');
           await refreshProfile();
           clearInterval(interval);
         }
@@ -159,7 +159,7 @@ export const AddFundsKhqr: React.FC = () => {
               disabled={isLoading}
               style={{ marginTop: 4, padding: 12 }}
             >
-              {isLoading ? 'Generating Bakong KHQR...' : `Generate KHQR ($${(parseFloat(customAmount) || 0).toFixed(2)})`}
+              {isLoading ? 'Generating Bakong KHQR...' : `Generate KHQR ($${(parseFloat(customAmount) || 0).toFixed(3)})`}
               <ArrowRight size={16} />
             </button>
           </form>
@@ -192,7 +192,7 @@ export const AddFundsKhqr: React.FC = () => {
                   <CheckCircle2 size={64} color="#10b981" style={{ margin: '0 auto 12px' }} />
                   <h3 style={{ color: '#15803d', marginBottom: 6 }}>Payment Confirmed!</h3>
                   <p style={{ fontSize: '0.88rem', color: '#475569' }}>
-                    ${khqrData.amount.toFixed(2)} {khqrData.currency} has been successfully added to your wallet balance.
+                    ${khqrData.amount.toFixed(3)} {khqrData.currency} has been successfully added to your wallet balance.
                   </p>
                 </div>
               ) : (
@@ -215,7 +215,7 @@ export const AddFundsKhqr: React.FC = () => {
 
                   {/* Amount Display */}
                   <div className="khqr-amount-text" style={{ margin: '14px 0 10px', fontSize: '1.4rem', fontWeight: 800, color: '#0f172a' }}>
-                    ${khqrData.amount.toFixed(2)} USD
+                    ${khqrData.amount.toFixed(3)} USD
                   </div>
 
                   {/* Countdown Timer */}

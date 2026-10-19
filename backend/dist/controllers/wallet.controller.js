@@ -26,7 +26,7 @@ class WalletController {
             success: true,
             balance: user.balance,
             totalOrders: orders.length,
-            totalSpent: Number(totalSpent.toFixed(2)),
+            totalSpent: Number(totalSpent.toFixed(3)),
             accountPoints: 0,
             statusTier: user.role === 'ADMIN' ? 'VIP Admin' : 'New',
         });
@@ -61,10 +61,10 @@ class WalletController {
             res.status(500).json({ success: false, error: result.error || 'Failed to credit balance' });
             return;
         }
-        await db.logAudit('DEPOSIT_COMPLETED', `Deposit of $${numAmount.toFixed(2)} completed via ${method} (Ref: ${paymentReference})`, req.ip || '127.0.0.1', req.user.id, req.user.username);
+        await db.logAudit('DEPOSIT_COMPLETED', `Deposit of $${numAmount.toFixed(3)} completed via ${method} (Ref: ${paymentReference})`, req.ip || '127.0.0.1', req.user.id, req.user.username);
         res.json({
             success: true,
-            message: `Successfully added $${numAmount.toFixed(2)} to your balance!`,
+            message: `Successfully added $${numAmount.toFixed(3)} to your balance!`,
             newBalance: result.newBalance,
             reference: paymentReference,
         });
@@ -152,7 +152,7 @@ class WalletController {
                 // Real payment confirmed on Bakong network!
                 const creditAmount = checkRes.data?.amount ? Number(checkRes.data.amount) : numAmount;
                 const creditResult = await db.adjustUserBalance(req.user.id, creditAmount, 'DEPOSIT', md5, `Bakong KHQR to ${bakong.getAccountId()} (MD5: ${md5.slice(0, 10)})`);
-                await db.logAudit('KHQR_PAYMENT_CONFIRMED', `Bakong payment of $${creditAmount.toFixed(2)} confirmed & credited to ${req.user.username} (MD5: ${md5})`, req.ip || '127.0.0.1', req.user.id, req.user.username);
+                await db.logAudit('KHQR_PAYMENT_CONFIRMED', `Bakong payment of $${creditAmount.toFixed(3)} confirmed & credited to ${req.user.username} (MD5: ${md5})`, req.ip || '127.0.0.1', req.user.id, req.user.username);
                 res.json({
                     success: true,
                     confirmed: true,

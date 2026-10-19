@@ -15,9 +15,28 @@ const smmfollows_service_1 = require("./smmfollows.service");
 /**
  * Strips password hashes, TOTP secrets, and internal security counters before sending user data over wire.
  */
-function toSafeUser(user) {
+function toSafeUser(user, totalSpent, totalOrders) {
     const { passwordHash: _, twoFactorSecret: __, failedLoginAttempts: ___, lockoutUntil: ____, ...safe } = user;
-    return safe;
+    let spent = totalSpent;
+    let ordersCount = totalOrders;
+    if (spent === undefined || ordersCount === undefined) {
+        try {
+            const db = DatabaseService.getInstance();
+            if (spent === undefined)
+                spent = db.getUserTotalSpent(user.id);
+            if (ordersCount === undefined)
+                ordersCount = db.getUserTotalOrders(user.id);
+        }
+        catch {
+            spent = user.totalSpent ?? 0;
+            ordersCount = user.totalOrders ?? 0;
+        }
+    }
+    return {
+        ...safe,
+        totalSpent: spent,
+        totalOrders: ordersCount,
+    };
 }
 class DatabaseService {
     static instance;
@@ -639,6 +658,16 @@ class DatabaseService {
     }
     getOrdersByUserId(userId) {
         return this.data.orders.filter((o) => o.userId === userId);
+    }
+    getUserTotalSpent(userId) {
+        const orders = this.getOrdersByUserId(userId);
+        const spent = orders
+            .filter((o) => o.status !== 'CANCELED')
+            .reduce((sum, o) => sum + (o.charge || 0), 0);
+        return Number(spent.toFixed(3));
+    }
+    getUserTotalOrders(userId) {
+        return this.getOrdersByUserId(userId).length;
     }
     getOrderById(id) {
         return this.data.orders.find((o) => o.id === id);

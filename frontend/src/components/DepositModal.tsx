@@ -29,7 +29,7 @@ export const DepositModal: React.FC<DepositModalProps> = ({ isOpen, onClose }) =
     try {
       const res = await api.wallet.deposit(num, method);
       if (res.success) {
-        showToast(`Successfully deposited $${num.toFixed(2)} to your balance!`, 'success');
+        showToast(`Successfully deposited $${num.toFixed(3)} to your balance!`, 'success');
         await refreshProfile();
         onClose();
       } else {
@@ -59,7 +59,7 @@ export const DepositModal: React.FC<DepositModalProps> = ({ isOpen, onClose }) =
             <div>
               <h3 style={{ fontSize: '1.15rem' }}>Add Funds to Wallet</h3>
               <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                Current Balance: <strong style={{ color: 'var(--success-light)' }}>${user?.balance.toFixed(2)}</strong>
+                Current Balance: <strong style={{ color: 'var(--success-light)' }}>${user?.balance.toFixed(3)}</strong>
               </span>
             </div>
           </div>
@@ -189,7 +189,7 @@ export const DepositModal: React.FC<DepositModalProps> = ({ isOpen, onClose }) =
               Cancel
             </button>
             <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-              {isSubmitting ? 'Processing...' : `Deposit $${(parseFloat(customAmount) || 0).toFixed(2)}`}
+              {isSubmitting ? 'Processing...' : `Deposit $${(parseFloat(customAmount) || 0).toFixed(3)}`}
               <ArrowRight size={16} />
             </button>
           </div>

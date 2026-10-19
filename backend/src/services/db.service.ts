@@ -21,9 +21,25 @@ import { SMMFollowsService } from './smmfollows.service';
 /**
  * Strips password hashes, TOTP secrets, and internal security counters before sending user data over wire.
  */
-export function toSafeUser(user: User): SafeUser {
+export function toSafeUser(user: User, totalSpent?: number, totalOrders?: number): SafeUser {
   const { passwordHash: _, twoFactorSecret: __, failedLoginAttempts: ___, lockoutUntil: ____, ...safe } = user;
-  return safe;
+  let spent = totalSpent;
+  let ordersCount = totalOrders;
+  if (spent === undefined || ordersCount === undefined) {
+    try {
+      const db = DatabaseService.getInstance();
+      if (spent === undefined) spent = db.getUserTotalSpent(user.id);
+      if (ordersCount === undefined) ordersCount = db.getUserTotalOrders(user.id);
+    } catch {
+      spent = user.totalSpent ?? 0;
+      ordersCount = user.totalOrders ?? 0;
+    }
+  }
+  return {
+    ...safe,
+    totalSpent: spent,
+    totalOrders: ordersCount,
+  };
 }
 
 interface DatabaseSchema {
@@ -722,6 +738,18 @@ export class DatabaseService {
 
   public getOrdersByUserId(userId: string): Order[] {
     return this.data.orders.filter((o) => o.userId === userId);
+  }
+
+  public getUserTotalSpent(userId: string): number {
+    const orders = this.getOrdersByUserId(userId);
+    const spent = orders
+      .filter((o) => o.status !== 'CANCELED')
+      .reduce((sum, o) => sum + (o.charge || 0), 0);
+    return Number(spent.toFixed(3));
+  }
+
+  public getUserTotalOrders(userId: string): number {
+    return this.getOrdersByUserId(userId).length;
   }
 
   public getOrderById(id: string): Order | undefined {

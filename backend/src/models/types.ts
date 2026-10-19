@@ -6,6 +6,8 @@ export interface User {
   email: string;
   passwordHash: string;
   balance: number;
+  totalSpent?: number;
+  totalOrders?: number;
   role: UserRole;
   status: 'active' | 'suspended';
   apiKey: string;
@@ -20,7 +22,10 @@ export interface User {
   updatedAt: string;
 }
 
-export type SafeUser = Omit<User, 'passwordHash' | 'twoFactorSecret' | 'failedLoginAttempts' | 'lockoutUntil'>;
+export type SafeUser = Omit<User, 'passwordHash' | 'twoFactorSecret' | 'failedLoginAttempts' | 'lockoutUntil'> & {
+  totalSpent?: number;
+  totalOrders?: number;
+};
 
 export type PlatformType =
   | 'Instagram'

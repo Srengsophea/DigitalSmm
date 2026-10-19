@@ -107,7 +107,7 @@ class OrdersController {
         await db.logAudit('ORDER_REFUNDED', `Order #${localOrder.id.slice(0, 8)} failed (${providerResult.error}). $${charge} refunded to ${req.user.username}`, req.ip || '127.0.0.1', req.user.id, req.user.username);
         res.status(400).json({
             success: false,
-            error: `Provider error: ${providerResult.error || 'Failed to place order'}. Your wallet was refunded $${charge.toFixed(2)}.`,
+            error: `Provider error: ${providerResult.error || 'Failed to place order'}. Your wallet was refunded $${charge.toFixed(3)}.`,
             order: refundedOrder,
             newBalance: debitResult.newBalance + charge,
         });

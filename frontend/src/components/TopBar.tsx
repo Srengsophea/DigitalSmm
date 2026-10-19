@@ -12,6 +12,7 @@ import {
   Power,
   LogIn,
   Menu,
+  ShoppingBag,
 } from 'lucide-react';
 
 interface TopBarProps {
@@ -33,6 +34,8 @@ export const TopBar: React.FC<TopBarProps> = ({
 }) => {
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const balance = user?.balance ?? 0;
+  const spending = user?.totalSpent ?? 0;
+  const totalOrders = user?.totalOrders ?? 0;
 
   const handleSignIn = () => {
     if (onNavigate) {
@@ -98,6 +101,17 @@ export const TopBar: React.FC<TopBarProps> = ({
           </div>
         </div>
 
+        {/* Total Orders */}
+        <div className="topbar-stat-card stat-card-orders">
+          <div className="stat-card-icon orders-icon-bg">
+            <ShoppingBag size={15} />
+          </div>
+          <div className="stat-card-text">
+            <span className="stat-card-label">Total Orders</span>
+            <span className="stat-card-val">{totalOrders}</span>
+          </div>
+        </div>
+
         {/* Account Points */}
         <div className="topbar-stat-card stat-card-points">
           <div className="stat-card-icon points-icon-bg">
@@ -105,7 +119,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           </div>
           <div className="stat-card-text">
             <span className="stat-card-label">Account Points</span>
-            <span className="stat-card-val">0 = 0.00$</span>
+            <span className="stat-card-val">0 = 0.000$</span>
           </div>
         </div>
 
@@ -116,7 +130,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           </div>
           <div className="stat-card-text">
             <span className="stat-card-label">Account Spending</span>
-            <span className="stat-card-val">$0</span>
+            <span className="stat-card-val">${spending.toFixed(3)}</span>
           </div>
         </div>
 
@@ -133,7 +147,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           </div>
           <div className="stat-card-text">
             <span className="stat-card-label">Account Balance</span>
-            <span className="stat-card-val balance-val">${balance.toFixed(2)}</span>
+            <span className="stat-card-val balance-val">${balance.toFixed(3)}</span>
           </div>
           <button
             type="button"

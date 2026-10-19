@@ -95,7 +95,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               {/* Wallet Balance Badge */}
               <div className="wallet-badge">
                 <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Balance:</span>
-                <span className="wallet-balance">${user?.balance.toFixed(2)}</span>
+                <span className="wallet-balance">${user?.balance.toFixed(3)}</span>
                 <button
                   className="btn btn-primary btn-sm"
                   style={{ padding: '4px 10px', fontSize: '0.78rem' }}
