@@ -91,7 +91,7 @@ export const ServicesTable: React.FC<ServicesTableProps> = ({
         </div>
 
         {/* Category Dropdown */}
-        <div style={{ minWidth: 200, flex: '1 1 200px' }}>
+        <div style={{ minWidth: 200, flex: '1 1 auto', height: 'auto' }}>
           <div
             className="mobile-select-trigger"
             onClick={() => setIsCategoryPickerOpen(true)}

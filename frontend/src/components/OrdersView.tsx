@@ -193,7 +193,7 @@ export const OrdersView: React.FC = () => {
                     <button
                       className="topbar-circle-btn"
                       style={{ width: 28, height: 28 }}
-                      title="Sync live status from SMMFollows"
+                      title="Sync live order status"
                       disabled={syncingId === order.id}
                       onClick={() => handleSyncStatus(order.id)}
                     >

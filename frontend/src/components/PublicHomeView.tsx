@@ -34,11 +34,6 @@ export const PublicHomeView: React.FC<PublicHomeViewProps> = ({
       {/* 1. Hero Banner */}
       <section className="public-hero-section">
         <div className="public-hero-container">
-          <div className="public-hero-badge">
-            <span className="public-hero-pulse" />
-            <span>SMMFollows Direct Provider Infrastructure · Live & Ready</span>
-            <Sparkles size={14} color="#0284c7" />
-          </div>
 
           <h1 className="public-hero-title">
             Scale Your Social Presence With <br />
@@ -164,7 +159,7 @@ export const PublicHomeView: React.FC<PublicHomeViewProps> = ({
                 Automated High-Speed Delivery
               </h3>
               <p style={{ fontSize: '0.88rem', color: '#64748b', lineHeight: 1.6, margin: 0 }}>
-                Our automated SMMFollows provider engine dispatches your order in seconds. Track live progress, delivery speed, and refills in real time.
+                Our proprietary automated dispatch engine processes your order in seconds. Track live progress, delivery speed, and refills in real time.
               </p>
             </div>
           </div>

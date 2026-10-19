@@ -660,13 +660,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                     </div>
 
                     {/* Terms */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18, fontSize: '0.82rem', color: '#64748b' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 11, fontSize: '0.78rem', color: '#64748b' }}>
                       <input
                         type="checkbox"
                         id="terms-checkbox"
                         checked={agreeTerms}
                         onChange={(e) => setAgreeTerms(e.target.checked)}
-                        style={{ cursor: 'pointer', accentColor: '#162399' }}
+                        style={{ cursor: 'pointer', accentColor: '#162399', width: 14, height: 14 }}
                       />
                       <label htmlFor="terms-checkbox" style={{ cursor: 'pointer' }}>
                         I agree to the Terms of Service & Privacy Policy
@@ -990,13 +990,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                     </div>
 
                     {/* Remember Me */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18, fontSize: '0.82rem', color: '#64748b' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 11, fontSize: '0.78rem', color: '#64748b' }}>
                       <input
                         type="checkbox"
                         id="remember-checkbox"
                         checked={rememberMe}
                         onChange={(e) => setRememberMe(e.target.checked)}
-                        style={{ cursor: 'pointer', accentColor: '#162399' }}
+                        style={{ cursor: 'pointer', accentColor: '#162399', width: 14, height: 14 }}
                       />
                       <label htmlFor="remember-checkbox" style={{ cursor: 'pointer' }}>
                         Remember me for 30 days
@@ -1023,7 +1023,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               )}
 
               {/* Toggle Mode Footer Link */}
-              <div style={{ textAlign: 'center', marginTop: 22, fontSize: '0.84rem', color: '#64748b' }}>
+              <div style={{ textAlign: 'center', marginTop: 14, fontSize: '0.80rem', color: '#64748b' }}>
                 {mode === 'login' ? (
                   !is2FAPrompt && (
                     <>

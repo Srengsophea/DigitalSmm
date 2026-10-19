@@ -13,7 +13,7 @@ export const Hero: React.FC<HeroProps> = ({ totalServices, onExplore }) => {
         {/* Glow badge */}
         <div className="hero-tagline">
           <span className="pulse-dot" />
-          <span>SMMFollows Provider Connected & Live</span>
+          <span>High-Speed Provider Nodes Connected & Live</span>
           <Shield size={14} style={{ marginLeft: 4 }} />
         </div>
 
@@ -24,7 +24,7 @@ export const Hero: React.FC<HeroProps> = ({ totalServices, onExplore }) => {
         </h1>
 
         <p className="hero-subtitle">
-          DigitalSMM connects directly to the SMMFollows provider infrastructure. Enjoy enterprise-grade
+          DigitalSMM connects directly to Tier-1 provider infrastructure. Enjoy enterprise-grade
           order dispatch, AES-256 encrypted credentials, and automated refill tracking at wholesale resale pricing.
         </p>
 

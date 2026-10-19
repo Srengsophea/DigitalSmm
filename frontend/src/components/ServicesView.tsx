@@ -108,7 +108,7 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
           Search
         </button>
 
-        <div className="category-filter-select" style={{ minWidth: 200, flex: '1 1 200px' }}>
+        <div className="category-filter-select">
           <div
             className="mobile-select-trigger"
             onClick={() => setIsCategoryPickerOpen(true)}
@@ -143,7 +143,7 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
             {isLoading ? (
               <tr>
                 <td colSpan={7} style={{ textAlign: 'center', padding: 40 }}>
-                  Loading SMMFollows provider services...
+                  Loading wholesale services catalog...
                 </td>
               </tr>
             ) : Object.keys(groupedByCategory).length === 0 ? (

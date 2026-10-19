@@ -9,7 +9,7 @@ export const FAQView: React.FC = () => {
     },
     {
       q: 'How fast do orders start after submission?',
-      a: 'Most services start within 10 to 60 seconds of automated dispatch to SMMFollows infrastructure. You can track real-time progress on the Orders page.',
+      a: 'Most services start within 10 to 60 seconds of automated dispatch to high-speed delivery nodes. You can track real-time progress on the Orders page.',
     },
     {
       q: 'What is the format for Mass Orders?',

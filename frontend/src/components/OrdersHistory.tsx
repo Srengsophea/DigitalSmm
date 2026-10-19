@@ -127,7 +127,7 @@ export const OrdersHistory: React.FC = () => {
         <div>
           <h2>Order History & Live Tracking</h2>
           <p style={{ marginTop: 4 }}>
-            Monitor real-time progress and dispatch status of your SMMFollows provider orders.
+            Monitor real-time progress and dispatch status of your automated orders.
           </p>
         </div>
 
@@ -249,7 +249,7 @@ export const OrdersHistory: React.FC = () => {
                   <td style={{ textAlign: 'right' }}>
                     <button
                       className="btn btn-secondary btn-sm"
-                      title="Check live status from SMMFollows provider"
+                      title="Check live order dispatch status"
                       disabled={checkingOrderId === order.id}
                       onClick={() => checkLiveStatus(order.id)}
                     >

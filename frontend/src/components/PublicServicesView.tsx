@@ -159,7 +159,7 @@ export const PublicServicesView: React.FC<PublicServicesViewProps> = ({
           Search
         </button>
 
-        <div className="category-filter-select" style={{ minWidth: 200, flex: '1 1 200px' }}>
+        <div className="category-filter-select">
           <div
             className="mobile-select-trigger"
             onClick={() => setIsCategoryPickerOpen(true)}

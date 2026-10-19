@@ -609,6 +609,7 @@
 
 .category-filter-select {
   min-width: 280px;
+  height: auto;
 }
 
 /* Services Table */
@@ -1639,11 +1640,14 @@
     flex-direction: column !important;
     align-items: stretch !important;
     gap: 10px !important;
+    margin-bottom: 16px !important;
   }
 
   .category-filter-select {
     min-width: 100% !important;
     width: 100% !important;
+    flex: none !important;
+    height: auto !important;
   }
 
   .services-table {

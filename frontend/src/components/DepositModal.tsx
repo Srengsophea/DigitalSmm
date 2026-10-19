@@ -177,7 +177,7 @@ export const DepositModal: React.FC<DepositModalProps> = ({ isOpen, onClose }) =
                   <ShieldCheck size={16} /> Automated TRC-20 Address Ready
                 </div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--text-muted)', wordBreak: 'break-all' }}>
-                  TDSmmFollowsDeposit8ce4373a1a160279
+                  TDDigitalSmmDeposit8ce4373a1a160279
                 </div>
               </div>
             )}
