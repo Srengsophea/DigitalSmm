@@ -14,6 +14,8 @@ import {
 
 export interface OrderItem {
   id: string;
+  serviceId?: string;
+  externalServiceId?: string | number;
   externalOrderId?: string | number;
   serviceName: string;
   category: string;

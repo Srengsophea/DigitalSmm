@@ -3,6 +3,7 @@ import { DatabaseService } from '../services/db.service';
 import { SMMFollowsService } from '../services/smmfollows.service';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { EncryptionService } from '../services/encryption.service';
+import { OrdersController } from './orders.controller';
 import { ENV } from '../config/env';
 
 export class AdminController {
@@ -172,7 +173,45 @@ export class AdminController {
    */
   public static async getAllOrders(req: AuthenticatedRequest, res: Response): Promise<void> {
     const db = DatabaseService.getInstance();
-    const orders = db.getOrders();
+    const smm = SMMFollowsService.getInstance();
+    let orders = db.getOrders();
+
+    const activeOrders = orders.filter(
+      (o) => o.externalOrderId && !['COMPLETED', 'CANCELED'].includes(o.status)
+    );
+
+    if (activeOrders.length > 0) {
+      try {
+        const extIds = activeOrders.map((o) => o.externalOrderId as string | number);
+        for (let i = 0; i < extIds.length; i += 50) {
+          const chunk = extIds.slice(i, i + 50);
+          const multiStatus = await smm.getMultipleOrdersStatus(chunk);
+          if (multiStatus && typeof multiStatus === 'object') {
+            for (const order of activeOrders) {
+              const extId = order.externalOrderId!.toString();
+              const statusRes = multiStatus[extId];
+              if (statusRes && !statusRes.error && statusRes.status) {
+                const mappedStatus = OrdersController.mapProviderStatus(statusRes.status);
+                const updated = await db.updateOrder(order.id, {
+                  status: mappedStatus,
+                  startCount: statusRes.start_count ?? order.startCount,
+                  remains: statusRes.remains ?? order.remains,
+                  providerResponse: JSON.stringify(statusRes),
+                });
+                if (updated) {
+                  const idx = orders.findIndex((o) => o.id === order.id);
+                  if (idx !== -1) {
+                    orders[idx] = updated;
+                  }
+                }
+              }
+            }
+          }
+        }
+      } catch (err: any) {
+        console.warn('Auto live-sync active orders for admin warning:', err.message);
+      }
+    }
 
     res.json({ success: true, total: orders.length, orders });
   }

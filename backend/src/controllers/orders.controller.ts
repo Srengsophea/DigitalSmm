@@ -291,15 +291,56 @@ export class OrdersController {
     }
 
     const db = DatabaseService.getInstance();
+    const smm = SMMFollowsService.getInstance();
     let orders = db.getOrdersByUserId(req.user.id);
+
+    // Auto-sync live status from SMMFollows provider for active orders on reload/fetch
+    const activeOrders = orders.filter(
+      (o) => o.externalOrderId && !['COMPLETED', 'CANCELED'].includes(o.status)
+    );
+
+    if (activeOrders.length > 0) {
+      try {
+        const extIds = activeOrders.map((o) => o.externalOrderId as string | number);
+        // Process in chunks of 50 to avoid URL length issues with the provider
+        for (let i = 0; i < extIds.length; i += 50) {
+          const chunk = extIds.slice(i, i + 50);
+          const multiStatus = await smm.getMultipleOrdersStatus(chunk);
+          if (multiStatus && typeof multiStatus === 'object') {
+            for (const order of activeOrders) {
+              const extId = order.externalOrderId!.toString();
+              const statusRes = multiStatus[extId];
+              if (statusRes && !statusRes.error && statusRes.status) {
+                const mappedStatus = OrdersController.mapProviderStatus(statusRes.status);
+                const updated = await db.updateOrder(order.id, {
+                  status: mappedStatus,
+                  startCount: statusRes.start_count ?? order.startCount,
+                  remains: statusRes.remains ?? order.remains,
+                  providerResponse: JSON.stringify(statusRes),
+                });
+                if (updated) {
+                  const idx = orders.findIndex((o) => o.id === order.id);
+                  if (idx !== -1) {
+                    orders[idx] = updated;
+                  }
+                }
+              }
+            }
+          }
+        }
+      } catch (syncErr: any) {
+        console.warn('Auto live-sync active orders warning:', syncErr.message);
+      }
+    }
 
     const { status, platform, search } = req.query;
 
-    if (status && typeof status === 'string' && status !== 'ALL') {
-      orders = orders.filter((o) => o.status.toUpperCase() === status.toUpperCase());
+    if (status && typeof status === 'string' && status.toUpperCase() !== 'ALL') {
+      const target = status.toUpperCase().replace(/[\s-]+/g, '_');
+      orders = orders.filter((o) => o.status.toUpperCase().replace(/[\s-]+/g, '_') === target);
     }
 
-    if (platform && typeof platform === 'string' && platform !== 'ALL') {
+    if (platform && typeof platform === 'string' && platform.toUpperCase() !== 'ALL') {
       orders = orders.filter((o) => o.platform.toLowerCase() === platform.toLowerCase());
     }
 
@@ -373,15 +414,16 @@ export class OrdersController {
     }
   }
 
-  private static mapProviderStatus(rawStatus?: string): OrderStatus {
+  public static mapProviderStatus(rawStatus?: string): OrderStatus {
     if (!rawStatus) return 'PROCESSING';
-    const s = rawStatus.toLowerCase();
-    if (s.includes('completed') || s.includes('finished')) return 'COMPLETED';
+    const s = rawStatus.toLowerCase().replace(/[-_]/g, ' ');
+    if (s.includes('completed') || s.includes('finished') || s.includes('complete')) return 'COMPLETED';
     if (s.includes('in progress')) return 'IN_PROGRESS';
     if (s.includes('processing')) return 'PROCESSING';
     if (s.includes('pending')) return 'PENDING';
     if (s.includes('partial')) return 'PARTIAL';
     if (s.includes('cancel')) return 'CANCELED';
+    if (s.includes('refund')) return 'CANCELED';
     return 'PROCESSING';
   }
 }

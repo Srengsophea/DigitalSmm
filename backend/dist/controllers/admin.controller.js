@@ -4,6 +4,7 @@ exports.AdminController = void 0;
 const db_service_1 = require("../services/db.service");
 const smmfollows_service_1 = require("../services/smmfollows.service");
 const encryption_service_1 = require("../services/encryption.service");
+const orders_controller_1 = require("./orders.controller");
 const env_1 = require("../config/env");
 class AdminController {
     /**
@@ -131,7 +132,42 @@ class AdminController {
      */
     static async getAllOrders(req, res) {
         const db = db_service_1.DatabaseService.getInstance();
-        const orders = db.getOrders();
+        const smm = smmfollows_service_1.SMMFollowsService.getInstance();
+        let orders = db.getOrders();
+        const activeOrders = orders.filter((o) => o.externalOrderId && !['COMPLETED', 'CANCELED'].includes(o.status));
+        if (activeOrders.length > 0) {
+            try {
+                const extIds = activeOrders.map((o) => o.externalOrderId);
+                for (let i = 0; i < extIds.length; i += 50) {
+                    const chunk = extIds.slice(i, i + 50);
+                    const multiStatus = await smm.getMultipleOrdersStatus(chunk);
+                    if (multiStatus && typeof multiStatus === 'object') {
+                        for (const order of activeOrders) {
+                            const extId = order.externalOrderId.toString();
+                            const statusRes = multiStatus[extId];
+                            if (statusRes && !statusRes.error && statusRes.status) {
+                                const mappedStatus = orders_controller_1.OrdersController.mapProviderStatus(statusRes.status);
+                                const updated = await db.updateOrder(order.id, {
+                                    status: mappedStatus,
+                                    startCount: statusRes.start_count ?? order.startCount,
+                                    remains: statusRes.remains ?? order.remains,
+                                    providerResponse: JSON.stringify(statusRes),
+                                });
+                                if (updated) {
+                                    const idx = orders.findIndex((o) => o.id === order.id);
+                                    if (idx !== -1) {
+                                        orders[idx] = updated;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (err) {
+                console.warn('Auto live-sync active orders for admin warning:', err.message);
+            }
+        }
         res.json({ success: true, total: orders.length, orders });
     }
     /**

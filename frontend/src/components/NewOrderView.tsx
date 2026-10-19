@@ -6,10 +6,21 @@ import { PlatformPillsBar } from './PlatformPillsBar';
 import { Search, X, ChevronDown } from 'lucide-react';
 import { ResponsivePickerSheet } from './ResponsivePickerSheet';
 
+export interface PreselectedServiceData {
+  serviceId: string;
+  serviceName?: string;
+  category?: string;
+  platform?: string;
+  link?: string;
+  quantity?: number;
+}
+
 interface NewOrderViewProps {
   services: ServiceItem[];
   categories: string[];
   initialTab?: 'new-order' | 'mass-order';
+  preselectedService?: PreselectedServiceData | null;
+  onClearPreselectedService?: () => void;
   onOrderSuccess: () => void;
   openAuthModal: () => void;
   openDepositModal: () => void;
@@ -506,6 +517,8 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
   services: propServices,
   categories: propCategories,
   initialTab = 'new-order',
+  preselectedService,
+  onClearPreselectedService,
   onOrderSuccess,
   openAuthModal,
   openDepositModal,
@@ -653,6 +666,41 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
       setQuantity(filteredServices[0].min || 1000);
     }
   }, [selectedCategory]);
+
+  useEffect(() => {
+    if (preselectedService && allServices.length > 0) {
+      const targetId = preselectedService.serviceId?.toString();
+      const matched = allServices.find((s) => {
+        if (targetId && (s.id?.toString() === targetId || s.externalId?.toString() === targetId)) {
+          return true;
+        }
+        if (preselectedService.serviceName && s.name.trim() === preselectedService.serviceName.trim()) {
+          return true;
+        }
+        return false;
+      });
+
+      if (matched) {
+        if (matched.platform) {
+          setSelectedPlatform(matched.platform);
+        }
+        setSelectedCategory(matched.category);
+        setSelectedServiceId(matched.id);
+        if (preselectedService.quantity) {
+          setQuantity(preselectedService.quantity);
+        } else if (matched.min) {
+          setQuantity(matched.min);
+        }
+        if (preselectedService.link) {
+          setLink(preselectedService.link);
+        }
+        setActiveTab('new');
+        if (onClearPreselectedService) {
+          onClearPreselectedService();
+        }
+      }
+    }
+  }, [preselectedService, allServices]);
 
   const charge = selectedService
     ? Number(((quantity / 1000) * selectedService.customRate).toFixed(4))

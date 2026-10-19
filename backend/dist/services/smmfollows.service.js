@@ -29,7 +29,7 @@ class SMMFollowsService {
     async request(action, extraParams = {}) {
         const { apiKey, apiUrl } = this.getCredentials();
         if (!apiKey) {
-            throw new Error('SMMFollows API key is not configured');
+            throw new Error('Provider API key is not configured');
         }
         const payload = {
             key: apiKey,
@@ -51,7 +51,7 @@ class SMMFollowsService {
             });
             clearTimeout(timeoutId);
             if (!response.ok) {
-                throw new Error(`SMMFollows HTTP error ${response.status}: ${response.statusText}`);
+                throw new Error(`Provider HTTP error ${response.status}: ${response.statusText}`);
             }
             const data = await response.json();
             return data;
@@ -59,7 +59,7 @@ class SMMFollowsService {
         catch (err) {
             clearTimeout(timeoutId);
             if (err.name === 'AbortError') {
-                throw new Error('SMMFollows provider request timed out after 15s');
+                throw new Error('Provider request timed out after 15s');
             }
             throw err;
         }
@@ -129,7 +129,7 @@ class SMMFollowsService {
                 };
             }
             return {
-                error: 'Unexpected response from SMMFollows',
+                error: 'Unexpected response from upstream gateway',
                 raw: response,
             };
         }

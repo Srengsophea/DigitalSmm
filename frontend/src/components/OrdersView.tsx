@@ -2,16 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { OrderItem } from './OrdersHistory';
-import { Search, Check, RefreshCw } from 'lucide-react';
+import { Search, Check, RefreshCw, ShoppingCart } from 'lucide-react';
 
-export const OrdersView: React.FC = () => {
+export interface OrdersViewProps {
+  onBuyService?: (order: OrderItem) => void;
+}
+
+export const OrdersView: React.FC<OrdersViewProps> = ({ onBuyService }) => {
   const { showToast } = useAuth();
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeStatus, setActiveStatus] = useState<string>('All');
   const [searchInput, setSearchInput] = useState('');
   const [activeSearch, setActiveSearch] = useState('');
-  const [syncingId, setSyncingId] = useState<string | null>(null);
 
   const statusTabs = [
     { label: 'All', color: '#162399', isSolid: true },
@@ -23,11 +26,16 @@ export const OrdersView: React.FC = () => {
     { label: 'Canceled', color: '#ef4444', isSolid: false },
   ];
 
+  const formatStatusForApi = (label: string) => {
+    if (!label || label.toLowerCase() === 'all') return undefined;
+    return label.toUpperCase().replace(/\s+/g, '_');
+  };
+
   const fetchOrders = async () => {
     setIsLoading(true);
     try {
       const data = await api.orders.getMyOrders({
-        status: activeStatus !== 'All' ? activeStatus.toUpperCase() : undefined,
+        status: formatStatusForApi(activeStatus),
         search: activeSearch.trim() || undefined,
       });
       if (data.success) {
@@ -43,24 +51,6 @@ export const OrdersView: React.FC = () => {
   useEffect(() => {
     fetchOrders();
   }, [activeStatus, activeSearch]);
-
-  const handleSyncStatus = async (orderId: string) => {
-    if (syncingId === orderId) return;
-    setSyncingId(orderId);
-    try {
-      const res = await api.orders.checkLiveStatus(orderId);
-      if (res.success && res.order) {
-        setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, ...res.order } : o)));
-        const rawStatus = (res.order.status || 'Updated').toUpperCase();
-        const toastType = rawStatus === 'COMPLETED' ? 'success' : 'info';
-        showToast(`Order #${orderId.slice(0, 7)} status: ${rawStatus}`, toastType);
-      }
-    } catch (err: any) {
-      showToast(err.message || 'Error updating status', 'error');
-    } finally {
-      setSyncingId(null);
-    }
-  };
 
   return (
     <div>
@@ -80,8 +70,18 @@ export const OrdersView: React.FC = () => {
         <button
           className="btn-search"
           onClick={() => setActiveSearch(searchInput)}
+          title="Search orders"
         >
           <Search size={16} />
+        </button>
+        <button
+          className="btn-search"
+          onClick={() => fetchOrders()}
+          disabled={isLoading}
+          title="Refresh orders & update live status"
+          style={{ backgroundColor: '#162399', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          <RefreshCw size={16} className={isLoading ? 'spin' : ''} />
         </button>
       </div>
 
@@ -123,7 +123,7 @@ export const OrdersView: React.FC = () => {
               <th>Service</th>
               <th style={{ width: 100 }}>Remains</th>
               <th style={{ width: 120 }}>Status</th>
-              <th style={{ width: 60, textAlign: 'right' }}>Sync</th>
+              <th style={{ width: 85, textAlign: 'center' }}>Order</th>
             </tr>
           </thead>
           <tbody>
@@ -159,7 +159,24 @@ export const OrdersView: React.FC = () => {
                   <td style={{ fontWeight: 600 }}>${order.charge.toFixed(3)}</td>
                   <td>{order.startCount ?? '0'}</td>
                   <td>{order.quantity.toLocaleString()}</td>
-                  <td style={{ fontWeight: 500 }}>{order.serviceName}</td>
+                  <td style={{ fontWeight: 500 }}>
+                    <span
+                      onClick={() => onBuyService && onBuyService(order)}
+                      style={{
+                        cursor: onBuyService ? 'pointer' : 'default',
+                        transition: 'color 0.2s',
+                      }}
+                      title={onBuyService ? `Click to buy again: ${order.serviceName}` : undefined}
+                      onMouseEnter={(e) => {
+                        if (onBuyService) e.currentTarget.style.color = '#2563eb';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (onBuyService) e.currentTarget.style.color = 'inherit';
+                      }}
+                    >
+                      {order.serviceName}
+                    </span>
+                  </td>
                   <td>{order.remains ?? '0'}</td>
                   <td>
                     <span
@@ -189,15 +206,42 @@ export const OrdersView: React.FC = () => {
                       {order.status}
                     </span>
                   </td>
-                  <td style={{ textAlign: 'right' }}>
+                  <td style={{ textAlign: 'center' }}>
                     <button
-                      className="topbar-circle-btn"
-                      style={{ width: 28, height: 28 }}
-                      title="Sync live order status"
-                      disabled={syncingId === order.id}
-                      onClick={() => handleSyncStatus(order.id)}
+                      className="btn-order-shortcut"
+                      title={`Buy again (Shortcut): ${order.serviceName}`}
+                      onClick={() => {
+                        if (onBuyService) {
+                          onBuyService(order);
+                        }
+                      }}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 5,
+                        padding: '5px 12px',
+                        borderRadius: 6,
+                        background: 'linear-gradient(135deg, #162399 0%, #2563eb 100%)',
+                        color: '#ffffff',
+                        border: 'none',
+                        fontSize: '0.78rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)',
+                        transition: 'all 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(37, 99, 235, 0.35)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'none';
+                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(37, 99, 235, 0.2)';
+                      }}
                     >
-                      <RefreshCw size={12} className={syncingId === order.id ? 'spin' : ''} />
+                      <ShoppingCart size={13} />
+                      <span>Buy</span>
                     </button>
                   </td>
                 </tr>

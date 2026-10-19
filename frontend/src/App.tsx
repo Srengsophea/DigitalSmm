@@ -2,9 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
-import { NewOrderView } from './components/NewOrderView';
+import { NewOrderView, PreselectedServiceData } from './components/NewOrderView';
 import { ServicesView } from './components/ServicesView';
 import { OrdersView } from './components/OrdersView';
+import { OrderItem } from './components/OrdersHistory';
 import { AddFundsKhqr } from './components/AddFundsKhqr';
 import { AdminDashboard } from './components/AdminDashboard';
 import { ApiDocs } from './components/ApiDocs';
@@ -51,8 +52,21 @@ const MainLayout: React.FC<MainLayoutProps> = ({
 
   // Modals state
   const [selectedServiceForOrder, setSelectedServiceForOrder] = useState<ServiceItem | null>(null);
+  const [preselectedService, setPreselectedService] = useState<PreselectedServiceData | null>(null);
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  const handleBuyOrderServiceShortcut = (order: OrderItem) => {
+    setPreselectedService({
+      serviceId: order.serviceId || String(order.externalServiceId || ''),
+      serviceName: order.serviceName,
+      category: order.category,
+      platform: order.platform,
+      link: order.link,
+      quantity: order.quantity,
+    });
+    handleNavPage('new-order');
+  };
 
   useEffect(() => {
     const target = activePageProp || initialPage;
@@ -129,6 +143,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({
               services={services}
               categories={categories}
               initialTab="new-order"
+              preselectedService={preselectedService}
+              onClearPreselectedService={() => setPreselectedService(null)}
               onOrderSuccess={() => handleNavPage('orders')}
               openAuthModal={() => onNavigate('/login')}
               openDepositModal={() => handleNavPage('add-funds')}
@@ -159,7 +175,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({
           )}
 
           {/* Orders View */}
-          {activePage === 'orders' && <OrdersView />}
+          {activePage === 'orders' && (
+            <OrdersView onBuyService={handleBuyOrderServiceShortcut} />
+          )}
 
           {/* Add Funds (Bakong KHQR) */}
           {activePage === 'add-funds' && <AddFundsKhqr />}
