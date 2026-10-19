@@ -132,9 +132,16 @@ export const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({
             </div>
 
             <div className="spec-box">
-              <div className="spec-box-label">Guarantee & Retention</div>
-              <div className="spec-box-val" style={{ fontSize: '0.88rem', color: '#0369a1' }}>
-                {isNoDrop ? 'Non-Drop Lifetime' : hasRefill ? '30 Days Auto Refill' : 'Standard Retention'}
+              <div className="spec-box-label">Guarantee & Refill</div>
+              <div className="spec-box-val" style={{ fontSize: '0.88rem', color: service.refill ? '#15803d' : '#0369a1' }}>
+                {service.refill ? '♻️ Refill Guaranteed' : isNoDrop ? 'Non-Drop Lifetime' : 'Standard Retention'}
+              </div>
+            </div>
+
+            <div className="spec-box">
+              <div className="spec-box-label">Cancel Protection</div>
+              <div className="spec-box-val" style={{ fontSize: '0.88rem', color: service.cancel ? '#b45309' : '#64748b' }}>
+                {service.cancel ? '🚫 Cancel Allowed' : 'No Cancellation'}
               </div>
             </div>
           </div>
@@ -191,9 +198,15 @@ export const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({
               </li>
               <li>
                 <strong>Refill Protection:</strong>{' '}
-                {hasRefill
-                  ? '30-Day automated refill enabled if drop exceeds 5%.'
+                {service.refill
+                  ? 'Automated refill guaranteed if drop occurs.'
                   : 'Stable non-drop service with organic retention.'}
+              </li>
+              <li>
+                <strong>Cancellation:</strong>{' '}
+                {service.cancel
+                  ? 'Cancel button is supported by provider on eligible orders.'
+                  : 'Direct automated dispatch — cannot be cancelled once processed.'}
               </li>
             </ul>
           </div>

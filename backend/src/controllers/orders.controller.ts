@@ -87,6 +87,8 @@ export class OrdersController {
       originalCost,
       profit,
       status: 'PENDING',
+      refill: service.refill,
+      cancel: service.cancel,
     });
 
     // 3. Dispatch to SMMFollows provider API
@@ -246,6 +248,8 @@ export class OrdersController {
         originalCost,
         profit,
         status: 'PENDING',
+        refill: service.refill,
+        cancel: service.cancel,
       });
 
       const providerResult = await smm.addOrder({
@@ -355,10 +359,36 @@ export class OrdersController {
       );
     }
 
+    const servicesList = db.getServices();
+    const serviceMap = new Map<string, any>();
+    servicesList.forEach((s) => {
+      serviceMap.set(s.id, s);
+      if (s.externalId) serviceMap.set(s.externalId.toString(), s);
+    });
+
+    const enrichedOrders = orders.map((o) => {
+      let refill = o.refill;
+      let cancel = o.cancel;
+      if (refill === undefined || cancel === undefined) {
+        const svc =
+          serviceMap.get(o.serviceId) ||
+          (o.externalServiceId ? serviceMap.get(o.externalServiceId.toString()) : undefined);
+        if (svc) {
+          if (refill === undefined) refill = svc.refill;
+          if (cancel === undefined) cancel = svc.cancel;
+        }
+      }
+      return {
+        ...o,
+        refill: Boolean(refill),
+        cancel: Boolean(cancel),
+      };
+    });
+
     res.json({
       success: true,
-      total: orders.length,
-      orders,
+      total: enrichedOrders.length,
+      orders: enrichedOrders,
     });
   }
 
@@ -425,5 +455,117 @@ export class OrdersController {
     if (s.includes('cancel')) return 'CANCELED';
     if (s.includes('refund')) return 'CANCELED';
     return 'PROCESSING';
+  }
+
+  /**
+   * Request refill for an order on SMMFollows
+   */
+  public static async refillOrder(req: AuthenticatedRequest, res: Response): Promise<void> {
+    if (!req.user) {
+      res.status(401).json({ success: false, error: 'Authentication required' });
+      return;
+    }
+
+    const db = DatabaseService.getInstance();
+    const smm = SMMFollowsService.getInstance();
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+    const order = db.getOrderById(id);
+    if (!order) {
+      res.status(404).json({ success: false, error: 'Order not found' });
+      return;
+    }
+
+    if (req.user.role !== 'ADMIN' && order.userId !== req.user.id) {
+      res.status(403).json({ success: false, error: 'Unauthorized access to this order' });
+      return;
+    }
+
+    if (!order.externalOrderId) {
+      res.status(400).json({ success: false, error: 'This order has no external provider reference' });
+      return;
+    }
+
+    try {
+      const refillResult = await smm.refillOrder(order.externalOrderId);
+
+      if (refillResult.error) {
+        res.status(400).json({ success: false, error: refillResult.error });
+        return;
+      }
+
+      await db.logAudit(
+        'ORDER_REFILL',
+        `Refill requested for order #${order.id.slice(0, 8)} (refill #${refillResult.refill})`,
+        req.ip || '127.0.0.1',
+        req.user.id,
+        req.user.username
+      );
+
+      res.json({
+        success: true,
+        message: 'Refill requested successfully!',
+        refillId: refillResult.refill,
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message || 'Failed to request refill' });
+    }
+  }
+
+  /**
+   * Request cancellation for an order on SMMFollows
+   */
+  public static async cancelOrder(req: AuthenticatedRequest, res: Response): Promise<void> {
+    if (!req.user) {
+      res.status(401).json({ success: false, error: 'Authentication required' });
+      return;
+    }
+
+    const db = DatabaseService.getInstance();
+    const smm = SMMFollowsService.getInstance();
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+    const order = db.getOrderById(id);
+    if (!order) {
+      res.status(404).json({ success: false, error: 'Order not found' });
+      return;
+    }
+
+    if (req.user.role !== 'ADMIN' && order.userId !== req.user.id) {
+      res.status(403).json({ success: false, error: 'Unauthorized access to this order' });
+      return;
+    }
+
+    if (!order.externalOrderId) {
+      res.status(400).json({ success: false, error: 'This order has no external provider reference' });
+      return;
+    }
+
+    try {
+      const cancelResult = await smm.cancelOrders([order.externalOrderId]);
+
+      if (Array.isArray(cancelResult) && cancelResult.length > 0) {
+        const item = cancelResult[0];
+        if (item.cancel && item.cancel.error) {
+          res.status(400).json({ success: false, error: item.cancel.error });
+          return;
+        }
+      }
+
+      await db.logAudit(
+        'ORDER_CANCEL_REQUEST',
+        `Cancellation requested for order #${order.id.slice(0, 8)}`,
+        req.ip || '127.0.0.1',
+        req.user.id,
+        req.user.username
+      );
+
+      res.json({
+        success: true,
+        message: 'Cancellation requested successfully from provider!',
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message || 'Failed to request cancellation' });
+    }
   }
 }

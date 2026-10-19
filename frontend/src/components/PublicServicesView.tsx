@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ServiceItem } from './ServicesTable';
-import { Star, Eye, Search, Layers, DollarSign, UserPlus, LogIn, Sparkles, Filter, ChevronRight, ChevronDown } from 'lucide-react';
+import { Star, Eye, Search, Layers, DollarSign, UserPlus, LogIn, Sparkles, Filter, ChevronRight, ChevronDown, CheckCircle2, XCircle } from 'lucide-react';
 import { PlatformPillsBar } from './PlatformPillsBar';
 import { ServiceDetailModal } from './ServiceDetailModal';
 import { ResponsivePickerSheet } from './ResponsivePickerSheet';
@@ -224,7 +224,7 @@ export const PublicServicesView: React.FC<PublicServicesViewProps> = ({
                         </div>
                       </td>
 
-                      {/* Service Name */}
+                      {/* Service Name with Refill & Cancel badges */}
                       <td style={{ fontWeight: 600, color: '#1e293b', lineHeight: 1.4 }}>
                         <span
                           style={{ cursor: 'pointer', transition: 'color 0.15s ease' }}
@@ -235,6 +235,65 @@ export const PublicServicesView: React.FC<PublicServicesViewProps> = ({
                         >
                           {service.name}
                         </span>
+                        <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                          {service.refill && (
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                padding: '2px 8px',
+                                borderRadius: 4,
+                                fontSize: '0.70rem',
+                                fontWeight: 700,
+                                backgroundColor: '#dcfce7',
+                                color: '#15803d',
+                                border: '1px solid #bbf7d0',
+                              }}
+                              title="Refill Guaranteed on SMMFollows"
+                            >
+                              <CheckCircle2 size={11} /> Refill
+                            </span>
+                          )}
+                          {service.cancel && (
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                padding: '2px 8px',
+                                borderRadius: 4,
+                                fontSize: '0.70rem',
+                                fontWeight: 700,
+                                backgroundColor: '#fef3c7',
+                                color: '#b45309',
+                                border: '1px solid #fde68a',
+                              }}
+                              title="Cancel Button Available on SMMFollows"
+                            >
+                              <XCircle size={11} /> Cancel
+                            </span>
+                          )}
+                          {service.dripfeed && (
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                padding: '2px 8px',
+                                borderRadius: 4,
+                                fontSize: '0.70rem',
+                                fontWeight: 700,
+                                backgroundColor: '#e0f2fe',
+                                color: '#0369a1',
+                                border: '1px solid #bae6fd',
+                              }}
+                              title="Drip-feed Automated Pacing Supported"
+                            >
+                              Drip-feed
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       {/* View Details Eye Button */}

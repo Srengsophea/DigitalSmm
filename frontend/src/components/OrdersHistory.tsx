@@ -26,6 +26,8 @@ export interface OrderItem {
   status: 'PENDING' | 'PROCESSING' | 'IN_PROGRESS' | 'COMPLETED' | 'PARTIAL' | 'CANCELED';
   startCount?: string | number;
   remains?: string | number;
+  refill?: boolean;
+  cancel?: boolean;
   createdAt: string;
 }
 

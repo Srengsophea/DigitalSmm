@@ -166,5 +166,29 @@ class SMMFollowsService {
             return {};
         }
     }
+    /**
+     * Request refill for an order on SMMFollows
+     */
+    async refillOrder(orderId) {
+        try {
+            const data = await this.request('refill', { order: orderId });
+            return data;
+        }
+        catch (err) {
+            return { error: err.message };
+        }
+    }
+    /**
+     * Request cancellation for orders on SMMFollows
+     */
+    async cancelOrders(orderIds) {
+        try {
+            const data = await this.request('cancel', { orders: orderIds.join(',') });
+            return data;
+        }
+        catch (err) {
+            return { error: err.message };
+        }
+    }
 }
 exports.SMMFollowsService = SMMFollowsService;

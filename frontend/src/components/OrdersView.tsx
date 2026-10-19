@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { OrderItem } from './OrdersHistory';
-import { Search, Check, RefreshCw, ShoppingCart } from 'lucide-react';
+import { Search, Check, RefreshCw, ShoppingCart, RotateCcw, XCircle } from 'lucide-react';
 
 export interface OrdersViewProps {
   onBuyService?: (order: OrderItem) => void;
@@ -12,6 +12,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ onBuyService }) => {
   const { showToast } = useAuth();
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [actingOrderId, setActingOrderId] = useState<string | null>(null);
   const [activeStatus, setActiveStatus] = useState<string>('All');
   const [searchInput, setSearchInput] = useState('');
   const [activeSearch, setActiveSearch] = useState('');
@@ -45,6 +46,44 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ onBuyService }) => {
       showToast(err.message || 'Failed to load orders', 'error');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleRefillOrder = async (order: OrderItem) => {
+    if (actingOrderId === order.id) return;
+    setActingOrderId(order.id);
+    try {
+      const res = await api.orders.refillOrder(order.id);
+      if (res.success) {
+        showToast(res.message || 'Refill requested successfully!', 'success');
+      } else {
+        showToast(res.error || 'Failed to request refill', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Error requesting refill', 'error');
+    } finally {
+      setActingOrderId(null);
+    }
+  };
+
+  const handleCancelOrder = async (order: OrderItem) => {
+    if (actingOrderId === order.id) return;
+    if (!window.confirm(`Request cancellation from provider for Order #${order.id.slice(0, 7)}?`)) {
+      return;
+    }
+    setActingOrderId(order.id);
+    try {
+      const res = await api.orders.cancelOrder(order.id);
+      if (res.success) {
+        showToast(res.message || 'Cancellation requested successfully!', 'success');
+        fetchOrders();
+      } else {
+        showToast(res.error || 'Failed to cancel order', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Error requesting cancellation', 'error');
+    } finally {
+      setActingOrderId(null);
     }
   };
 
@@ -123,7 +162,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ onBuyService }) => {
               <th>Service</th>
               <th style={{ width: 100 }}>Remains</th>
               <th style={{ width: 120 }}>Status</th>
-              <th style={{ width: 85, textAlign: 'center' }}>Order</th>
+              <th style={{ minWidth: 150, textAlign: 'center' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -207,42 +246,100 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ onBuyService }) => {
                     </span>
                   </td>
                   <td style={{ textAlign: 'center' }}>
-                    <button
-                      className="btn-order-shortcut"
-                      title={`Buy again (Shortcut): ${order.serviceName}`}
-                      onClick={() => {
-                        if (onBuyService) {
-                          onBuyService(order);
-                        }
-                      }}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 5,
-                        padding: '5px 12px',
-                        borderRadius: 6,
-                        background: 'linear-gradient(135deg, #162399 0%, #2563eb 100%)',
-                        color: '#ffffff',
-                        border: 'none',
-                        fontSize: '0.78rem',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)',
-                        transition: 'all 0.2s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-1px)';
-                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(37, 99, 235, 0.35)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'none';
-                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(37, 99, 235, 0.2)';
-                      }}
-                    >
-                      <ShoppingCart size={13} />
-                      <span>Buy</span>
-                    </button>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <button
+                        className="btn-order-shortcut"
+                        title={`Buy again (Shortcut): ${order.serviceName}`}
+                        onClick={() => {
+                          if (onBuyService) {
+                            onBuyService(order);
+                          }
+                        }}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 4,
+                          padding: '5px 10px',
+                          borderRadius: 6,
+                          background: 'linear-gradient(135deg, #162399 0%, #2563eb 100%)',
+                          color: '#ffffff',
+                          border: 'none',
+                          fontSize: '0.76rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)',
+                          transition: 'all 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-1px)';
+                          e.currentTarget.style.boxShadow = '0 4px 8px rgba(37, 99, 235, 0.35)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'none';
+                          e.currentTarget.style.boxShadow = '0 2px 4px rgba(37, 99, 235, 0.2)';
+                        }}
+                      >
+                        <ShoppingCart size={12} />
+                        <span>Buy</span>
+                      </button>
+
+                      {order.refill && (order.status === 'COMPLETED' || order.status === 'PARTIAL') && (
+                        <button
+                          className="btn-order-refill"
+                          title="Request Refill guarantee from provider"
+                          disabled={actingOrderId === order.id}
+                          onClick={() => handleRefillOrder(order)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 4,
+                            padding: '5px 9px',
+                            borderRadius: 6,
+                            background: 'rgba(16, 185, 129, 0.12)',
+                            color: '#059669',
+                            border: '1px solid rgba(16, 185, 129, 0.35)',
+                            fontSize: '0.76rem',
+                            fontWeight: 600,
+                            cursor: actingOrderId === order.id ? 'not-allowed' : 'pointer',
+                            opacity: actingOrderId === order.id ? 0.6 : 1,
+                            transition: 'all 0.2s ease',
+                          }}
+                        >
+                          <RotateCcw size={12} />
+                          <span>Refill</span>
+                        </button>
+                      )}
+
+                      {order.cancel && (order.status === 'PENDING' || order.status === 'PROCESSING' || order.status === 'IN_PROGRESS') && (
+                        <button
+                          className="btn-order-cancel"
+                          title="Request order cancellation from provider"
+                          disabled={actingOrderId === order.id}
+                          onClick={() => handleCancelOrder(order)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 4,
+                            padding: '5px 9px',
+                            borderRadius: 6,
+                            background: 'rgba(239, 68, 68, 0.12)',
+                            color: '#dc2626',
+                            border: '1px solid rgba(239, 68, 68, 0.35)',
+                            fontSize: '0.76rem',
+                            fontWeight: 600,
+                            cursor: actingOrderId === order.id ? 'not-allowed' : 'pointer',
+                            opacity: actingOrderId === order.id ? 0.6 : 1,
+                            transition: 'all 0.2s ease',
+                          }}
+                        >
+                          <XCircle size={12} />
+                          <span>Cancel</span>
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))

@@ -216,4 +216,28 @@ export class SMMFollowsService {
       return {};
     }
   }
+
+  /**
+   * Request refill for an order on SMMFollows
+   */
+  public async refillOrder(orderId: string | number): Promise<{ refill?: number | string; error?: string }> {
+    try {
+      const data = await this.request<any>('refill', { order: orderId });
+      return data;
+    } catch (err: any) {
+      return { error: err.message };
+    }
+  }
+
+  /**
+   * Request cancellation for orders on SMMFollows
+   */
+  public async cancelOrders(orderIds: (string | number)[]): Promise<any> {
+    try {
+      const data = await this.request<any>('cancel', { orders: orderIds.join(',') });
+      return data;
+    } catch (err: any) {
+      return { error: err.message };
+    }
+  }
 }

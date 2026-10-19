@@ -709,12 +709,13 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
   // Format the service search result row matching the user's screenshot
   const formatServiceSearchRow = (s: ServiceItem) => {
     const cleanName = decodeHtmlEntities(s.name);
+    const badges = `${s.refill ? ' | ♻️ Refill' : ''}${s.cancel ? ' | 🚫 Cancel' : ''}`;
     if (s.name.includes('|')) {
-      return `${cleanName} - $${s.customRate.toFixed(2)} per 1000`;
+      return `${cleanName}${badges} - $${s.customRate.toFixed(2)} per 1000`;
     }
     const maxStr = s.max ? (s.max >= 1000000 ? `${(s.max / 1000000).toLocaleString()}M` : s.max >= 1000 ? `${(s.max / 1000).toLocaleString()}K` : s.max) : '100K';
     const minStr = s.min ? s.min.toLocaleString() : '10';
-    return `${cleanName} | ✅ Quality: High Quality | ⚡ Start: Instant - 15 Min | 🚀 Speed: Fast | ⬇️ Min: ${minStr} | 🔝 Max: ${maxStr} - $${s.customRate.toFixed(2)} per 1000`;
+    return `${cleanName}${badges} | ✅ Quality: High Quality | ⚡ Start: Instant - 15 Min | 🚀 Speed: Fast | ⬇️ Min: ${minStr} | 🔝 Max: ${maxStr} - $${s.customRate.toFixed(2)} per 1000`;
   };
 
   const handleSelectSearchService = (s: ServiceItem) => {
@@ -1060,6 +1061,46 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                     </span>
                     <ChevronDown size={16} style={{ color: '#64748b', flexShrink: 0, marginLeft: 8 }} />
                   </div>
+                  {selectedService && (selectedService.refill || selectedService.cancel) && (
+                    <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+                      {selectedService.refill && (
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            padding: '2px 8px',
+                            borderRadius: 4,
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            backgroundColor: '#dcfce7',
+                            color: '#15803d',
+                            border: '1px solid #bbf7d0',
+                          }}
+                        >
+                          ♻️ Refill Guaranteed
+                        </span>
+                      )}
+                      {selectedService.cancel && (
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            padding: '2px 8px',
+                            borderRadius: 4,
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            backgroundColor: '#fef3c7',
+                            color: '#b45309',
+                            border: '1px solid #fde68a',
+                          }}
+                        >
+                          🚫 Cancel Button Available
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Link Input matching Screenshot 1 */}
@@ -1668,7 +1709,7 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
         items={filteredServices.map((s) => ({
           id: s.id,
           title: decodeHtmlEntities(s.name),
-          badge: `#${s.externalId}`,
+          badge: `#${s.externalId}${s.refill ? ' • ♻️ Refill' : ''}${s.cancel ? ' • 🚫 Cancel' : ''}`,
           rate: `$${s.customRate.toFixed(3)} / 1000`,
         }))}
       />

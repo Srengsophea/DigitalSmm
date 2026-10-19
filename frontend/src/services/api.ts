@@ -231,6 +231,20 @@ export const api = {
       });
       return handleResponse<any>(res);
     },
+    async refillOrder(orderId: string) {
+      const res = await fetch(`${API_BASE}/orders/${orderId}/refill`, {
+        method: 'POST',
+        headers: { ...getAuthHeader() },
+      });
+      return handleResponse<any>(res);
+    },
+    async cancelOrder(orderId: string) {
+      const res = await fetch(`${API_BASE}/orders/${orderId}/cancel`, {
+        method: 'POST',
+        headers: { ...getAuthHeader() },
+      });
+      return handleResponse<any>(res);
+    },
   },
 
   // ================= WALLET =================

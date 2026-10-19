@@ -495,8 +495,8 @@ export class DatabaseService {
         type: raw.type || 'Default',
         isActive,
         dripfeed: Boolean(raw.dripfeed),
-        refill: Boolean(raw.refill),
-        cancel: Boolean(raw.cancel),
+        refill: override?.refill !== undefined ? Boolean(override.refill) : this.detectRefill(raw),
+        cancel: override?.cancel !== undefined ? Boolean(override.cancel) : this.detectCancel(raw),
         updatedAt: override?.updatedAt || new Date().toISOString(),
       });
     }
@@ -661,6 +661,58 @@ export class DatabaseService {
     if (combined.includes('linkedin')) return 'LinkedIn';
     if (combined.includes('threads')) return 'Threads';
     return 'Other';
+  }
+
+  private detectRefill(raw: any): boolean {
+    if (raw.refill === true || raw.refill === 'true' || raw.refill === 1 || raw.refill === '1') {
+      return true;
+    }
+    const n = `${raw.name || ''} ${raw.category || ''}`.toLowerCase();
+    if (
+      n.includes('no refill') ||
+      n.includes('refill: no') ||
+      n.includes('refill : no') ||
+      n.includes('without refill') ||
+      n.includes('no-refill') ||
+      n.includes('refill: none')
+    ) {
+      return false;
+    }
+    return (
+      n.includes('refill') ||
+      n.includes('♻️') ||
+      n.includes('30d refill') ||
+      n.includes('365d refill') ||
+      n.includes('lifetime refill') ||
+      n.includes('auto refill') ||
+      n.includes('guaranteed refill')
+    );
+  }
+
+  private detectCancel(raw: any): boolean {
+    if (raw.cancel === true || raw.cancel === 'true' || raw.cancel === 1 || raw.cancel === '1') {
+      return true;
+    }
+    const n = `${raw.name || ''} ${raw.category || ''}`.toLowerCase();
+    if (
+      n.includes('no cancel') ||
+      n.includes('cancel: no') ||
+      n.includes('cancel : no') ||
+      n.includes('without cancel') ||
+      n.includes('cancel disabled')
+    ) {
+      return false;
+    }
+    return (
+      n.includes('cancel: enabled') ||
+      n.includes('cancel : enabled') ||
+      n.includes('cancel button') ||
+      n.includes('cancel: yes') ||
+      n.includes('cancel : yes') ||
+      n.includes('cancellation: enabled') ||
+      n.includes('cancel available') ||
+      n.includes('cancel: allowed')
+    );
   }
 
   // ================= ORDERS =================

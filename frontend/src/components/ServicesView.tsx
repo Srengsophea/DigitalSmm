@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ServiceItem } from './ServicesTable';
-import { Star, Eye, Info, Search, Filter, ChevronDown } from 'lucide-react';
+import { Star, Eye, Info, Search, Filter, ChevronDown, CheckCircle2, XCircle } from 'lucide-react';
 import { PlatformPillsBar } from './PlatformPillsBar';
 import { ServiceDetailModal } from './ServiceDetailModal';
 import { ResponsivePickerSheet } from './ResponsivePickerSheet';
@@ -32,6 +32,7 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
 }) => {
   const [selectedPlatform, setSelectedPlatform] = useState<string>('All');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [featureFilter, setFeatureFilter] = useState<'all' | 'refill' | 'cancel'>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [activeSearch, setActiveSearch] = useState<string>('');
   const [selectedDetailService, setSelectedDetailService] = useState<ServiceItem | null>(null);
@@ -53,6 +54,10 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
       return false;
     }
 
+    // Feature filter
+    if (featureFilter === 'refill' && !s.refill) return false;
+    if (featureFilter === 'cancel' && !s.cancel) return false;
+
     // Search query
     if (activeSearch.trim()) {
       const q = activeSearch.toLowerCase().trim();
@@ -68,7 +73,7 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
 
   // Group services by category for SMMFollows table format
   const groupedByCategory: { [cat: string]: ServiceItem[] } = {};
-  filteredServices.slice(0, 100).forEach((s) => {
+  filteredServices.slice(0, 150).forEach((s) => {
     if (!groupedByCategory[s.category]) {
       groupedByCategory[s.category] = [];
     }
@@ -92,7 +97,7 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
           <input
             type="text"
             className="form-input"
-            placeholder="Search"
+            placeholder="Search services by ID, title, or keyword..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyDown={(e) => {
@@ -125,18 +130,81 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
         </div>
       </div>
 
+      {/* Quick Feature Filter Badges */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap' }}>
+        <button
+          type="button"
+          onClick={() => setFeatureFilter('all')}
+          style={{
+            padding: '5px 12px',
+            borderRadius: 20,
+            fontSize: '0.8rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+            border: featureFilter === 'all' ? '1px solid #162399' : '1px solid #cbd5e1',
+            backgroundColor: featureFilter === 'all' ? '#162399' : '#ffffff',
+            color: featureFilter === 'all' ? '#ffffff' : '#475569',
+            transition: 'all 0.2s',
+          }}
+        >
+          All Services
+        </button>
+        <button
+          type="button"
+          onClick={() => setFeatureFilter('refill')}
+          style={{
+            padding: '5px 12px',
+            borderRadius: 20,
+            fontSize: '0.8rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+            border: featureFilter === 'refill' ? '1px solid #15803d' : '1px solid #bbf7d0',
+            backgroundColor: featureFilter === 'refill' ? '#15803d' : '#dcfce7',
+            color: featureFilter === 'refill' ? '#ffffff' : '#15803d',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5,
+            transition: 'all 0.2s',
+          }}
+        >
+          <CheckCircle2 size={13} />
+          <span>Refill Guaranteed</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setFeatureFilter('cancel')}
+          style={{
+            padding: '5px 12px',
+            borderRadius: 20,
+            fontSize: '0.8rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+            border: featureFilter === 'cancel' ? '1px solid #b45309' : '1px solid #fde68a',
+            backgroundColor: featureFilter === 'cancel' ? '#b45309' : '#fef3c7',
+            color: featureFilter === 'cancel' ? '#ffffff' : '#b45309',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5,
+            transition: 'all 0.2s',
+          }}
+        >
+          <XCircle size={13} />
+          <span>Cancel Button Available</span>
+        </button>
+      </div>
+
       {/* 3. Grouped Table matching Screenshot 2 */}
       <div className="services-table-wrapper">
         <table className="services-table">
           <thead>
             <tr>
-              <th style={{ width: 100 }}>ID</th>
+              <th style={{ width: 90 }}>ID</th>
               <th>Service</th>
               <th style={{ width: 50 }}></th>
               <th style={{ width: 140 }}>Rate per 1000</th>
-              <th style={{ width: 140, textAlign: 'center' }}>Min order</th>
-              <th style={{ width: 160, textAlign: 'center' }}>Max order</th>
-              <th style={{ width: 180, textAlign: 'right' }}>Average completion time ⓘ</th>
+              <th style={{ width: 130, textAlign: 'center' }}>Min order</th>
+              <th style={{ width: 140, textAlign: 'center' }}>Max order</th>
+              <th style={{ width: 160, textAlign: 'right' }}>Average speed</th>
             </tr>
           </thead>
           <tbody>
@@ -173,9 +241,68 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
                         </div>
                       </td>
 
-                      {/* Service Name */}
+                      {/* Service Name with Refill & Cancel badges */}
                       <td style={{ fontWeight: 500, color: '#334155' }}>
-                        {service.name}
+                        <div style={{ lineHeight: 1.45 }}>{service.name}</div>
+                        <div style={{ display: 'flex', gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
+                          {service.refill && (
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                padding: '2px 8px',
+                                borderRadius: 4,
+                                fontSize: '0.72rem',
+                                fontWeight: 700,
+                                backgroundColor: '#dcfce7',
+                                color: '#15803d',
+                                border: '1px solid #bbf7d0',
+                              }}
+                              title="Refill Guaranteed on SMMFollows"
+                            >
+                              <CheckCircle2 size={11} /> Refill
+                            </span>
+                          )}
+                          {service.cancel && (
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                padding: '2px 8px',
+                                borderRadius: 4,
+                                fontSize: '0.72rem',
+                                fontWeight: 700,
+                                backgroundColor: '#fef3c7',
+                                color: '#b45309',
+                                border: '1px solid #fde68a',
+                              }}
+                              title="Cancel Button Available on SMMFollows"
+                            >
+                              <XCircle size={11} /> Cancel
+                            </span>
+                          )}
+                          {service.dripfeed && (
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                padding: '2px 8px',
+                                borderRadius: 4,
+                                fontSize: '0.72rem',
+                                fontWeight: 700,
+                                backgroundColor: '#e0f2fe',
+                                color: '#0369a1',
+                                border: '1px solid #bae6fd',
+                              }}
+                              title="Drip-feed Automated Pacing Supported"
+                            >
+                              Drip-feed
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       {/* View Button */}

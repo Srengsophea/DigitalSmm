@@ -10,5 +10,7 @@ router.post('/', authenticate, orderLimiter, validateBody(createOrderSchema), Or
 router.post('/mass', authenticate, orderLimiter, OrdersController.createMassOrder);
 router.get('/my-orders', authenticate, OrdersController.getMyOrders);
 router.get('/:id/status', authenticate, OrdersController.checkLiveStatus);
+router.post('/:id/refill', authenticate, OrdersController.refillOrder);
+router.post('/:id/cancel', authenticate, OrdersController.cancelOrder);
 
 export default router;

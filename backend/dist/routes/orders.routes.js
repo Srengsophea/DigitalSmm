@@ -10,4 +10,6 @@ router.post('/', auth_middleware_1.authenticate, rateLimiter_1.orderLimiter, (0,
 router.post('/mass', auth_middleware_1.authenticate, rateLimiter_1.orderLimiter, orders_controller_1.OrdersController.createMassOrder);
 router.get('/my-orders', auth_middleware_1.authenticate, orders_controller_1.OrdersController.getMyOrders);
 router.get('/:id/status', auth_middleware_1.authenticate, orders_controller_1.OrdersController.checkLiveStatus);
+router.post('/:id/refill', auth_middleware_1.authenticate, orders_controller_1.OrdersController.refillOrder);
+router.post('/:id/cancel', auth_middleware_1.authenticate, orders_controller_1.OrdersController.cancelOrder);
 exports.default = router;

@@ -61,6 +61,8 @@ export interface ServiceOverride {
   markupPercent?: number;
   fixedIncrease?: number;
   isActive?: boolean;
+  refill?: boolean;
+  cancel?: boolean;
   updatedAt?: string;
 }
 
@@ -91,6 +93,8 @@ export interface Order {
   status: OrderStatus;
   startCount?: string | number;
   remains?: string | number;
+  refill?: boolean;
+  cancel?: boolean;
   providerResponse?: string;
   createdAt: string;
   updatedAt: string;
