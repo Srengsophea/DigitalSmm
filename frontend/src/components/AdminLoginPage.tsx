@@ -128,19 +128,24 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onNavigate }) =>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <div
             style={{
-              width: 58,
-              height: 58,
-              borderRadius: 16,
-              background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.2), rgba(14, 165, 233, 0.35))',
-              border: '1px solid #38bdf8',
+              width: 64,
+              height: 64,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto 16px',
-              boxShadow: '0 0 25px rgba(56, 189, 248, 0.4)',
             }}
           >
-            <ShieldAlert size={28} color="#38bdf8" />
+            <img
+              src="/logo.png"
+              alt="DigitalSMM Logo"
+              style={{
+                width: 58,
+                height: 58,
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 0 20px rgba(56, 189, 248, 0.5))',
+              }}
+            />
           </div>
 
           <div

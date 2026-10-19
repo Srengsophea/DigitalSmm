@@ -35,7 +35,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
         {/* Brand Logo */}
         <div className="public-brand" onClick={() => handleNav('/')}>
           <div className="public-brand-icon">
-            <Zap size={22} fill="#ffffff" />
+            <img src="/logo.png" alt="DigitalSMM Logo" className="public-brand-logo-img" />
           </div>
           <div className="public-brand-text">
             <div className="public-brand-name">

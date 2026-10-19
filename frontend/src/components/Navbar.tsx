@@ -37,8 +37,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           style={{ cursor: 'pointer' }}
           onClick={() => setActiveTab('services')}
         >
-          <div className="brand-icon-wrapper">
-            <Zap size={22} fill="#ffffff" />
+          <div className="brand-icon-wrapper" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <img src="/logo.png" alt="DigitalSMM" style={{ width: 34, height: 34, objectFit: 'contain' }} />
           </div>
           <div>
             Digital<span className="brand-highlight">SMM</span>

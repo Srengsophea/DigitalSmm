@@ -390,9 +390,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({
           <div className="auth-panel-left">
             <div>
               <div className="auth-left-brand">
-                <div className="auth-left-logo-icon">
-                  <Zap size={20} fill="#ffffff" />
-                </div>
+                <img
+                  src="/logo.png"
+                  alt="DigitalSMM"
+                  style={{ width: 42, height: 42, objectFit: 'contain', flexShrink: 0 }}
+                />
                 <div className="auth-left-brand-title">DIGITALSMM</div>
               </div>
 
@@ -461,6 +463,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
           {/* Right Form Container */}
           <div className="auth-panel-right">
+            {/* Mobile-only Brand Header */}
+            <div className="auth-mobile-brand">
+              <img src="/logo.png" alt="DigitalSMM" className="auth-mobile-logo-img" />
+              <div className="auth-mobile-brand-title">
+                DIGITAL<span>SMM</span>
+              </div>
+            </div>
+
             {/* Mode Switch Tabs */}
             <div className="auth-tab-switch">
               <button

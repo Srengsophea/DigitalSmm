@@ -54,9 +54,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div
           className="sidebar-logo"
           onClick={() => handleNav('services', '/services')}
-          style={{ cursor: 'pointer' }}
+          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }}
         >
-          <span style={{ color: '#162399', fontWeight: 900 }}>DIGITALSMM</span>
+          <img
+            src="/logo.png"
+            alt="DigitalSMM"
+            style={{ width: '30px', height: '30px', objectFit: 'contain', flexShrink: 0 }}
+          />
+          <span style={{ color: '#162399', fontWeight: 900, letterSpacing: '-0.02em', fontSize: '1.15rem' }}>
+            DIGITAL<span style={{ color: '#0284c7' }}>SMM</span>
+          </span>
         </div>
         
         {/* Mobile Close Button */}
