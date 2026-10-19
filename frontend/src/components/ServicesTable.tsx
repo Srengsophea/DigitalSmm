@@ -1,5 +1,17 @@
 import React, { useState, useMemo } from 'react';
-import { Search, ShoppingCart, RefreshCw, CheckCircle2, XCircle, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, ShoppingCart, RefreshCw, CheckCircle2, XCircle, Filter, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { ResponsivePickerSheet } from './ResponsivePickerSheet';
+
+const decodeHtmlEntities = (text: string): string => {
+  if (!text) return '';
+  return text
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ');
+};
 
 export interface ServiceItem {
   id: string;
@@ -42,6 +54,7 @@ export const ServicesTable: React.FC<ServicesTableProps> = ({
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<'rate_asc' | 'rate_desc' | 'id_asc'>('rate_asc');
+  const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState(false);
   const itemsPerPage = 40;
 
   const sortedServices = useMemo(() => {
@@ -78,22 +91,20 @@ export const ServicesTable: React.FC<ServicesTableProps> = ({
         </div>
 
         {/* Category Dropdown */}
-        <div style={{ minWidth: 220 }}>
-          <select
-            className="form-select"
-            value={selectedCategory}
-            onChange={(e) => {
-              onCategoryChange(e.target.value);
-              setCurrentPage(1);
-            }}
+        <div style={{ minWidth: 200, flex: '1 1 200px' }}>
+          <div
+            className="mobile-select-trigger"
+            onClick={() => setIsCategoryPickerOpen(true)}
+            role="button"
+            tabIndex={0}
           >
-            <option value="All">All Categories ({categories.length})</option>
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat.length > 50 ? `${cat.slice(0, 50)}...` : cat}
-              </option>
-            ))}
-          </select>
+            <span className="mobile-select-trigger-text">
+              {selectedCategory === 'All'
+                ? `All Categories (${categories.length})`
+                : decodeHtmlEntities(selectedCategory)}
+            </span>
+            <ChevronDown size={15} style={{ color: '#64748b', flexShrink: 0, marginLeft: 6 }} />
+          </div>
         </div>
 
         {/* Sort Select */}
@@ -271,6 +282,26 @@ export const ServicesTable: React.FC<ServicesTableProps> = ({
           </button>
         </div>
       )}
+
+      {/* Mobile Responsive Category Picker */}
+      <ResponsivePickerSheet
+        isOpen={isCategoryPickerOpen}
+        onClose={() => setIsCategoryPickerOpen(false)}
+        title="Select Category"
+        searchPlaceholder="Search categories..."
+        selectedId={selectedCategory}
+        onSelect={(cat) => {
+          onCategoryChange(cat);
+          setCurrentPage(1);
+        }}
+        items={[
+          { id: 'All', title: `All Categories (${categories.length})` },
+          ...categories.map((cat) => ({
+            id: cat,
+            title: decodeHtmlEntities(cat),
+          })),
+        ]}
+      />
     </div>
   );
 };

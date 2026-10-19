@@ -3,7 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { ServiceItem } from './ServicesTable';
 import { PlatformPillsBar } from './PlatformPillsBar';
-import { Search, X } from 'lucide-react';
+import { Search, X, ChevronDown } from 'lucide-react';
+import { ResponsivePickerSheet } from './ResponsivePickerSheet';
 
 interface NewOrderViewProps {
   services: ServiceItem[];
@@ -546,6 +547,8 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
 
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedServiceId, setSelectedServiceId] = useState<string>('');
+  const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState(false);
+  const [isServicePickerOpen, setIsServicePickerOpen] = useState(false);
   const [link, setLink] = useState('');
   const [quantity, setQuantity] = useState<number>(1000);
   const [dripFeed, setDripFeed] = useState<boolean>(false);
@@ -974,26 +977,19 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                   <label className="form-label" style={{ fontWeight: 500, color: '#334155', marginBottom: 6, fontSize: '0.88rem' }}>
                     Search By Category
                   </label>
-                  <select
-                    className="form-select"
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    style={{
-                      borderRadius: 8,
-                      borderColor: '#e2e8f0',
-                      fontSize: '0.88rem',
-                      padding: '10px 14px',
-                      width: '100%',
-                      maxWidth: '100%',
-                      boxSizing: 'border-box',
-                    }}
+
+                  {/* Custom Compact Selector Trigger */}
+                  <div
+                    className="mobile-select-trigger"
+                    onClick={() => setIsCategoryPickerOpen(true)}
+                    role="button"
+                    tabIndex={0}
                   >
-                    {displayCategories.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
+                    <span className="mobile-select-trigger-text">
+                      {decodeHtmlEntities(selectedCategory) || 'Select Category...'}
+                    </span>
+                    <ChevronDown size={16} style={{ color: '#64748b', flexShrink: 0, marginLeft: 8 }} />
+                  </div>
                 </div>
 
                 {/* Service Dropdown matching Screenshot 1 */}
@@ -1001,30 +997,21 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                   <label className="form-label" style={{ fontWeight: 500, color: '#334155', marginBottom: 6, fontSize: '0.88rem' }}>
                     Service
                   </label>
-                  <select
-                    className="form-select"
-                    value={selectedServiceId}
-                    onChange={(e) => {
-                      setSelectedServiceId(e.target.value);
-                      const s = allServices.find((x) => x.id === e.target.value);
-                      if (s) setQuantity(s.min);
-                    }}
-                    style={{
-                      borderRadius: 8,
-                      borderColor: '#e2e8f0',
-                      fontSize: '0.84rem',
-                      padding: '10px 14px',
-                      width: '100%',
-                      maxWidth: '100%',
-                      boxSizing: 'border-box',
-                    }}
+
+                  {/* Custom Compact Selector Trigger */}
+                  <div
+                    className="mobile-select-trigger"
+                    onClick={() => setIsServicePickerOpen(true)}
+                    role="button"
+                    tabIndex={0}
                   >
-                    {filteredServices.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        ID - {s.externalId} {decodeHtmlEntities(s.name)} | ${s.customRate.toFixed(3)} per 1000
-                      </option>
-                    ))}
-                  </select>
+                    <span className="mobile-select-trigger-text">
+                      {selectedService
+                        ? `ID - ${selectedService.externalId} ${decodeHtmlEntities(selectedService.name)} | $${selectedService.customRate.toFixed(3)} per 1000`
+                        : 'Select Service...'}
+                    </span>
+                    <ChevronDown size={16} style={{ color: '#64748b', flexShrink: 0, marginLeft: 8 }} />
+                  </div>
                 </div>
 
                 {/* Link Input matching Screenshot 1 */}
@@ -1151,52 +1138,40 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                   <label className="form-label" style={{ fontWeight: 500, color: '#334155', marginBottom: 6, fontSize: '0.88rem' }}>
                     Search By Category
                   </label>
-                  <select
-                    className="form-select"
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    style={{
-                      borderRadius: 8,
-                      borderColor: '#e2e8f0',
-                      fontSize: '0.88rem',
-                      padding: '10px 14px',
-                      width: '100%',
-                      maxWidth: '100%',
-                      boxSizing: 'border-box',
-                    }}
+
+                  {/* Custom Compact Selector Trigger */}
+                  <div
+                    className="mobile-select-trigger"
+                    onClick={() => setIsCategoryPickerOpen(true)}
+                    role="button"
+                    tabIndex={0}
                   >
-                    {displayCategories.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
+                    <span className="mobile-select-trigger-text">
+                      {decodeHtmlEntities(selectedCategory) || 'Select Category...'}
+                    </span>
+                    <ChevronDown size={16} style={{ color: '#64748b', flexShrink: 0, marginLeft: 8 }} />
+                  </div>
                 </div>
 
                 <div className="form-group" style={{ marginBottom: 18 }}>
                   <label className="form-label" style={{ fontWeight: 500, color: '#334155', marginBottom: 6, fontSize: '0.88rem' }}>
                     Service
                   </label>
-                  <select
-                    className="form-select"
-                    value={selectedServiceId}
-                    onChange={(e) => setSelectedServiceId(e.target.value)}
-                    style={{
-                      borderRadius: 8,
-                      borderColor: '#e2e8f0',
-                      fontSize: '0.84rem',
-                      padding: '10px 14px',
-                      width: '100%',
-                      maxWidth: '100%',
-                      boxSizing: 'border-box',
-                    }}
+
+                  {/* Custom Compact Selector Trigger */}
+                  <div
+                    className="mobile-select-trigger"
+                    onClick={() => setIsServicePickerOpen(true)}
+                    role="button"
+                    tabIndex={0}
                   >
-                    {filteredServices.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        ID - {s.externalId} {decodeHtmlEntities(s.name)} | ${s.customRate.toFixed(3)} per 1000
-                      </option>
-                    ))}
-                  </select>
+                    <span className="mobile-select-trigger-text">
+                      {selectedService
+                        ? `ID - ${selectedService.externalId} ${decodeHtmlEntities(selectedService.name)} | $${selectedService.customRate.toFixed(3)} per 1000`
+                        : 'Select Service...'}
+                    </span>
+                    <ChevronDown size={16} style={{ color: '#64748b', flexShrink: 0, marginLeft: 8 }} />
+                  </div>
                 </div>
 
                 <div className="form-group" style={{ marginBottom: 18 }}>
@@ -1615,6 +1590,40 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Mobile Responsive Category Bottom Sheet Picker */}
+      <ResponsivePickerSheet
+        isOpen={isCategoryPickerOpen}
+        onClose={() => setIsCategoryPickerOpen(false)}
+        title="Select Category"
+        searchPlaceholder="Search categories..."
+        selectedId={selectedCategory}
+        onSelect={(cat) => setSelectedCategory(cat)}
+        items={displayCategories.map((cat) => ({
+          id: cat,
+          title: decodeHtmlEntities(cat),
+        }))}
+      />
+
+      {/* Mobile Responsive Service Bottom Sheet Picker */}
+      <ResponsivePickerSheet
+        isOpen={isServicePickerOpen}
+        onClose={() => setIsServicePickerOpen(false)}
+        title="Select Service"
+        searchPlaceholder="Search services by name, ID or rate..."
+        selectedId={selectedServiceId}
+        onSelect={(id) => {
+          setSelectedServiceId(id);
+          const s = allServices.find((x) => x.id === id);
+          if (s) setQuantity(s.min);
+        }}
+        items={filteredServices.map((s) => ({
+          id: s.id,
+          title: decodeHtmlEntities(s.name),
+          badge: `#${s.externalId}`,
+          rate: `$${s.customRate.toFixed(3)} / 1000`,
+        }))}
+      />
     </div>
   );
 };

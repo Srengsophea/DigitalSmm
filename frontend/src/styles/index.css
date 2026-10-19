@@ -166,3 +166,262 @@ a {
 .floating-bell-btn:hover {
   transform: scale(1.08);
 }
+
+/* ==========================================================================
+   MOBILE RESPONSIVE SELECTOR & BOTTOM SHEET PICKER (COMPACT TYPOGRAPHY)
+   ========================================================================== */
+.mobile-select-trigger {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
+  user-select: none;
+  min-height: 38px;
+}
+
+.mobile-select-trigger:active,
+.mobile-select-trigger:hover {
+  background: #f8fafc;
+  border-color: #162399;
+}
+
+.mobile-select-trigger-text {
+  font-size: 0.78rem;
+  color: #1e293b;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+
+.desktop-select-element {
+  display: none !important;
+}
+
+/* Force all native select elements on mobile to be compact as fallback */
+select, .form-select, option {
+  font-size: 0.76rem !important;
+}
+
+@media (max-width: 768px) {
+  select, .form-select, option {
+    font-size: 0.74rem !important;
+  }
+}
+
+/* Bottom Sheet Picker Modal */
+.picker-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  animation: pickerFadeIn 0.2s ease forwards;
+}
+
+@keyframes pickerFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.picker-sheet-container {
+  background: #ffffff;
+  width: 100%;
+  max-width: 580px;
+  margin: 0 auto;
+  border-radius: 18px 18px 0 0;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -10px 35px rgba(0, 20, 80, 0.2);
+  animation: pickerSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  overflow: hidden;
+}
+
+@keyframes pickerSlideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.picker-sheet-handle {
+  width: 34px;
+  height: 4px;
+  background: #cbd5e1;
+  border-radius: 2px;
+  margin: 8px auto 4px;
+  flex-shrink: 0;
+}
+
+.picker-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px 10px;
+  border-bottom: 1px solid #f1f5f9;
+  flex-shrink: 0;
+}
+
+.picker-sheet-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.picker-sheet-title {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.picker-sheet-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: #e0f2fe;
+  color: #0284c7;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+.picker-sheet-close {
+  background: #f1f5f9;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.picker-sheet-close:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.picker-sheet-search-wrap {
+  padding: 8px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #f8fafc;
+  flex-shrink: 0;
+}
+
+.picker-sheet-search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  padding: 6px 10px;
+}
+
+.picker-sheet-search-input {
+  border: none;
+  outline: none;
+  width: 100%;
+  font-size: 0.78rem;
+  color: #1e293b;
+  background: transparent;
+}
+
+.picker-sheet-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2px 0 16px;
+}
+
+.picker-sheet-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  border-bottom: 1px solid #f8fafc;
+  cursor: pointer;
+  transition: background 0.12s ease;
+  user-select: none;
+}
+
+.picker-sheet-item:hover,
+.picker-sheet-item:active {
+  background: #f1f5f9;
+}
+
+.picker-sheet-item.selected {
+  background: #eff6ff;
+}
+
+.picker-sheet-item-left {
+  flex: 1;
+  min-width: 0;
+  padding-right: 10px;
+}
+
+.picker-sheet-item-text {
+  font-size: 0.74rem;
+  line-height: 1.3;
+  color: #1e293b;
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.picker-sheet-item.selected .picker-sheet-item-text {
+  color: #162399;
+  font-weight: 700;
+}
+
+.picker-sheet-item-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+}
+
+.picker-sheet-item-id-pill {
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: #e2e8f0;
+  color: #475569;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.picker-sheet-item-rate {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #0284c7;
+}
+
+.picker-sheet-radio {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.picker-sheet-item.selected .picker-sheet-radio {
+  border: 5px solid #162399;
+  background: #ffffff;
+}
+

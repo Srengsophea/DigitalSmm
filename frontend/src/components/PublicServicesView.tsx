@@ -1,8 +1,20 @@
 import React, { useState } from 'react';
 import { ServiceItem } from './ServicesTable';
-import { Star, Eye, Search, Layers, DollarSign, UserPlus, LogIn, Sparkles, Filter, ChevronRight } from 'lucide-react';
+import { Star, Eye, Search, Layers, DollarSign, UserPlus, LogIn, Sparkles, Filter, ChevronRight, ChevronDown } from 'lucide-react';
 import { PlatformPillsBar } from './PlatformPillsBar';
 import { ServiceDetailModal } from './ServiceDetailModal';
+import { ResponsivePickerSheet } from './ResponsivePickerSheet';
+
+const decodeHtmlEntities = (text: string): string => {
+  if (!text) return '';
+  return text
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ');
+};
 
 interface PublicServicesViewProps {
   services: ServiceItem[];
@@ -28,6 +40,7 @@ export const PublicServicesView: React.FC<PublicServicesViewProps> = ({
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [activeSearch, setActiveSearch] = useState<string>('');
   const [selectedDetailService, setSelectedDetailService] = useState<ServiceItem | null>(null);
+  const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState<boolean>(false);
 
   // Filtering
   const filteredServices = services.filter((s) => {
@@ -146,19 +159,20 @@ export const PublicServicesView: React.FC<PublicServicesViewProps> = ({
           Search
         </button>
 
-        <div className="category-filter-select">
-          <select
-            className="form-select"
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
+        <div className="category-filter-select" style={{ minWidth: 200, flex: '1 1 200px' }}>
+          <div
+            className="mobile-select-trigger"
+            onClick={() => setIsCategoryPickerOpen(true)}
+            role="button"
+            tabIndex={0}
           >
-            <option value="All">Filter By Category ({categories.length})</option>
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
+            <span className="mobile-select-trigger-text">
+              {selectedCategory === 'All'
+                ? `Filter By Category (${categories.length})`
+                : decodeHtmlEntities(selectedCategory)}
+            </span>
+            <ChevronDown size={15} style={{ color: '#64748b', flexShrink: 0, marginLeft: 6 }} />
+          </div>
         </div>
       </div>
 
@@ -282,6 +296,23 @@ export const PublicServicesView: React.FC<PublicServicesViewProps> = ({
         onSignUp={onSignUp}
         onSignIn={onSignIn}
         isAuthenticated={false}
+      />
+
+      {/* Mobile Responsive Category Picker */}
+      <ResponsivePickerSheet
+        isOpen={isCategoryPickerOpen}
+        onClose={() => setIsCategoryPickerOpen(false)}
+        title="Filter By Category"
+        searchPlaceholder="Search categories..."
+        selectedId={selectedCategory}
+        onSelect={(cat) => setSelectedCategory(cat)}
+        items={[
+          { id: 'All', title: `All Categories (${categories.length})` },
+          ...categories.map((cat) => ({
+            id: cat,
+            title: decodeHtmlEntities(cat),
+          })),
+        ]}
       />
     </div>
   );
