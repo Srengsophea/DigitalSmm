@@ -786,6 +786,7 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
       setMessage({ text: err.message || 'Error creating order', type: 'error' });
     } finally {
       setIsSubmitting(false);
+      refreshProfile();
     }
   };
 
@@ -818,6 +819,7 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
       setMessage({ text: err.message || 'Mass order error', type: 'error' });
     } finally {
       setIsSubmittingMass(false);
+      refreshProfile();
     }
   };
 

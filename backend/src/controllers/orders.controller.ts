@@ -52,7 +52,59 @@ export class OrdersController {
     const originalCost = Number(((quantity / 1000) * service.originalRate).toFixed(4));
     const profit = Number((charge - originalCost).toFixed(4));
 
-    // 1. Atomically deduct funds from user's balance
+    // 1. Verify user exists and has enough funds BEFORE sending order to provider
+    const freshUser = db.getUserById(req.user.id);
+    if (!freshUser || freshUser.balance < charge) {
+      res.status(400).json({
+        success: false,
+        error: `Insufficient funds in your wallet. Required: $${charge.toFixed(3)}, Current balance: $${(freshUser?.balance || 0).toFixed(3)}. Please add funds.`,
+        requiredCharge: charge,
+        currentBalance: freshUser?.balance || 0,
+      });
+      return;
+    }
+
+    // 2. Dispatch to SMMFollows provider API BEFORE deducting any funds
+    let providerResult;
+    try {
+      providerResult = await smm.addOrder({
+        service: service.externalId,
+        link,
+        quantity,
+        runs,
+        interval,
+      });
+    } catch (netErr: any) {
+      res.status(400).json({
+        success: false,
+        error: `Provider connection error: ${netErr.message || 'Failed to reach upstream server'}. No funds were deducted.`,
+        currentBalance: freshUser.balance,
+      });
+      return;
+    }
+
+    // 3. Handle provider rejection: ZERO FUNDS ARE DEBITED!
+    if (!providerResult || !providerResult.order) {
+      const errorMsg = providerResult?.error || 'Provider rejected order';
+      console.warn(`SMMFollows order dispatch rejected: ${errorMsg}`);
+
+      await db.logAudit(
+        'ORDER_REJECTED',
+        `Order for "${service.name.slice(0, 30)}" rejected by provider (${errorMsg}). No funds deducted from ${req.user.username}.`,
+        req.ip || '127.0.0.1',
+        req.user.id,
+        req.user.username
+      );
+
+      res.status(400).json({
+        success: false,
+        error: `Provider error: ${errorMsg}. No funds were deducted from your wallet.`,
+        currentBalance: freshUser.balance,
+      });
+      return;
+    }
+
+    // 4. Provider accepted! Now atomically debit user balance
     const debitResult = await db.adjustUserBalance(
       req.user.id,
       -charge,
@@ -62,21 +114,26 @@ export class OrdersController {
     );
 
     if (!debitResult.success) {
+      // Extremely rare race condition (concurrent order drained balance during provider call)
+      try {
+        await smm.cancelOrders([providerResult.order]);
+      } catch (_) {}
       res.status(400).json({
         success: false,
-        error: debitResult.error || 'Insufficient funds in your wallet. Please add funds.',
+        error: debitResult.error || 'Insufficient funds to finalize order charge.',
         requiredCharge: charge,
-        currentBalance: req.user.balance,
+        currentBalance: freshUser.balance,
       });
       return;
     }
 
-    // 2. Create local pending order record
+    // 5. Create local active order record
     const localOrder = await db.createOrder({
       userId: req.user.id,
       username: req.user.username,
       serviceId: service.id,
       externalServiceId: service.externalId,
+      externalOrderId: providerResult.order,
       serviceName: service.name,
       category: service.category,
       platform: service.platform,
@@ -86,75 +143,31 @@ export class OrdersController {
       charge,
       originalCost,
       profit,
-      status: 'PENDING',
+      status: 'PROCESSING',
       refill: service.refill,
       cancel: service.cancel,
+      providerResponse: JSON.stringify(providerResult.raw || {}),
     });
 
-    // 3. Dispatch to SMMFollows provider API
-    const providerResult = await smm.addOrder({
-      service: service.externalId,
-      link,
-      quantity,
-      runs,
-      interval,
-    });
-
-    // 4. Handle provider response
-    if (providerResult.order) {
-      // Order accepted by SMMFollows!
-      const updatedOrder = await db.updateOrder(localOrder.id, {
-        externalOrderId: providerResult.order,
-        status: 'PROCESSING',
-        providerResponse: JSON.stringify(providerResult.raw || {}),
-      });
-
-      await db.logAudit(
-        'ORDER_PLACED',
-        `Order #${localOrder.id.slice(0, 8)} placed on SMMFollows (#${providerResult.order}) for $${charge}`,
-        req.ip || '127.0.0.1',
-        req.user.id,
-        req.user.username
-      );
-
-      res.status(201).json({
-        success: true,
-        message: 'Order placed successfully and forwarded to provider!',
-        order: updatedOrder,
-        newBalance: debitResult.newBalance,
-      });
-      return;
+    // Link transaction referenceId to localOrder.id
+    const userTxs = db.getTransactionsByUserId(req.user.id);
+    if (userTxs.length > 0 && userTxs[0].type === 'ORDER_CHARGE' && !userTxs[0].referenceId) {
+      userTxs[0].referenceId = localOrder.id;
     }
 
-    // Provider rejected the order: instantly refund the user!
-    console.warn(`SMMFollows order dispatch rejected: ${providerResult.error}`);
-
-    await db.adjustUserBalance(
-      req.user.id,
-      charge,
-      'REFUND',
-      localOrder.id,
-      `Refund for failed order: ${providerResult.error || 'Provider rejection'}`
-    );
-
-    const refundedOrder = await db.updateOrder(localOrder.id, {
-      status: 'CANCELED',
-      providerResponse: providerResult.error || 'Provider dispatch error',
-    });
-
     await db.logAudit(
-      'ORDER_REFUNDED',
-      `Order #${localOrder.id.slice(0, 8)} failed (${providerResult.error}). $${charge} refunded to ${req.user.username}`,
+      'ORDER_PLACED',
+      `Order #${localOrder.id.slice(0, 8)} placed on SMMFollows (#${providerResult.order}) for $${charge}`,
       req.ip || '127.0.0.1',
       req.user.id,
       req.user.username
     );
 
-    res.status(400).json({
-      success: false,
-      error: `Provider error: ${providerResult.error || 'Failed to place order'}. Your wallet was refunded $${charge.toFixed(3)}.`,
-      order: refundedOrder,
-      newBalance: debitResult.newBalance + charge,
+    res.status(201).json({
+      success: true,
+      message: 'Order placed successfully and forwarded to provider!',
+      order: localOrder,
+      newBalance: debitResult.newBalance,
     });
   }
 
@@ -220,56 +233,58 @@ export class OrdersController {
         continue;
       }
 
-      const debitResult = await db.adjustUserBalance(
-        req.user.id,
-        -charge,
-        'ORDER_CHARGE',
-        undefined,
-        `Mass Order: #${service.externalId} Qty: ${quantity}`
-      );
-
-      if (!debitResult.success) {
-        results.push({ line: i + 1, raw: line, success: false, error: debitResult.error });
+      let providerResult;
+      try {
+        providerResult = await smm.addOrder({
+          service: service.externalId,
+          link,
+          quantity,
+        });
+      } catch (err: any) {
+        results.push({ line: i + 1, raw: line, success: false, error: err.message || 'Provider connection error' });
         continue;
       }
 
-      const localOrder = await db.createOrder({
-        userId: req.user.id,
-        username: req.user.username,
-        serviceId: service.id,
-        externalServiceId: service.externalId,
-        serviceName: service.name,
-        category: service.category,
-        platform: service.platform,
-        link,
-        quantity,
-        ratePerThousand: service.customRate,
-        charge,
-        originalCost,
-        profit,
-        status: 'PENDING',
-        refill: service.refill,
-        cancel: service.cancel,
-      });
+      if (providerResult && providerResult.order) {
+        const debitResult = await db.adjustUserBalance(
+          req.user.id,
+          -charge,
+          'ORDER_CHARGE',
+          undefined,
+          `Mass Order: #${service.externalId} Qty: ${quantity}`
+        );
 
-      const providerResult = await smm.addOrder({
-        service: service.externalId,
-        link,
-        quantity,
-      });
+        if (!debitResult.success) {
+          results.push({ line: i + 1, raw: line, success: false, error: debitResult.error });
+          continue;
+        }
 
-      if (providerResult.order) {
-        await db.updateOrder(localOrder.id, {
+        const localOrder = await db.createOrder({
+          userId: req.user.id,
+          username: req.user.username,
+          serviceId: service.id,
+          externalServiceId: service.externalId,
           externalOrderId: providerResult.order,
+          serviceName: service.name,
+          category: service.category,
+          platform: service.platform,
+          link,
+          quantity,
+          ratePerThousand: service.customRate,
+          charge,
+          originalCost,
+          profit,
           status: 'PROCESSING',
+          refill: service.refill,
+          cancel: service.cancel,
           providerResponse: JSON.stringify(providerResult.raw || {}),
         });
+
         results.push({ line: i + 1, raw: line, success: true, orderId: localOrder.id, externalOrderId: providerResult.order, charge });
         successfulCount++;
       } else {
-        await db.adjustUserBalance(req.user.id, charge, 'REFUND', localOrder.id, 'Mass order refund');
-        await db.updateOrder(localOrder.id, { status: 'CANCELED', providerResponse: providerResult.error });
-        results.push({ line: i + 1, raw: line, success: false, error: providerResult.error || 'Provider rejected' });
+        // Provider rejected: no deduction from user!
+        results.push({ line: i + 1, raw: line, success: false, error: providerResult?.error || 'Provider rejected' });
       }
     }
 
@@ -315,13 +330,7 @@ export class OrdersController {
               const extId = order.externalOrderId!.toString();
               const statusRes = multiStatus[extId];
               if (statusRes && !statusRes.error && statusRes.status) {
-                const mappedStatus = OrdersController.mapProviderStatus(statusRes.status);
-                const updated = await db.updateOrder(order.id, {
-                  status: mappedStatus,
-                  startCount: statusRes.start_count ?? order.startCount,
-                  remains: statusRes.remains ?? order.remains,
-                  providerResponse: JSON.stringify(statusRes),
-                });
+                const updated = await OrdersController.processOrderStatusUpdate(order, statusRes);
                 if (updated) {
                   const idx = orders.findIndex((o) => o.id === order.id);
                   if (idx !== -1) {
@@ -425,23 +434,95 @@ export class OrdersController {
         return;
       }
 
-      const mappedStatus: OrderStatus = OrdersController.mapProviderStatus(statusRes.status);
-
-      const updated = await db.updateOrder(order.id, {
-        status: mappedStatus,
-        startCount: statusRes.start_count,
-        remains: statusRes.remains,
-        providerResponse: JSON.stringify(statusRes),
-      });
+      const updated = await OrdersController.processOrderStatusUpdate(order, statusRes);
 
       res.json({
         success: true,
-        order: updated,
+        order: updated || order,
         providerStatus: statusRes,
       });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message || 'Failed to check status' });
     }
+  }
+
+  /**
+   * Process provider status update, with automated refund handling for Canceled, Refunded, or Partial orders
+   */
+  public static async processOrderStatusUpdate(
+    order: any,
+    statusRes: any
+  ): Promise<any | null> {
+    const db = DatabaseService.getInstance();
+    if (!statusRes || statusRes.error || !statusRes.status) {
+      return null;
+    }
+
+    const mappedStatus: OrderStatus = OrdersController.mapProviderStatus(statusRes.status);
+    let isRefunded = Boolean(order.isRefunded);
+    let refundAmount = order.refundAmount || 0;
+
+    // 1. Full refund if provider canceled/refunded order and order was not already refunded
+    if (mappedStatus === 'CANCELED' && !isRefunded && (order.charge || 0) > 0) {
+      const refundVal = order.charge;
+      const refRes = await db.adjustUserBalance(
+        order.userId,
+        refundVal,
+        'REFUND',
+        order.id,
+        `Automated refund for canceled order #${order.id.slice(0, 8)} (${order.serviceName.slice(0, 30)})`
+      );
+      if (refRes.success) {
+        isRefunded = true;
+        refundAmount = refundVal;
+        await db.logAudit(
+          'ORDER_AUTO_REFUND',
+          `Order #${order.id.slice(0, 8)} was canceled by provider. Auto-refunded $${refundVal} to ${order.username || order.userId}`,
+          '127.0.0.1',
+          order.userId,
+          order.username
+        );
+      }
+    }
+
+    // 2. Partial refund if provider marked partial and order was not already refunded
+    if (mappedStatus === 'PARTIAL' && !isRefunded && statusRes.remains !== undefined) {
+      const remainsNum = parseInt(statusRes.remains.toString(), 10);
+      if (!isNaN(remainsNum) && remainsNum > 0 && remainsNum <= order.quantity) {
+        const partialRefund = Number(((remainsNum / 1000) * (order.ratePerThousand || 0)).toFixed(4));
+        if (partialRefund > 0 && partialRefund <= (order.charge || 0)) {
+          const refRes = await db.adjustUserBalance(
+            order.userId,
+            partialRefund,
+            'REFUND',
+            order.id,
+            `Partial refund for order #${order.id.slice(0, 8)} (${remainsNum} remains)`
+          );
+          if (refRes.success) {
+            isRefunded = true;
+            refundAmount = partialRefund;
+            await db.logAudit(
+              'ORDER_PARTIAL_REFUND',
+              `Order #${order.id.slice(0, 8)} was partial (${remainsNum} remains). Auto-refunded $${partialRefund} to ${order.username || order.userId}`,
+              '127.0.0.1',
+              order.userId,
+              order.username
+            );
+          }
+        }
+      }
+    }
+
+    const updated = await db.updateOrder(order.id, {
+      status: mappedStatus,
+      startCount: statusRes.start_count ?? order.startCount,
+      remains: statusRes.remains ?? order.remains,
+      providerResponse: JSON.stringify(statusRes),
+      isRefunded,
+      refundAmount,
+    });
+
+    return updated;
   }
 
   public static mapProviderStatus(rawStatus?: string): OrderStatus {

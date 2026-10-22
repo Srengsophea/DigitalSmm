@@ -100,6 +100,8 @@ export interface Order {
   remains?: string | number;
   refill?: boolean;
   cancel?: boolean;
+  isRefunded?: boolean;
+  refundAmount?: number;
   providerResponse?: string;
   createdAt: string;
   updatedAt: string;

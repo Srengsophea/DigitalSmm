@@ -28,6 +28,8 @@ export interface OrderItem {
   remains?: string | number;
   refill?: boolean;
   cancel?: boolean;
+  isRefunded?: boolean;
+  refundAmount?: number;
   createdAt: string;
 }
 
@@ -242,9 +244,40 @@ export const OrdersHistory: React.FC = () => {
 
                   {/* Charge */}
                   <td>
-                    <span style={{ color: 'var(--cyan-light)', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
-                      ${order.charge.toFixed(3)}
-                    </span>
+                    {order.status === 'CANCELED' || order.isRefunded ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '0.82rem', fontFamily: 'var(--font-mono)' }}>
+                          ${order.charge.toFixed(3)}
+                        </span>
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            padding: '2px 6px',
+                            borderRadius: 4,
+                            fontSize: '0.68rem',
+                            fontWeight: 700,
+                            backgroundColor: '#dcfce7',
+                            color: '#15803d',
+                            width: 'fit-content',
+                          }}
+                        >
+                          Refunded
+                        </span>
+                      </div>
+                    ) : order.status === 'PARTIAL' && order.refundAmount ? (
+                      <div>
+                        <span style={{ color: 'var(--cyan-light)', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
+                          ${(order.charge - order.refundAmount).toFixed(3)}
+                        </span>
+                        <span style={{ display: 'block', fontSize: '0.68rem', color: '#16a34a' }}>
+                          (Ref: ${order.refundAmount.toFixed(3)})
+                        </span>
+                      </div>
+                    ) : (
+                      <span style={{ color: 'var(--cyan-light)', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
+                        ${order.charge.toFixed(3)}
+                      </span>
+                    )}
                   </td>
 
                   {/* Status Badge */}

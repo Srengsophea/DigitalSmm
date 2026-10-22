@@ -87,6 +87,31 @@ export class ApiV2Controller {
         const originalCost = Number(((quantity / 1000) * service.originalRate).toFixed(4));
         const profit = Number((charge - originalCost).toFixed(4));
 
+        const freshUser = db.getUserById(user.id);
+        if (!freshUser || freshUser.balance < charge) {
+          res.status(400).json({ error: 'Insufficient funds' });
+          return;
+        }
+
+        let providerResult;
+        try {
+          providerResult = await smm.addOrder({
+            service: service.externalId,
+            link,
+            quantity,
+            runs: req.body.runs ? parseInt(req.body.runs, 10) : undefined,
+            interval: req.body.interval ? parseInt(req.body.interval, 10) : undefined,
+          });
+        } catch (err: any) {
+          res.status(400).json({ error: err.message || 'Provider connection error' });
+          return;
+        }
+
+        if (!providerResult || !providerResult.order) {
+          res.status(400).json({ error: providerResult?.error || 'Provider rejection' });
+          return;
+        }
+
         const debit = await db.adjustUserBalance(
           user.id,
           -charge,
@@ -105,6 +130,7 @@ export class ApiV2Controller {
           username: user.username,
           serviceId: service.id,
           externalServiceId: service.externalId,
+          externalOrderId: providerResult.order,
           serviceName: service.name,
           category: service.category,
           platform: service.platform,
@@ -114,30 +140,11 @@ export class ApiV2Controller {
           charge,
           originalCost,
           profit,
-          status: 'PENDING',
+          status: 'PROCESSING',
+          providerResponse: JSON.stringify(providerResult.raw || {}),
         });
 
-        const providerResult = await smm.addOrder({
-          service: service.externalId,
-          link,
-          quantity,
-          runs: req.body.runs ? parseInt(req.body.runs, 10) : undefined,
-          interval: req.body.interval ? parseInt(req.body.interval, 10) : undefined,
-        });
-
-        if (providerResult.order) {
-          await db.updateOrder(localOrder.id, {
-            externalOrderId: providerResult.order,
-            status: 'PROCESSING',
-          });
-          res.json({ order: localOrder.id });
-          return;
-        }
-
-        // Refund user if provider fails
-        await db.adjustUserBalance(user.id, charge, 'REFUND', localOrder.id, 'API Order Refund');
-        await db.updateOrder(localOrder.id, { status: 'CANCELED', providerResponse: providerResult.error });
-        res.status(400).json({ error: providerResult.error || 'Provider rejection' });
+        res.json({ order: localOrder.id });
         return;
       }
 

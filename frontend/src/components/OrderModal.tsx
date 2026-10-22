@@ -88,6 +88,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
       setErrorMessage(err.message || 'Error communicating with server');
     } finally {
       setIsSubmitting(false);
+      refreshProfile();
     }
   };
 

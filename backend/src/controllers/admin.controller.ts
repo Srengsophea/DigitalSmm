@@ -191,13 +191,7 @@ export class AdminController {
               const extId = order.externalOrderId!.toString();
               const statusRes = multiStatus[extId];
               if (statusRes && !statusRes.error && statusRes.status) {
-                const mappedStatus = OrdersController.mapProviderStatus(statusRes.status);
-                const updated = await db.updateOrder(order.id, {
-                  status: mappedStatus,
-                  startCount: statusRes.start_count ?? order.startCount,
-                  remains: statusRes.remains ?? order.remains,
-                  providerResponse: JSON.stringify(statusRes),
-                });
+                const updated = await OrdersController.processOrderStatusUpdate(order, statusRes);
                 if (updated) {
                   const idx = orders.findIndex((o) => o.id === order.id);
                   if (idx !== -1) {
