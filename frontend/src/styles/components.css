@@ -625,13 +625,34 @@
   border: 1px solid var(--border-light);
   border-radius: var(--radius-lg);
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   box-shadow: var(--shadow-card);
+  width: 100%;
+}
+
+.services-table-wrapper::-webkit-scrollbar {
+  height: 6px;
+}
+
+.services-table-wrapper::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 4px;
+}
+
+.services-table-wrapper::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.services-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .services-table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
+  min-width: 1300px;
 }
 
 .services-table th {
@@ -1658,12 +1679,14 @@
   }
 
   .services-table {
-    min-width: 720px !important;
+    min-width: 1400px !important;
   }
 
   .services-table-wrapper {
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
   .khqr-page-grid.has-qr {

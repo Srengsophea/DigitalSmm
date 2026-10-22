@@ -199,7 +199,7 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
           <thead>
             <tr>
               <th style={{ width: 90 }}>ID</th>
-              <th>Service</th>
+              <th style={{ minWidth: 320, width: 360 }}>Service</th>
               <th style={{ width: 50 }}></th>
               <th style={{ width: 140 }}>Rate per 1000</th>
               <th style={{ width: 130, textAlign: 'center' }}>Min order</th>
@@ -242,7 +242,7 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
                       </td>
 
                       {/* Service Name with Refill & Cancel badges */}
-                      <td style={{ fontWeight: 500, color: '#334155' }}>
+                      <td style={{ minWidth: 320, maxWidth: 500, fontWeight: 500, color: '#334155' }}>
                         <div style={{ lineHeight: 1.45 }}>{service.name}</div>
                         <div style={{ display: 'flex', gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
                           {service.refill && (

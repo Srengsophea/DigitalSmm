@@ -182,7 +182,7 @@ export const PublicServicesView: React.FC<PublicServicesViewProps> = ({
           <thead>
             <tr>
               <th style={{ width: 90 }}>ID</th>
-              <th>Service Name</th>
+              <th style={{ minWidth: 320, width: 360 }}>Service Name</th>
               <th style={{ width: 60, textAlign: 'center' }}>Details</th>
               <th style={{ width: 140 }}>Rate per 1000</th>
               <th style={{ width: 130, textAlign: 'center' }}>Min order</th>
@@ -225,7 +225,7 @@ export const PublicServicesView: React.FC<PublicServicesViewProps> = ({
                       </td>
 
                       {/* Service Name with Refill & Cancel badges */}
-                      <td style={{ fontWeight: 600, color: '#1e293b', lineHeight: 1.4 }}>
+                      <td style={{ minWidth: 320, maxWidth: 500, fontWeight: 600, color: '#1e293b', lineHeight: 1.45 }}>
                         <span
                           style={{ cursor: 'pointer', transition: 'color 0.15s ease' }}
                           onClick={() => setSelectedDetailService(service)}

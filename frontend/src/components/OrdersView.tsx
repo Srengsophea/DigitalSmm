@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { OrderItem } from './OrdersHistory';
-import { Search, Check, RefreshCw, ShoppingCart, RotateCcw, XCircle } from 'lucide-react';
+import { Search, Check, RefreshCw, ShoppingCart, RotateCcw, XCircle, ExternalLink, Copy } from 'lucide-react';
 
 export interface OrdersViewProps {
   onBuyService?: (order: OrderItem) => void;
@@ -13,6 +13,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ onBuyService }) => {
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [actingOrderId, setActingOrderId] = useState<string | null>(null);
+  const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
   const [activeStatus, setActiveStatus] = useState<string>('All');
   const [searchInput, setSearchInput] = useState('');
   const [activeSearch, setActiveSearch] = useState('');
@@ -87,6 +88,20 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ onBuyService }) => {
     }
   };
 
+  const handleCopyLink = (linkStr: string, orderId: string) => {
+    navigator.clipboard.writeText(linkStr);
+    setCopiedOrderId(orderId);
+    showToast('Link copied to clipboard!', 'success');
+    setTimeout(() => {
+      setCopiedOrderId(null);
+    }, 2000);
+  };
+
+  const formatDisplayLink = (raw: string) => {
+    if (!raw) return '';
+    return raw.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
+  };
+
   useEffect(() => {
     fetchOrders();
   }, [activeStatus, activeSearch]);
@@ -154,14 +169,14 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ onBuyService }) => {
           <thead>
             <tr>
               <th style={{ width: 85 }}>ID</th>
-              <th style={{ width: 140 }}>Date</th>
-              <th>Link</th>
-              <th style={{ width: 100 }}>Charge</th>
-              <th style={{ width: 110 }}>Start count</th>
-              <th style={{ width: 100 }}>Quantity</th>
-              <th>Service</th>
-              <th style={{ width: 100 }}>Remains</th>
-              <th style={{ width: 120 }}>Status</th>
+              <th style={{ width: 105 }}>Date</th>
+              <th style={{ width: 340, minWidth: 300 }}>Link</th>
+              <th style={{ width: 90 }}>Charge</th>
+              <th style={{ width: 95 }}>Start count</th>
+              <th style={{ width: 95 }}>Quantity</th>
+              <th style={{ minWidth: 350, width: 380 }}>Service</th>
+              <th style={{ width: 90 }}>Remains</th>
+              <th style={{ width: 115 }}>Status</th>
               <th style={{ minWidth: 150, textAlign: 'center' }}>Actions</th>
             </tr>
           </thead>
@@ -185,25 +200,97 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ onBuyService }) => {
                   <td style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>
                     {new Date(order.createdAt).toLocaleDateString()}
                   </td>
-                  <td style={{ maxWidth: 220, wordBreak: 'break-all' }}>
-                    <a
-                      href={order.link.startsWith('http') ? order.link : `https://${order.link}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{ color: '#0284c7' }}
-                    >
-                      {order.link}
-                    </a>
+                  <td style={{ minWidth: 300, maxWidth: 420 }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <a
+                        href={order.link.startsWith('http') ? order.link : `https://${order.link}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        title={order.link}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '5px 10px',
+                          background: 'rgba(2, 132, 199, 0.08)',
+                          color: '#0284c7',
+                          border: '1px solid rgba(2, 132, 199, 0.22)',
+                          borderRadius: 6,
+                          fontSize: '0.82rem',
+                          fontWeight: 500,
+                          textDecoration: 'none',
+                          maxWidth: 320,
+                          transition: 'all 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'rgba(2, 132, 199, 0.16)';
+                          e.currentTarget.style.borderColor = '#0284c7';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'rgba(2, 132, 199, 0.08)';
+                          e.currentTarget.style.borderColor = 'rgba(2, 132, 199, 0.22)';
+                        }}
+                      >
+                        <ExternalLink size={12} style={{ flexShrink: 0 }} />
+                        <span
+                          style={{
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            display: 'inline-block',
+                          }}
+                        >
+                          {formatDisplayLink(order.link)}
+                        </span>
+                      </a>
+                      <button
+                        type="button"
+                        title="Copy full link"
+                        onClick={() => handleCopyLink(order.link, order.id)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: 26,
+                          height: 26,
+                          padding: 0,
+                          borderRadius: 5,
+                          border: '1px solid #e2e8f0',
+                          background: copiedOrderId === order.id ? '#dcfce7' : '#ffffff',
+                          color: copiedOrderId === order.id ? '#16a34a' : '#64748b',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                          flexShrink: 0,
+                        }}
+                        onMouseEnter={(e) => {
+                          if (copiedOrderId !== order.id) {
+                            e.currentTarget.style.background = '#f8fafc';
+                            e.currentTarget.style.borderColor = '#cbd5e1';
+                            e.currentTarget.style.color = '#334155';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (copiedOrderId !== order.id) {
+                            e.currentTarget.style.background = '#ffffff';
+                            e.currentTarget.style.borderColor = '#e2e8f0';
+                            e.currentTarget.style.color = '#64748b';
+                          }
+                        }}
+                      >
+                        {copiedOrderId === order.id ? <Check size={12} /> : <Copy size={12} />}
+                      </button>
+                    </div>
                   </td>
                   <td style={{ fontWeight: 600 }}>${order.charge.toFixed(3)}</td>
                   <td>{order.startCount ?? '0'}</td>
                   <td>{order.quantity.toLocaleString()}</td>
-                  <td style={{ fontWeight: 500 }}>
+                  <td style={{ minWidth: 350, maxWidth: 520, fontWeight: 500, lineHeight: 1.5 }}>
                     <span
                       onClick={() => onBuyService && onBuyService(order)}
                       style={{
                         cursor: onBuyService ? 'pointer' : 'default',
                         transition: 'color 0.2s',
+                        display: 'inline-block',
                       }}
                       title={onBuyService ? `Click to buy again: ${order.serviceName}` : undefined}
                       onMouseEnter={(e) => {

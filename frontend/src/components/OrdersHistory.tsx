@@ -161,7 +161,7 @@ export const OrdersHistory: React.FC = () => {
             <tr>
               <th>Order ID</th>
               <th>Provider Ref</th>
-              <th>Service & Target Link</th>
+              <th style={{ minWidth: 380 }}>Service & Target Link</th>
               <th>Quantity</th>
               <th>Charge</th>
               <th>Live Status</th>
@@ -206,7 +206,7 @@ export const OrdersHistory: React.FC = () => {
                   </td>
 
                   {/* Service & Link */}
-                  <td style={{ maxWidth: 320 }}>
+                  <td style={{ minWidth: 380, maxWidth: 480 }}>
                     <div style={{ fontWeight: 600, color: '#ffffff', fontSize: '0.88rem' }}>
                       {order.serviceName}
                     </div>
@@ -214,18 +214,24 @@ export const OrdersHistory: React.FC = () => {
                       href={order.link.startsWith('http') ? order.link : `https://${order.link}`}
                       target="_blank"
                       rel="noopener noreferrer"
+                      title={order.link}
                       style={{
                         fontSize: '0.78rem',
                         color: 'var(--primary-light)',
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: 4,
-                        marginTop: 2,
-                        wordBreak: 'break-all',
+                        marginTop: 4,
+                        maxWidth: 400,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
                       }}
                     >
-                      {order.link}
-                      <ExternalLink size={11} />
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {order.link.replace(/^https?:\/\//i, '').replace(/^www\./i, '')}
+                      </span>
+                      <ExternalLink size={11} style={{ flexShrink: 0 }} />
                     </a>
                   </td>
 
