@@ -183,6 +183,66 @@ export function getRangeLabel(options: ExportFilterOptions): string {
 }
 
 /**
+ * Clean & format SMM service names for PDF export:
+ * 1. Decodes HTML entities (&amp;, etc.)
+ * 2. Strips emojis and unsupported Unicode symbols that break standard PDF font glyphs
+ *    (preventing the "F a c e b o o k" character spacing bug and "Ø<ÝûØ<Ýø" mojibake)
+ * 3. Formats into a clean Title + concise specs subtitle
+ */
+export function cleanPdfServiceName(rawName?: string): string {
+  if (!rawName) return 'Service';
+
+  // 1. Decode HTML entities
+  let str = rawName
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ');
+
+  // 2. Remove emojis, surrogate pairs, and non-ASCII symbols that break standard PDF fonts
+  str = str
+    .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '') // Emojis & surrogate pairs
+    .replace(/[\u2600-\u27BF]/g, '') // Dingbats & symbols (⏱, 👥, ✅, ⚡, 🚀, etc.)
+    .replace(/[\uE000-\uF8FF]/g, '') // Private use
+    .replace(/[\uFE00-\uFE0F]/g, '') // Variation selectors
+    .replace(/[\u200D\u200B\u200E\u200F]/g, '') // Zero-width characters
+    .replace(/[\u2018\u2019]/g, "'") // Curly single quotes
+    .replace(/[\u201C\u201D]/g, '"') // Curly double quotes
+    .replace(/[\u2013\u2014]/g, '-') // En-dash & em-dash
+    .replace(/[^\x20-\x7E]/g, '') // Keep only clean standard printable ASCII
+    .trim();
+
+  // 3. Parse pipe-separated segments: Title | Spec1 | Spec2 | ...
+  const parts = str.split('|').map((p) => p.trim()).filter(Boolean);
+  if (parts.length === 0) return 'Service';
+
+  const baseTitle = parts[0].replace(/\s+/g, ' ').trim();
+  if (parts.length === 1) return baseTitle;
+
+  const keySpecs: string[] = [];
+  for (let i = 1; i < parts.length; i++) {
+    let p = parts[i];
+    p = p.replace(/^Refill Button:/i, 'Refill:');
+    p = p.replace(/^Quality:\s*/i, '');
+    p = p.replace(/^Speed:\s*/i, '');
+    p = p.replace(/^Duration:\s*/i, '');
+    p = p.replace(/^Location:\s*/i, '');
+    p = p.replace(/\s+/g, ' ').trim();
+
+    // Skip empty or noisy tags like "MAX 100K", "0% Drop", "New", "Cheapest"
+    if (!p || p.toLowerCase().startsWith('max') || p.toLowerCase() === 'new' || p.toLowerCase() === 'cheapest') {
+      continue;
+    }
+    keySpecs.push(p);
+  }
+
+  if (keySpecs.length === 0) return baseTitle;
+  return `${baseTitle}\n(${keySpecs.slice(0, 3).join(' • ')})`;
+}
+
+/**
  * EXPORT TO PDF
  * Generates an executive, branded Statement & Spend Report
  */
@@ -268,10 +328,12 @@ export function exportOrdersToPdf(orders: OrderItem[], options: ExportFilterOpti
     const isRefunded = o.isRefunded || isCanceled;
     let chargeStr = `$${(o.charge || 0).toFixed(3)}`;
     if (isRefunded) {
-      chargeStr = `$0.00 (Ref: $${(o.refundAmount || o.charge || 0).toFixed(3)})`;
+      chargeStr = `$0.00\n(Ref: $${(o.refundAmount || o.charge || 0).toFixed(3)})`;
+    } else if (o.status === 'PARTIAL' && o.refundAmount) {
+      chargeStr = `$${((o.charge || 0) - o.refundAmount).toFixed(3)}\n(Ref: $${o.refundAmount.toFixed(3)})`;
     }
 
-    const dateStr = new Date(o.createdAt).toLocaleString(undefined, {
+    const dateStr = new Date(o.createdAt).toLocaleString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
@@ -279,13 +341,15 @@ export function exportOrdersToPdf(orders: OrderItem[], options: ExportFilterOpti
       minute: '2-digit',
     });
 
-    const displayLink = o.link ? o.link.replace(/^https?:\/\//i, '').slice(0, 32) : '';
+    const displayLink = o.link
+      ? o.link.replace(/^https?:\/\//i, '').replace(/^www\./i, '').slice(0, 30)
+      : '';
 
     return [
       `#${(o.externalOrderId || o.id.slice(0, 7)).toString()}`,
       dateStr,
       o.platform || 'General',
-      o.serviceName ? o.serviceName.slice(0, 48) : 'Service',
+      cleanPdfServiceName(o.serviceName),
       displayLink,
       (o.quantity || 0).toLocaleString(),
       chargeStr,
@@ -296,12 +360,13 @@ export function exportOrdersToPdf(orders: OrderItem[], options: ExportFilterOpti
 
   autoTable(doc, {
     startY: cardY + cardHeight + 24,
-    head: [['Order ID', 'Date & Time', 'Platform', 'Service Name', 'Target Link', 'Quantity', 'Charge (USD)', 'Remains', 'Status']],
+    margin: { left: 35, right: 35 },
+    head: [['Order ID', 'Date & Time', 'Platform', 'Service Name', 'Target Link', 'Qty', 'Charge', 'Remains', 'Status']],
     body: tableData,
     theme: 'grid',
     styles: {
       fontSize: 8,
-      cellPadding: 4.5,
+      cellPadding: 4,
       textColor: [30, 41, 59],
       lineColor: [226, 232, 240],
       lineWidth: 0.5,
@@ -312,20 +377,36 @@ export function exportOrdersToPdf(orders: OrderItem[], options: ExportFilterOpti
       textColor: [255, 255, 255],
       fontStyle: 'bold',
       fontSize: 8,
+      halign: 'left',
     },
     alternateRowStyles: {
       fillColor: [248, 250, 252],
     },
     columnStyles: {
-      0: { cellWidth: 55, fontStyle: 'bold' },
-      1: { cellWidth: 95 },
-      2: { cellWidth: 60 },
-      3: { cellWidth: 'auto' },
-      4: { cellWidth: 120 },
-      5: { cellWidth: 55, halign: 'right' },
-      6: { cellWidth: 80, halign: 'right', fontStyle: 'bold' },
-      7: { cellWidth: 50, halign: 'right' },
-      8: { cellWidth: 65, halign: 'center', fontStyle: 'bold' },
+      0: { cellWidth: 58, fontStyle: 'bold' },
+      1: { cellWidth: 90, fontSize: 7.5 },
+      2: { cellWidth: 54 },
+      3: { cellWidth: 'auto', fontStyle: 'bold' }, // Clean Service Name - plenty of space
+      4: { cellWidth: 120, fontSize: 7.5 },
+      5: { cellWidth: 46, halign: 'right' },
+      6: { cellWidth: 65, halign: 'right', fontStyle: 'bold' },
+      7: { cellWidth: 46, halign: 'right' },
+      8: { cellWidth: 70, halign: 'center', fontStyle: 'bold' },
+    },
+    didParseCell: (data) => {
+      // Color status badges
+      if (data.section === 'body' && data.column.index === 8) {
+        const val = data.cell.raw;
+        if (val === 'COMPLETED') {
+          data.cell.styles.textColor = [21, 128, 61];
+        } else if (val === 'PROCESSING' || val === 'IN_PROGRESS') {
+          data.cell.styles.textColor = [3, 105, 161];
+        } else if (val === 'PENDING') {
+          data.cell.styles.textColor = [180, 83, 9];
+        } else if (val === 'CANCELED') {
+          data.cell.styles.textColor = [185, 28, 28];
+        }
+      }
     },
     didDrawPage: (data) => {
       // Footer page numbering
@@ -396,7 +477,7 @@ export function exportOrdersToExcel(orders: OrderItem[], options: ExportFilterOp
       o.platform || '',
       o.category || '',
       o.externalServiceId ? o.externalServiceId.toString() : (o.serviceId || ''),
-      o.serviceName || '',
+      cleanPdfServiceName(o.serviceName).replace('\n', ' - '),
       o.link || '',
       o.quantity || 0,
       o.charge || 0,
@@ -502,7 +583,7 @@ export function exportOrdersToTxt(orders: OrderItem[], options: ExportFilterOpti
       lines.push(`[#${i + 1}] Order ID: #${o.externalOrderId || o.id}`);
       lines.push(`     Date     : ${new Date(o.createdAt).toLocaleString()}`);
       lines.push(`     Platform : ${o.platform} | Status: ${o.status}`);
-      lines.push(`     Service  : ${o.serviceName}`);
+      lines.push(`     Service  : ${cleanPdfServiceName(o.serviceName).replace('\n', ' - ')}`);
       lines.push(`     Link     : ${o.link}`);
       lines.push(`     Quantity : ${(o.quantity || 0).toLocaleString()} | Charge: $${(o.charge || 0).toFixed(3)} USD`);
       lines.push(`     Remains  : ${o.remains ?? '0'} | Start Count: ${o.startCount ?? '0'}`);

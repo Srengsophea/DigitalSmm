@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { OrderItem } from './OrdersHistory';
 import {
   X,
@@ -61,6 +61,23 @@ export const OrderExportModal: React.FC<OrderExportModalProps> = ({
     return calculateSpendSummary(filteredOrders);
   }, [filteredOrders]);
 
+  // Lock body scroll and handle Escape key while modal is open
+  useEffect(() => {
+    if (!isOpen) return;
+    const origOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = origOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleExport = async () => {
@@ -120,18 +137,45 @@ export const OrderExportModal: React.FC<OrderExportModalProps> = ({
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1100 }}>
+    <div
+      className="modal-overlay"
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100vh',
+        backgroundColor: 'rgba(15, 23, 42, 0.65)',
+        backdropFilter: 'blur(5px)',
+        WebkitBackdropFilter: 'blur(5px)',
+        zIndex: 99999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '16px',
+        boxSizing: 'border-box',
+        overflowY: 'auto',
+      }}
+    >
       <div
         className="modal-content"
         onClick={(e) => e.stopPropagation()}
         style={{
           maxWidth: 680,
           width: '95%',
-          maxHeight: '92vh',
-          overflowY: 'auto',
-          borderRadius: 14,
-          padding: 0,
-          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.25)',
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundColor: '#ffffff',
+          borderRadius: 16,
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
+          overflow: 'hidden',
+          margin: 'auto',
+          position: 'relative',
         }}
       >
         {/* Modal Header */}
@@ -143,8 +187,7 @@ export const OrderExportModal: React.FC<OrderExportModalProps> = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderTopLeftRadius: 14,
-            borderTopRightRadius: 14,
+            flexShrink: 0,
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -188,7 +231,7 @@ export const OrderExportModal: React.FC<OrderExportModalProps> = ({
         </div>
 
         {/* Modal Body */}
-        <div style={{ padding: '24px' }}>
+        <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
           {/* 1. Format Selection */}
           <div style={{ marginBottom: 22 }}>
             <label style={{ fontSize: '0.88rem', fontWeight: 600, color: '#1e293b', display: 'block', marginBottom: 10 }}>
@@ -459,41 +502,52 @@ export const OrderExportModal: React.FC<OrderExportModalProps> = ({
             </div>
           </div>
 
-          {/* Modal Action Buttons */}
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-            <button
-              type="button"
-              onClick={onClose}
-              className="btn btn-secondary"
-              style={{ padding: '9px 18px', fontSize: '0.88rem' }}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleExport}
-              disabled={isExporting || filteredOrders.length === 0}
-              className="btn btn-primary"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '9px 22px',
-                fontSize: '0.88rem',
-                fontWeight: 600,
-                backgroundColor: '#162399',
-              }}
-            >
-              <Download size={16} />
-              <span>
-                {isExporting
-                  ? 'Generating File...'
-                  : filteredOrders.length === 0
-                  ? 'No Orders in Range'
-                  : `Download ${selectedFormat.toUpperCase()} (${filteredOrders.length} orders)`}
-              </span>
-            </button>
-          </div>
+        </div>
+
+        {/* Modal Action Buttons (Pinned Footer) */}
+        <div
+          style={{
+            display: 'flex',
+            gap: 12,
+            justifyContent: 'flex-end',
+            padding: '16px 24px',
+            borderTop: '1px solid #f1f5f9',
+            background: '#fafcff',
+            flexShrink: 0,
+          }}
+        >
+          <button
+            type="button"
+            onClick={onClose}
+            className="btn btn-secondary"
+            style={{ padding: '9px 18px', fontSize: '0.88rem' }}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={isExporting || filteredOrders.length === 0}
+            className="btn btn-primary"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '9px 22px',
+              fontSize: '0.88rem',
+              fontWeight: 600,
+              backgroundColor: '#162399',
+            }}
+          >
+            <Download size={16} />
+            <span>
+              {isExporting
+                ? 'Generating File...'
+                : filteredOrders.length === 0
+                ? 'No Orders in Range'
+                : `Download ${selectedFormat.toUpperCase()} (${filteredOrders.length} orders)`}
+            </span>
+          </button>
         </div>
       </div>
     </div>
