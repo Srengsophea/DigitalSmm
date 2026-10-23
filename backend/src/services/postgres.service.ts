@@ -510,6 +510,20 @@ export class PostgresService {
     return res.rows[0]?.value || null;
   }
 
+  public async getAllSettings(): Promise<Record<string, { key: string; value: string; isEncrypted: boolean; updatedAt: string }>> {
+    const res = await this.query('SELECT * FROM settings');
+    const settings: Record<string, { key: string; value: string; isEncrypted: boolean; updatedAt: string }> = {};
+    for (const row of res.rows) {
+      settings[row.key] = {
+        key: row.key,
+        value: row.value,
+        isEncrypted: row.is_encrypted,
+        updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : new Date().toISOString(),
+      };
+    }
+    return settings;
+  }
+
   public async setSetting(key: string, value: string, isEncrypted = false): Promise<void> {
     await this.query(
       `INSERT INTO settings (key, value, is_encrypted, updated_at)

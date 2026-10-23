@@ -134,19 +134,30 @@ export class DatabaseService {
     const pg = PostgresService.getInstance();
     if (!pg.isHealthy()) return;
     try {
-      const [users, orders, transactions, tickets, logs] = await Promise.all([
+      const [users, orders, transactions, tickets, logs, settingsMap] = await Promise.all([
         pg.getAllUsers(),
         pg.getOrders(),
         pg.getTransactions(),
         pg.getTickets(),
         pg.getAuditLogs(),
+        pg.getAllSettings(),
       ]);
       this.data.users = users;
       this.data.orders = orders;
       this.data.transactions = transactions;
       this.data.tickets = tickets;
       this.data.auditLogs = logs;
-      console.log(`⚡ PostgreSQL Active: ${users.length} users, ${orders.length} orders loaded into in-memory hot cache.`);
+
+      // Bidirectional sync for settings
+      if (Object.keys(settingsMap).length > 0) {
+        this.data.settings = settingsMap;
+      } else if (this.data.settings && Object.keys(this.data.settings).length > 0) {
+        for (const [key, item] of Object.entries(this.data.settings)) {
+          await pg.setSetting(key, item.value, item.isEncrypted);
+        }
+      }
+
+      console.log(`⚡ PostgreSQL Active: ${users.length} users, ${orders.length} orders, ${Object.keys(this.data.settings).length} settings synced.`);
     } catch (err: any) {
       console.warn('Could not hydrate in-memory cache from PostgreSQL:', err.message);
     }
