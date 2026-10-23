@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { api } from '../services/api';
 import {
   Copy,
@@ -16,6 +17,8 @@ import {
 
 export const UserSettingsView: React.FC = () => {
   const { user, refreshProfile, showToast } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   // 1. Email State & Flow
   // Step: 'idle' | 'verify_old' | 'verify_new'
@@ -355,19 +358,20 @@ export const UserSettingsView: React.FC = () => {
 
   // Base styles matching Image 2
   const cardStyle: React.CSSProperties = {
-    background: '#ffffff',
+    background: isDark ? '#1e293b' : '#ffffff',
     borderRadius: 14,
-    border: '1px solid #eef2f6',
-    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.02)',
+    border: isDark ? '1px solid #334155' : '1px solid #eef2f6',
+    boxShadow: isDark ? '0 4px 14px rgba(0, 0, 0, 0.4)' : '0 2px 10px rgba(0, 0, 0, 0.02)',
     padding: '24px 28px',
     marginBottom: 20,
+    color: isDark ? '#f8fafc' : '#0f172a',
   };
 
   const labelStyle: React.CSSProperties = {
     display: 'block',
     fontSize: '0.82rem',
     fontWeight: 600,
-    color: '#334155',
+    color: isDark ? '#cbd5e1' : '#334155',
     marginBottom: 6,
   };
 
@@ -375,11 +379,11 @@ export const UserSettingsView: React.FC = () => {
     width: '100%',
     height: 42,
     padding: '0 14px',
-    background: '#f8fafc',
-    border: '1px solid #e2e8f0',
+    background: isDark ? '#0f172a' : '#f8fafc',
+    border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
     borderRadius: 8,
     fontSize: '0.9rem',
-    color: '#1e293b',
+    color: isDark ? '#f8fafc' : '#1e293b',
     outline: 'none',
     boxSizing: 'border-box',
     transition: 'border-color 0.15s ease',
@@ -388,7 +392,7 @@ export const UserSettingsView: React.FC = () => {
   const primaryBtnStyle: React.CSSProperties = {
     width: '100%',
     height: 44,
-    background: '#162399',
+    background: isDark ? '#2563eb' : '#162399',
     color: '#ffffff',
     border: 'none',
     borderRadius: 24,
@@ -400,6 +404,7 @@ export const UserSettingsView: React.FC = () => {
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    boxShadow: isDark ? '0 4px 14px rgba(37, 99, 235, 0.4)' : 'none',
     transition: 'background-color 0.2s ease',
   };
 
@@ -413,7 +418,13 @@ export const UserSettingsView: React.FC = () => {
               <label style={labelStyle}>Username</label>
               <input
                 type="text"
-                style={{ ...inputStyle, background: '#f1f5f9', cursor: 'not-allowed', color: '#64748b' }}
+                style={{
+                  ...inputStyle,
+                  background: isDark ? '#111827' : '#f1f5f9',
+                  borderColor: isDark ? '#1f2937' : '#e2e8f0',
+                  cursor: 'not-allowed',
+                  color: isDark ? '#94a3b8' : '#64748b',
+                }}
                 value={user?.username || ''}
                 readOnly
                 disabled
@@ -424,7 +435,13 @@ export const UserSettingsView: React.FC = () => {
               <label style={labelStyle}>Current Email</label>
               <input
                 type="email"
-                style={{ ...inputStyle, background: '#f1f5f9', cursor: 'not-allowed', color: '#64748b' }}
+                style={{
+                  ...inputStyle,
+                  background: isDark ? '#111827' : '#f1f5f9',
+                  borderColor: isDark ? '#1f2937' : '#e2e8f0',
+                  cursor: 'not-allowed',
+                  color: isDark ? '#94a3b8' : '#64748b',
+                }}
                 value={user?.email || ''}
                 readOnly
                 disabled
@@ -469,7 +486,7 @@ export const UserSettingsView: React.FC = () => {
         {emailStep === 'verify_old' && (
           <form onSubmit={handleVerifyOldEmail}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#162399' }}>
+              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: isDark ? '#38bdf8' : '#162399' }}>
                 Step 1 of 2: Authorize from Current Email
               </div>
               <button
@@ -482,7 +499,17 @@ export const UserSettingsView: React.FC = () => {
               </button>
             </div>
 
-            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '12px 14px', marginBottom: 16, fontSize: '0.82rem', color: '#166534' }}>
+            <div
+              style={{
+                background: isDark ? 'rgba(34, 197, 94, 0.15)' : '#f0fdf4',
+                border: isDark ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid #bbf7d0',
+                borderRadius: 8,
+                padding: '12px 14px',
+                marginBottom: 16,
+                fontSize: '0.82rem',
+                color: isDark ? '#86efac' : '#166534',
+              }}
+            >
               We sent a 6-digit confirmation code to your current email (<strong>{pendingOldEmail}</strong>). Please enter it below to confirm authorization:
             </div>
 
@@ -522,7 +549,7 @@ export const UserSettingsView: React.FC = () => {
                 width: '100%',
                 background: 'transparent',
                 border: 'none',
-                color: '#64748b',
+                color: isDark ? '#94a3b8' : '#64748b',
                 fontSize: '0.82rem',
                 marginTop: 10,
                 cursor: 'pointer',
@@ -537,7 +564,7 @@ export const UserSettingsView: React.FC = () => {
         {emailStep === 'verify_new' && (
           <form onSubmit={handleVerifyNewEmail}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#162399' }}>
+              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: isDark ? '#38bdf8' : '#162399' }}>
                 Step 2 of 2: Verify Your New Email Address
               </div>
               <button
@@ -550,7 +577,17 @@ export const UserSettingsView: React.FC = () => {
               </button>
             </div>
 
-            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '12px 14px', marginBottom: 16, fontSize: '0.82rem', color: '#1e40af' }}>
+            <div
+              style={{
+                background: isDark ? 'rgba(56, 189, 248, 0.15)' : '#eff6ff',
+                border: isDark ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid #bfdbfe',
+                borderRadius: 8,
+                padding: '12px 14px',
+                marginBottom: 16,
+                fontSize: '0.82rem',
+                color: isDark ? '#7dd3fc' : '#1e40af',
+              }}
+            >
               Current email authorized! A 6-digit confirmation code has now been sent to your new email (<strong>{pendingNewEmail}</strong>). Please enter it to complete the update:
             </div>
 
@@ -692,15 +729,15 @@ export const UserSettingsView: React.FC = () => {
 
         {/* 2FA Setup View: QR Code + Secret Key + 6-Digit Code Input */}
         {twoFactorStep === 'setup' && (
-          <div style={{ marginTop: 20, paddingTop: 18, borderTop: '1px solid #f1f5f9' }}>
+          <div style={{ marginTop: 20, paddingTop: 18, borderTop: isDark ? '1px solid #334155' : '1px solid #f1f5f9' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <div style={{ fontSize: '0.90rem', fontWeight: 700, color: '#0f172a' }}>
+              <div style={{ fontSize: '0.90rem', fontWeight: 700, color: isDark ? '#f8fafc' : '#0f172a' }}>
                 Set Up Authenticator App
               </div>
               <button
                 type="button"
                 onClick={() => setTwoFactorStep('idle')}
-                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 4 }}
+                style={{ background: 'transparent', border: 'none', color: isDark ? '#94a3b8' : '#94a3b8', cursor: 'pointer', padding: 4 }}
                 title="Cancel"
               >
                 <X size={18} />
@@ -709,7 +746,7 @@ export const UserSettingsView: React.FC = () => {
 
             <div style={{ textAlign: 'center', marginBottom: 16 }}>
               {twoFactorQrCode && (
-                <div style={{ display: 'inline-block', padding: 8, background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                <div style={{ display: 'inline-block', padding: 8, background: '#ffffff', border: isDark ? '1px solid #334155' : '1px solid #e2e8f0', borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
                   <img
                     src={twoFactorQrCode}
                     alt="2FA QR Code"
@@ -717,7 +754,7 @@ export const UserSettingsView: React.FC = () => {
                   />
                 </div>
               )}
-              <div style={{ fontSize: '0.80rem', color: '#64748b', marginTop: 8 }}>
+              <div style={{ fontSize: '0.80rem', color: isDark ? '#94a3b8' : '#64748b', marginTop: 8 }}>
                 Scan this QR code with <strong>Google Authenticator</strong>, <strong>Authy</strong>, or <strong>1Password</strong>
               </div>
             </div>
@@ -734,8 +771,8 @@ export const UserSettingsView: React.FC = () => {
                     fontSize: '0.95rem',
                     fontWeight: 700,
                     letterSpacing: '2px',
-                    color: '#162399',
-                    background: '#f8fafc',
+                    color: isDark ? '#38bdf8' : '#162399',
+                    background: isDark ? '#0f172a' : '#f8fafc',
                   }}
                   value={twoFactorSecret}
                   readOnly
@@ -746,8 +783,8 @@ export const UserSettingsView: React.FC = () => {
                   style={{
                     height: 42,
                     padding: '0 16px',
-                    background: '#f1f5f9',
-                    border: '1px solid #e2e8f0',
+                    background: isDark ? '#1e293b' : '#f1f5f9',
+                    border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
                     borderRadius: 8,
                     cursor: 'pointer',
                     display: 'flex',
@@ -755,7 +792,7 @@ export const UserSettingsView: React.FC = () => {
                     gap: 6,
                     fontSize: '0.80rem',
                     fontWeight: 600,
-                    color: '#334155',
+                    color: isDark ? '#e2e8f0' : '#334155',
                   }}
                 >
                   {copiedSecret ? <Check size={16} color="#16a34a" /> : <Copy size={16} />}
@@ -801,7 +838,7 @@ export const UserSettingsView: React.FC = () => {
                   width: '100%',
                   background: 'transparent',
                   border: 'none',
-                  color: '#64748b',
+                  color: isDark ? '#94a3b8' : '#64748b',
                   fontSize: '0.82rem',
                   marginTop: 10,
                   cursor: 'pointer',
@@ -815,22 +852,22 @@ export const UserSettingsView: React.FC = () => {
 
         {/* 2FA Disable Confirmation */}
         {twoFactorStep === 'disable_confirm' && (
-          <form onSubmit={handleDisable2FA} style={{ marginTop: 20, paddingTop: 18, borderTop: '1px solid #f1f5f9' }}>
+          <form onSubmit={handleDisable2FA} style={{ marginTop: 20, paddingTop: 18, borderTop: isDark ? '1px solid #334155' : '1px solid #f1f5f9' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <div style={{ fontSize: '0.90rem', fontWeight: 700, color: '#dc2626' }}>
+              <div style={{ fontSize: '0.90rem', fontWeight: 700, color: '#ef4444' }}>
                 Disable Two-Factor Authentication
               </div>
               <button
                 type="button"
                 onClick={() => setTwoFactorStep('idle')}
-                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 4 }}
+                style={{ background: 'transparent', border: 'none', color: isDark ? '#94a3b8' : '#94a3b8', cursor: 'pointer', padding: 4 }}
                 title="Cancel"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '12px 14px', marginBottom: 16, fontSize: '0.82rem', color: '#991b1b' }}>
+            <div style={{ background: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fef2f2', border: isDark ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid #fecaca', borderRadius: 8, padding: '12px 14px', marginBottom: 16, fontSize: '0.82rem', color: isDark ? '#fca5a5' : '#991b1b' }}>
               Disabling 2FA will remove the extra layer of security from your account. Please enter your account password to confirm:
             </div>
 
@@ -848,7 +885,7 @@ export const UserSettingsView: React.FC = () => {
 
             <button
               type="submit"
-              style={{ ...primaryBtnStyle, background: '#dc2626' }}
+              style={{ ...primaryBtnStyle, background: '#ef4444' }}
               disabled={is2FALoading}
             >
               {is2FALoading ? 'Disabling...' : 'Confirm & Disable 2FA'}
@@ -861,7 +898,7 @@ export const UserSettingsView: React.FC = () => {
                 width: '100%',
                 background: 'transparent',
                 border: 'none',
-                color: '#64748b',
+                color: isDark ? '#94a3b8' : '#64748b',
                 fontSize: '0.82rem',
                 marginTop: 10,
                 cursor: 'pointer',
@@ -913,7 +950,8 @@ export const UserSettingsView: React.FC = () => {
                 fontFamily: 'var(--font-mono, monospace)',
                 fontSize: '0.86rem',
                 paddingRight: 40,
-                background: '#f8fafc',
+                background: isDark ? '#0f172a' : '#f8fafc',
+                color: isDark ? '#38bdf8' : undefined,
               }}
               value={currentApiKey || 'No API key generated'}
               readOnly
@@ -930,7 +968,7 @@ export const UserSettingsView: React.FC = () => {
                   transform: 'translateY(-50%)',
                   background: 'transparent',
                   border: 'none',
-                  color: '#64748b',
+                  color: isDark ? '#94a3b8' : '#64748b',
                   cursor: 'pointer',
                   padding: 4,
                   display: 'flex',
@@ -941,7 +979,7 @@ export const UserSettingsView: React.FC = () => {
               </button>
             )}
           </div>
-          <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: 8 }}>
+          <div style={{ fontSize: '0.78rem', color: isDark ? '#94a3b8' : '#64748b', marginTop: 8 }}>
             Created: {apiKeyCreatedDate}
           </div>
         </div>

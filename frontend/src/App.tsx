@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
 import { NewOrderView, PreselectedServiceData } from './components/NewOrderView';
@@ -95,6 +96,24 @@ const MainLayout: React.FC<MainLayoutProps> = ({
     fetchServices();
   }, []);
 
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('sidebar_collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const handleToggleSidebarCollapse = () => {
+    setIsSidebarCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('sidebar_collapsed', String(next));
+      } catch {}
+      return next;
+    });
+  };
+
   const handleNavPage = (page: string) => {
     setActivePage(page);
     onNavigate(`/${page}`);
@@ -102,7 +121,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   };
 
   return (
-    <div className="app-container">
+    <div className={`app-container ${isSidebarCollapsed ? 'sidebar-is-collapsed' : ''}`}>
       {/* 1. Left Navigation Sidebar */}
       <Sidebar
         activePage={activePage}
@@ -111,6 +130,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         onNavigate={onNavigate}
         isMobileOpen={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={handleToggleSidebarCollapse}
       />
 
       {/* Mobile Backdrop Overlay */}
@@ -421,8 +442,10 @@ const RouterApp: React.FC = () => {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <RouterApp />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <RouterApp />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

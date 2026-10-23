@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTheme } from '../context/ThemeContext';
 
 export const PLATFORM_ROW_1 = [
   'All',
@@ -59,6 +60,9 @@ export const PlatformPillsBar: React.FC<PlatformPillsBarProps> = ({
   selectedPlatform,
   onSelectPlatform,
 }) => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const getPlatformIcon = (platform: string, isActive: boolean) => {
     const iconSize = 18;
 
@@ -109,7 +113,7 @@ export const PlatformPillsBar: React.FC<PlatformPillsBarProps> = ({
 
       case 'Tiktok':
         return (
-          <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill={isActive ? '#ffffff' : '#0f172a'}>
+          <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill={isActive ? '#ffffff' : isDark ? '#f8fafc' : '#0f172a'}>
             <path d="M12.53 2c.07 1.55.74 3.01 1.88 4.09 1.15 1.08 2.65 1.68 4.22 1.68v3.2a7.35 7.35 0 0 1-3.63-1.02v6.52a5.47 5.47 0 1 1-5.47-5.47c.36 0 .72.04 1.07.11v3.31a2.27 2.27 0 1 0 1.2 2.05V2h.73z" />
           </svg>
         );
@@ -347,9 +351,9 @@ export const PlatformPillsBar: React.FC<PlatformPillsBarProps> = ({
 
       case 'Medium':
         return (
-          <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill={isActive ? '#ffffff' : '#000000'}>
+          <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill={isActive ? '#ffffff' : isDark ? '#f8fafc' : '#000000'}>
             <rect x="3" y="3" width="18" height="18" rx="4" />
-            <text x="12" y="16" fill="#ffffff" fontSize="12" fontWeight="900" textAnchor="middle" fontFamily="serif">M</text>
+            <text x="12" y="16" fill={isDark && !isActive ? '#0f172a' : '#ffffff'} fontSize="12" fontWeight="900" textAnchor="middle" fontFamily="serif">M</text>
           </svg>
         );
 
@@ -424,16 +428,18 @@ export const PlatformPillsBar: React.FC<PlatformPillsBarProps> = ({
           height: btnHeight,
           minHeight: btnHeight,
           borderRadius: 8,
-          background: isActive ? '#162399' : '#ffffff',
-          color: isActive ? '#ffffff' : '#1e293b',
-          border: `1.5px solid ${isActive ? '#162399' : '#e2e8f0'}`,
+          background: isActive ? '#2563eb' : isDark ? '#1e293b' : '#ffffff',
+          color: isActive ? '#ffffff' : isDark ? '#f1f5f9' : '#1e293b',
+          border: `1.5px solid ${isActive ? '#2563eb' : isDark ? '#334155' : '#e2e8f0'}`,
           fontWeight: isActive ? 700 : 600,
           fontSize: btnFontSize,
           letterSpacing: '-0.1px',
           cursor: 'pointer',
           whiteSpace: 'nowrap',
           boxShadow: isActive
-            ? '0 3px 10px rgba(22, 35, 153, 0.28)'
+            ? '0 3px 12px rgba(37, 99, 235, 0.35)'
+            : isDark
+            ? '0 2px 6px rgba(0, 0, 0, 0.25)'
             : '0 1px 3px rgba(0, 20, 80, 0.04)',
           transition: 'all 0.15s ease',
           flex: isWide && !isMobile ? '1 1 0' : '0 0 auto',

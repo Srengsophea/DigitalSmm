@@ -4,6 +4,7 @@ import { Star, Eye, Info, Search, Filter, ChevronDown, CheckCircle2, XCircle } f
 import { PlatformPillsBar } from './PlatformPillsBar';
 import { ServiceDetailModal } from './ServiceDetailModal';
 import { ResponsivePickerSheet } from './ResponsivePickerSheet';
+import { useTheme } from '../context/ThemeContext';
 
 const decodeHtmlEntities = (text: string): string => {
   if (!text) return '';
@@ -30,6 +31,8 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
   isLoading,
   onSelectService,
 }) => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [selectedPlatform, setSelectedPlatform] = useState<string>('All');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [featureFilter, setFeatureFilter] = useState<'all' | 'refill' | 'cancel'>('all');
@@ -141,9 +144,9 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
             fontSize: '0.8rem',
             fontWeight: 600,
             cursor: 'pointer',
-            border: featureFilter === 'all' ? '1px solid #162399' : '1px solid #cbd5e1',
-            backgroundColor: featureFilter === 'all' ? '#162399' : '#ffffff',
-            color: featureFilter === 'all' ? '#ffffff' : '#475569',
+            border: featureFilter === 'all' ? (isDark ? '1px solid #38bdf8' : '1px solid #162399') : (isDark ? '1px solid #334155' : '1px solid #cbd5e1'),
+            backgroundColor: featureFilter === 'all' ? (isDark ? '#2563eb' : '#162399') : (isDark ? '#1e293b' : '#ffffff'),
+            color: featureFilter === 'all' ? '#ffffff' : (isDark ? '#cbd5e1' : '#475569'),
             transition: 'all 0.2s',
           }}
         >
@@ -158,9 +161,9 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
             fontSize: '0.8rem',
             fontWeight: 600,
             cursor: 'pointer',
-            border: featureFilter === 'refill' ? '1px solid #15803d' : '1px solid #bbf7d0',
-            backgroundColor: featureFilter === 'refill' ? '#15803d' : '#dcfce7',
-            color: featureFilter === 'refill' ? '#ffffff' : '#15803d',
+            border: featureFilter === 'refill' ? '1px solid #15803d' : (isDark ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid #bbf7d0'),
+            backgroundColor: featureFilter === 'refill' ? '#15803d' : (isDark ? 'rgba(34, 197, 94, 0.15)' : '#dcfce7'),
+            color: featureFilter === 'refill' ? '#ffffff' : (isDark ? '#4ade80' : '#15803d'),
             display: 'inline-flex',
             alignItems: 'center',
             gap: 5,
@@ -179,9 +182,9 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
             fontSize: '0.8rem',
             fontWeight: 600,
             cursor: 'pointer',
-            border: featureFilter === 'cancel' ? '1px solid #b45309' : '1px solid #fde68a',
-            backgroundColor: featureFilter === 'cancel' ? '#b45309' : '#fef3c7',
-            color: featureFilter === 'cancel' ? '#ffffff' : '#b45309',
+            border: featureFilter === 'cancel' ? '1px solid #b45309' : (isDark ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid #fde68a'),
+            backgroundColor: featureFilter === 'cancel' ? '#b45309' : (isDark ? 'rgba(245, 158, 11, 0.15)' : '#fef3c7'),
+            color: featureFilter === 'cancel' ? '#ffffff' : (isDark ? '#fbbf24' : '#b45309'),
             display: 'inline-flex',
             alignItems: 'center',
             gap: 5,
@@ -234,7 +237,7 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
                   {items.map((service) => (
                     <tr key={service.id}>
                       {/* ID with Star */}
-                      <td style={{ color: '#475569', fontWeight: 600 }}>
+                      <td style={{ color: isDark ? '#94a3b8' : '#475569', fontWeight: 600 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <Star size={14} color="#f59e0b" fill="#fef3c7" />
                           <span>{service.externalId}</span>
@@ -242,7 +245,7 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
                       </td>
 
                       {/* Service Name with Refill & Cancel badges */}
-                      <td style={{ minWidth: 320, maxWidth: 500, fontWeight: 500, color: '#334155' }}>
+                      <td style={{ minWidth: 320, maxWidth: 500, fontWeight: 500, color: isDark ? '#f8fafc' : '#334155' }}>
                         <div style={{ lineHeight: 1.45 }}>{service.name}</div>
                         <div style={{ display: 'flex', gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
                           {service.refill && (
@@ -255,9 +258,9 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
                                 borderRadius: 4,
                                 fontSize: '0.72rem',
                                 fontWeight: 700,
-                                backgroundColor: '#dcfce7',
-                                color: '#15803d',
-                                border: '1px solid #bbf7d0',
+                                backgroundColor: isDark ? 'rgba(34, 197, 94, 0.2)' : '#dcfce7',
+                                color: isDark ? '#4ade80' : '#15803d',
+                                border: isDark ? '1px solid rgba(34, 197, 94, 0.35)' : '1px solid #bbf7d0',
                               }}
                               title="Refill Guaranteed on SMMFollows"
                             >
@@ -274,9 +277,9 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
                                 borderRadius: 4,
                                 fontSize: '0.72rem',
                                 fontWeight: 700,
-                                backgroundColor: '#fef3c7',
-                                color: '#b45309',
-                                border: '1px solid #fde68a',
+                                backgroundColor: isDark ? 'rgba(245, 158, 11, 0.2)' : '#fef3c7',
+                                color: isDark ? '#fbbf24' : '#b45309',
+                                border: isDark ? '1px solid rgba(245, 158, 11, 0.35)' : '1px solid #fde68a',
                               }}
                               title="Cancel Button Available on SMMFollows"
                             >
@@ -293,9 +296,9 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
                                 borderRadius: 4,
                                 fontSize: '0.72rem',
                                 fontWeight: 700,
-                                backgroundColor: '#e0f2fe',
-                                color: '#0369a1',
-                                border: '1px solid #bae6fd',
+                                backgroundColor: isDark ? 'rgba(56, 189, 248, 0.2)' : '#e0f2fe',
+                                color: isDark ? '#38bdf8' : '#0369a1',
+                                border: isDark ? '1px solid rgba(56, 189, 248, 0.35)' : '1px solid #bae6fd',
                               }}
                               title="Drip-feed Automated Pacing Supported"
                             >

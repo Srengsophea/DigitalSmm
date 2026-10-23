@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTheme } from '../context/ThemeContext';
 import {
   Zap,
   Layers,
@@ -13,6 +14,8 @@ import {
   Sparkles,
   ChevronRight,
   ShieldCheck,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 interface PublicNavbarProps {
@@ -24,6 +27,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
   activePage,
   onNavigate,
 }) => {
+  const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Close mobile drawer on Escape key
@@ -120,6 +124,29 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
 
           {/* Right Action Buttons */}
           <div className="public-nav-actions">
+            <button
+              type="button"
+              className="topbar-circle-btn theme-toggle-btn"
+              title={theme === 'dark' ? 'Switch to Light mode' : 'Switch to Dark mode'}
+              aria-label={theme === 'dark' ? 'Switch to Light mode' : 'Switch to Dark mode'}
+              onClick={toggleTheme}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              {theme === 'dark' ? (
+                <Moon size={16} style={{ color: '#38bdf8' }} />
+              ) : (
+                <Sun size={16} style={{ color: '#f59e0b' }} />
+              )}
+            </button>
+
             <button
               type="button"
               className="btn-public-signin"

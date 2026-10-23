@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import {
   User,
   Star,
@@ -9,6 +10,7 @@ import {
   Plus,
   Settings,
   Sun,
+  Moon,
   Power,
   LogIn,
   Menu,
@@ -33,6 +35,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   onToggleMobileSidebar,
 }) => {
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const balance = user?.balance ?? 0;
   const spending = user?.totalSpent ?? 0;
   const totalOrders = user?.totalOrders ?? 0;
@@ -212,8 +215,18 @@ export const TopBar: React.FC<TopBarProps> = ({
         )}
 
         {/* Theme Light / Dark */}
-        <button className="topbar-circle-btn" title="Toggle Theme">
-          <Sun size={15} />
+        <button
+          type="button"
+          className={`topbar-circle-btn theme-toggle-btn ${theme}`}
+          title={theme === 'dark' ? 'Switch to Light mode' : 'Switch to Dark mode'}
+          aria-label={theme === 'dark' ? 'Switch to Light mode' : 'Switch to Dark mode'}
+          onClick={toggleTheme}
+        >
+          {theme === 'dark' ? (
+            <Moon size={15} style={{ color: '#38bdf8' }} />
+          ) : (
+            <Sun size={15} style={{ color: '#475569' }} />
+          )}
         </button>
 
         {/* Logout or Login/Signup buttons */}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { api } from '../services/api';
 import { ServiceItem } from './ServicesTable';
 import { PlatformPillsBar } from './PlatformPillsBar';
@@ -524,6 +525,8 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
   openDepositModal,
 }) => {
   const { user, isAuthenticated, refreshProfile, showToast } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [activeTab, setActiveTab] = useState<'new' | 'subscription' | 'fav' | 'countries' | 'mass'>(
     initialTab === 'mass-order' ? 'mass' : 'new'
   );
@@ -840,30 +843,36 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
             padding: 0,
             overflow: 'hidden',
             borderRadius: 12,
-            border: '1px solid #e2e8f0',
-            background: '#ffffff',
-            boxShadow: '0 1px 4px rgba(0, 0, 0, 0.04)',
+            border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
+            background: isDark ? '#1e293b' : '#ffffff',
+            boxShadow: isDark ? '0 4px 16px rgba(0, 0, 0, 0.4)' : '0 1px 4px rgba(0, 0, 0, 0.04)',
             width: '100%',
             maxWidth: '100%',
             boxSizing: 'border-box',
           }}
         >
-          {/* Top Royal Blue Header Box with rounded pill tabs matching Screenshot 1 */}
-          <div className="order-header-tabs">
+          {/* Top Royal Blue Header Box with rounded pill tabs */}
+          <div
+            className="order-header-tabs"
+            style={{
+              background: isDark ? '#0f172a' : '#162399',
+              borderBottom: isDark ? '1px solid #334155' : 'none',
+            }}
+          >
             <button
               type="button"
               className={`order-header-tab-btn ${activeTab === 'new' ? 'active' : ''}`}
               onClick={() => setActiveTab('new')}
               style={{
-                background: activeTab === 'new' ? '#ffffff' : '#c8d3e2',
-                color: activeTab === 'new' ? '#162399' : '#1e293b',
+                background: activeTab === 'new' ? (isDark ? '#38bdf8' : '#ffffff') : (isDark ? 'rgba(255, 255, 255, 0.08)' : '#c8d3e2'),
+                color: activeTab === 'new' ? (isDark ? '#0f172a' : '#162399') : (isDark ? '#cbd5e1' : '#1e293b'),
                 border: 'none',
                 borderRadius: 20,
                 padding: '7px 22px',
                 fontWeight: 700,
                 fontSize: '0.86rem',
                 cursor: 'pointer',
-                boxShadow: activeTab === 'new' ? '0 2px 4px rgba(0, 0, 0, 0.12)' : 'none',
+                boxShadow: activeTab === 'new' ? '0 2px 6px rgba(0, 0, 0, 0.2)' : 'none',
                 transition: 'all 0.15s ease',
               }}
             >
@@ -874,15 +883,15 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
               className={`order-header-tab-btn ${activeTab === 'subscription' ? 'active' : ''}`}
               onClick={() => setActiveTab('subscription')}
               style={{
-                background: activeTab === 'subscription' ? '#ffffff' : '#c8d3e2',
-                color: activeTab === 'subscription' ? '#162399' : '#1e293b',
+                background: activeTab === 'subscription' ? (isDark ? '#38bdf8' : '#ffffff') : (isDark ? 'rgba(255, 255, 255, 0.08)' : '#c8d3e2'),
+                color: activeTab === 'subscription' ? (isDark ? '#0f172a' : '#162399') : (isDark ? '#cbd5e1' : '#1e293b'),
                 border: 'none',
                 borderRadius: 20,
                 padding: '7px 20px',
                 fontWeight: 600,
                 fontSize: '0.86rem',
                 cursor: 'pointer',
-                boxShadow: activeTab === 'subscription' ? '0 2px 4px rgba(0, 0, 0, 0.12)' : 'none',
+                boxShadow: activeTab === 'subscription' ? '0 2px 6px rgba(0, 0, 0, 0.2)' : 'none',
                 transition: 'all 0.15s ease',
               }}
             >
@@ -893,15 +902,15 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
               className={`order-header-tab-btn ${activeTab === 'fav' ? 'active' : ''}`}
               onClick={() => setActiveTab('fav')}
               style={{
-                background: activeTab === 'fav' ? '#ffffff' : '#c8d3e2',
-                color: activeTab === 'fav' ? '#162399' : '#1e293b',
+                background: activeTab === 'fav' ? (isDark ? '#38bdf8' : '#ffffff') : (isDark ? 'rgba(255, 255, 255, 0.08)' : '#c8d3e2'),
+                color: activeTab === 'fav' ? (isDark ? '#0f172a' : '#162399') : (isDark ? '#cbd5e1' : '#1e293b'),
                 border: 'none',
                 borderRadius: 20,
                 padding: '7px 20px',
                 fontWeight: 600,
                 fontSize: '0.86rem',
                 cursor: 'pointer',
-                boxShadow: activeTab === 'fav' ? '0 2px 4px rgba(0, 0, 0, 0.12)' : 'none',
+                boxShadow: activeTab === 'fav' ? '0 2px 6px rgba(0, 0, 0, 0.2)' : 'none',
                 transition: 'all 0.15s ease',
               }}
             >
@@ -912,15 +921,15 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
               className={`order-header-tab-btn ${activeTab === 'countries' ? 'active' : ''}`}
               onClick={() => setActiveTab('countries')}
               style={{
-                background: activeTab === 'countries' ? '#ffffff' : '#c8d3e2',
-                color: activeTab === 'countries' ? '#162399' : '#1e293b',
+                background: activeTab === 'countries' ? (isDark ? '#38bdf8' : '#ffffff') : (isDark ? 'rgba(255, 255, 255, 0.08)' : '#c8d3e2'),
+                color: activeTab === 'countries' ? (isDark ? '#0f172a' : '#162399') : (isDark ? '#cbd5e1' : '#1e293b'),
                 border: 'none',
                 borderRadius: 20,
                 padding: '7px 20px',
                 fontWeight: 600,
                 fontSize: '0.86rem',
                 cursor: 'pointer',
-                boxShadow: activeTab === 'countries' ? '0 2px 4px rgba(0, 0, 0, 0.12)' : 'none',
+                boxShadow: activeTab === 'countries' ? '0 2px 6px rgba(0, 0, 0, 0.2)' : 'none',
                 transition: 'all 0.15s ease',
               }}
             >
@@ -951,8 +960,9 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                         setIsSearchOpen(val.trim().length > 0);
                       }}
                       style={{
-                        background: '#f8fafc',
-                        borderColor: '#e2e8f0',
+                        background: isDark ? '#0f172a' : '#f8fafc',
+                        borderColor: isDark ? '#334155' : '#e2e8f0',
+                        color: isDark ? '#f8fafc' : '#1e293b',
                         borderRadius: 8,
                         fontSize: '0.88rem',
                         padding: '10px 36px 10px 14px',
@@ -995,10 +1005,10 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                         left: 0,
                         right: 0,
                         zIndex: 100,
-                        background: '#ffffff',
+                        background: isDark ? '#1e293b' : '#ffffff',
                         borderRadius: 10,
-                        border: '1px solid #e2e8f0',
-                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                        border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
+                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2)',
                         overflow: 'hidden',
                       }}
                     >
@@ -1025,7 +1035,7 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
 
                 {/* Search By Category Dropdown matching Screenshot 1 */}
                 <div className="form-group" style={{ marginBottom: 18 }}>
-                  <label className="form-label" style={{ fontWeight: 500, color: '#334155', marginBottom: 6, fontSize: '0.88rem' }}>
+                  <label className="form-label" style={{ fontWeight: 500, color: isDark ? '#cbd5e1' : '#334155', marginBottom: 6, fontSize: '0.88rem' }}>
                     Search By Category
                   </label>
 
@@ -1045,7 +1055,7 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
 
                 {/* Service Dropdown matching Screenshot 1 */}
                 <div className="form-group" style={{ marginBottom: 18 }}>
-                  <label className="form-label" style={{ fontWeight: 500, color: '#334155', marginBottom: 6, fontSize: '0.88rem' }}>
+                  <label className="form-label" style={{ fontWeight: 500, color: isDark ? '#cbd5e1' : '#334155', marginBottom: 6, fontSize: '0.88rem' }}>
                     Service
                   </label>
 
@@ -1075,9 +1085,9 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                             borderRadius: 4,
                             fontSize: '0.72rem',
                             fontWeight: 700,
-                            backgroundColor: '#dcfce7',
-                            color: '#15803d',
-                            border: '1px solid #bbf7d0',
+                            backgroundColor: isDark ? 'rgba(34, 197, 94, 0.2)' : '#dcfce7',
+                            color: isDark ? '#4ade80' : '#15803d',
+                            border: isDark ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid #bbf7d0',
                           }}
                         >
                           ♻️ Refill Guaranteed
@@ -1093,9 +1103,9 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                             borderRadius: 4,
                             fontSize: '0.72rem',
                             fontWeight: 700,
-                            backgroundColor: '#fef3c7',
-                            color: '#b45309',
-                            border: '1px solid #fde68a',
+                            backgroundColor: isDark ? 'rgba(245, 158, 11, 0.2)' : '#fef3c7',
+                            color: isDark ? '#fbbf24' : '#b45309',
+                            border: isDark ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid #fde68a',
                           }}
                         >
                           🚫 Cancel Button Available
@@ -1107,7 +1117,7 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
 
                 {/* Link Input matching Screenshot 1 */}
                 <div className="form-group" style={{ marginBottom: 18 }}>
-                  <label className="form-label" style={{ fontWeight: 500, color: '#334155', marginBottom: 6, fontSize: '0.88rem' }}>
+                  <label className="form-label" style={{ fontWeight: 500, color: isDark ? '#cbd5e1' : '#334155', marginBottom: 6, fontSize: '0.88rem' }}>
                     Link
                   </label>
                   <input
@@ -1116,14 +1126,21 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                     value={link}
                     onChange={(e) => setLink(e.target.value)}
                     placeholder={acceptedLinkFormats[0] ? acceptedLinkFormats[0].replace(/^•\s*/, '') : 'https://...'}
-                    style={{ borderRadius: 8, borderColor: '#e2e8f0', fontSize: '0.88rem', padding: '10px 14px' }}
+                    style={{
+                      borderRadius: 8,
+                      borderColor: isDark ? '#334155' : '#e2e8f0',
+                      background: isDark ? '#0f172a' : '#ffffff',
+                      color: isDark ? '#f8fafc' : '#1e293b',
+                      fontSize: '0.88rem',
+                      padding: '10px 14px',
+                    }}
                     required
                   />
                 </div>
 
                 {/* Quantity Input with Min/Max note on the right below input matching Screenshot 1 */}
                 <div className="form-group" style={{ marginBottom: 12 }}>
-                  <label className="form-label" style={{ fontWeight: 500, color: '#334155', marginBottom: 6, fontSize: '0.88rem' }}>
+                  <label className="form-label" style={{ fontWeight: 500, color: isDark ? '#cbd5e1' : '#334155', marginBottom: 6, fontSize: '0.88rem' }}>
                     Quantity
                   </label>
                   <input
@@ -1133,11 +1150,18 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                     min={selectedService?.min || 1}
                     max={selectedService?.max || 1000000}
                     onChange={(e) => setQuantity(Number(e.target.value))}
-                    style={{ borderRadius: 8, borderColor: '#e2e8f0', fontSize: '0.88rem', padding: '10px 14px' }}
+                    style={{
+                      borderRadius: 8,
+                      borderColor: isDark ? '#334155' : '#e2e8f0',
+                      background: isDark ? '#0f172a' : '#ffffff',
+                      color: isDark ? '#f8fafc' : '#1e293b',
+                      fontSize: '0.88rem',
+                      padding: '10px 14px',
+                    }}
                     required
                   />
                   <div style={{ textAlign: 'right', marginTop: 4 }}>
-                    <span style={{ fontSize: '0.78rem', color: '#2563eb', fontWeight: 600 }}>
+                    <span style={{ fontSize: '0.78rem', color: isDark ? '#38bdf8' : '#2563eb', fontWeight: 600 }}>
                       Min: {selectedService?.min?.toLocaleString() || 10} - Max: {selectedService?.max?.toLocaleString() || '300 000'}
                     </span>
                   </div>
@@ -1150,11 +1174,11 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                     id="dripFeedCheck"
                     checked={dripFeed}
                     onChange={(e) => setDripFeed(e.target.checked)}
-                    style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#162399' }}
+                    style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#2563eb' }}
                   />
                   <label
                     htmlFor="dripFeedCheck"
-                    style={{ fontSize: '0.88rem', color: '#334155', cursor: 'pointer', userSelect: 'none' }}
+                    style={{ fontSize: '0.88rem', color: isDark ? '#cbd5e1' : '#334155', cursor: 'pointer', userSelect: 'none' }}
                   >
                     Drip-feed
                   </label>
@@ -1162,7 +1186,7 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
 
                 {/* Charge Readonly Input Box matching Screenshot 1 */}
                 <div className="form-group" style={{ marginBottom: 22 }}>
-                  <label className="form-label" style={{ fontWeight: 500, color: '#334155', marginBottom: 6, fontSize: '0.88rem' }}>
+                  <label className="form-label" style={{ fontWeight: 500, color: isDark ? '#cbd5e1' : '#334155', marginBottom: 6, fontSize: '0.88rem' }}>
                     Charge
                   </label>
                   <input
@@ -1171,12 +1195,12 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                     className="form-input"
                     value={charge > 0 ? `$${charge.toFixed(3)}` : '$0.000'}
                     style={{
-                      background: '#f8fafc',
+                      background: isDark ? '#0f172a' : '#f8fafc',
                       borderRadius: 8,
-                      borderColor: '#e2e8f0',
-                      color: '#334155',
-                      fontWeight: 600,
-                      fontSize: '0.92rem',
+                      borderColor: isDark ? '#334155' : '#e2e8f0',
+                      color: isDark ? '#38bdf8' : '#334155',
+                      fontWeight: 700,
+                      fontSize: '0.95rem',
                       padding: '10px 14px',
                       cursor: 'not-allowed',
                     }}
@@ -1191,8 +1215,9 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                       borderRadius: 8,
                       marginBottom: 16,
                       fontSize: '0.85rem',
-                      background: message.type === 'error' ? '#fee2e2' : '#dcfce7',
-                      color: message.type === 'error' ? '#b91c1c' : '#15803d',
+                      background: message.type === 'error' ? (isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2') : (isDark ? 'rgba(34, 197, 94, 0.2)' : '#dcfce7'),
+                      color: message.type === 'error' ? (isDark ? '#f87171' : '#b91c1c') : (isDark ? '#4ade80' : '#15803d'),
+                      border: isDark ? (message.type === 'error' ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(34, 197, 94, 0.3)') : 'none',
                     }}
                   >
                     {message.text}
@@ -1205,7 +1230,7 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                   disabled={isSubmitting}
                   style={{
                     width: '100%',
-                    background: '#162399',
+                    background: isDark ? '#2563eb' : '#162399',
                     color: '#ffffff',
                     border: 'none',
                     borderRadius: 8,
@@ -1213,7 +1238,7 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                     fontWeight: 700,
                     fontSize: '0.95rem',
                     cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                    boxShadow: '0 2px 6px rgba(22, 35, 153, 0.25)',
+                    boxShadow: isDark ? '0 4px 14px rgba(37, 99, 235, 0.4)' : '0 2px 6px rgba(22, 35, 153, 0.25)',
                     transition: 'background 0.15s ease',
                   }}
                 >
@@ -1226,7 +1251,7 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
             {activeTab === 'subscription' && (
               <form onSubmit={handleSingleOrderSubmit}>
                 <div className="form-group" style={{ marginBottom: 18 }}>
-                  <label className="form-label" style={{ fontWeight: 500, color: '#334155', marginBottom: 6, fontSize: '0.88rem' }}>
+                  <label className="form-label" style={{ fontWeight: 500, color: isDark ? '#cbd5e1' : '#334155', marginBottom: 6, fontSize: '0.88rem' }}>
                     Search By Category
                   </label>
 
@@ -1245,7 +1270,7 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                 </div>
 
                 <div className="form-group" style={{ marginBottom: 18 }}>
-                  <label className="form-label" style={{ fontWeight: 500, color: '#334155', marginBottom: 6, fontSize: '0.88rem' }}>
+                  <label className="form-label" style={{ fontWeight: 500, color: isDark ? '#cbd5e1' : '#334155', marginBottom: 6, fontSize: '0.88rem' }}>
                     Service
                   </label>
 
@@ -1266,7 +1291,7 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                 </div>
 
                 <div className="form-group" style={{ marginBottom: 18 }}>
-                  <label className="form-label" style={{ fontWeight: 500, color: '#334155', marginBottom: 6, fontSize: '0.88rem' }}>
+                  <label className="form-label" style={{ fontWeight: 500, color: isDark ? '#cbd5e1' : '#334155', marginBottom: 6, fontSize: '0.88rem' }}>
                     Channel or Username Link
                   </label>
                   <input
@@ -1275,14 +1300,21 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                     value={subLink}
                     onChange={(e) => setSubLink(e.target.value)}
                     placeholder={acceptedLinkFormats[0] ? acceptedLinkFormats[0].replace(/^•\s*/, '') : 'https://instagram.com/username'}
-                    style={{ borderRadius: 8, borderColor: '#e2e8f0', fontSize: '0.88rem', padding: '10px 14px' }}
+                    style={{
+                      borderRadius: 8,
+                      borderColor: isDark ? '#334155' : '#e2e8f0',
+                      background: isDark ? '#0f172a' : '#ffffff',
+                      color: isDark ? '#f8fafc' : '#1e293b',
+                      fontSize: '0.88rem',
+                      padding: '10px 14px',
+                    }}
                     required
                   />
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 18 }}>
                   <div>
-                    <label className="form-label" style={{ fontWeight: 500, color: '#334155', marginBottom: 6, fontSize: '0.82rem' }}>
+                    <label className="form-label" style={{ fontWeight: 500, color: isDark ? '#cbd5e1' : '#334155', marginBottom: 6, fontSize: '0.82rem' }}>
                       New Posts
                     </label>
                     <input
@@ -1290,11 +1322,18 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                       className="form-input"
                       value={subPosts}
                       onChange={(e) => setSubPosts(Number(e.target.value))}
-                      style={{ borderRadius: 8, borderColor: '#e2e8f0', fontSize: '0.88rem', padding: '10px 14px' }}
+                      style={{
+                        borderRadius: 8,
+                        borderColor: isDark ? '#334155' : '#e2e8f0',
+                        background: isDark ? '#0f172a' : '#ffffff',
+                        color: isDark ? '#f8fafc' : '#1e293b',
+                        fontSize: '0.88rem',
+                        padding: '10px 14px',
+                      }}
                     />
                   </div>
                   <div>
-                    <label className="form-label" style={{ fontWeight: 500, color: '#334155', marginBottom: 6, fontSize: '0.82rem' }}>
+                    <label className="form-label" style={{ fontWeight: 500, color: isDark ? '#cbd5e1' : '#334155', marginBottom: 6, fontSize: '0.82rem' }}>
                       Min Quantity
                     </label>
                     <input
@@ -1302,11 +1341,18 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                       className="form-input"
                       value={subMin}
                       onChange={(e) => setSubMin(Number(e.target.value))}
-                      style={{ borderRadius: 8, borderColor: '#e2e8f0', fontSize: '0.88rem', padding: '10px 14px' }}
+                      style={{
+                        borderRadius: 8,
+                        borderColor: isDark ? '#334155' : '#e2e8f0',
+                        background: isDark ? '#0f172a' : '#ffffff',
+                        color: isDark ? '#f8fafc' : '#1e293b',
+                        fontSize: '0.88rem',
+                        padding: '10px 14px',
+                      }}
                     />
                   </div>
                   <div>
-                    <label className="form-label" style={{ fontWeight: 500, color: '#334155', marginBottom: 6, fontSize: '0.82rem' }}>
+                    <label className="form-label" style={{ fontWeight: 500, color: isDark ? '#cbd5e1' : '#334155', marginBottom: 6, fontSize: '0.82rem' }}>
                       Max Quantity
                     </label>
                     <input
@@ -1314,7 +1360,14 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                       className="form-input"
                       value={subMax}
                       onChange={(e) => setSubMax(Number(e.target.value))}
-                      style={{ borderRadius: 8, borderColor: '#e2e8f0', fontSize: '0.88rem', padding: '10px 14px' }}
+                      style={{
+                        borderRadius: 8,
+                        borderColor: isDark ? '#334155' : '#e2e8f0',
+                        background: isDark ? '#0f172a' : '#ffffff',
+                        color: isDark ? '#f8fafc' : '#1e293b',
+                        fontSize: '0.88rem',
+                        padding: '10px 14px',
+                      }}
                     />
                   </div>
                 </div>
@@ -1324,7 +1377,7 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                   disabled={isSubmitting}
                   style={{
                     width: '100%',
-                    background: '#162399',
+                    background: isDark ? '#2563eb' : '#162399',
                     color: '#ffffff',
                     border: 'none',
                     borderRadius: 8,
@@ -1332,7 +1385,7 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                     fontWeight: 700,
                     fontSize: '0.95rem',
                     cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                    boxShadow: '0 2px 6px rgba(22, 35, 153, 0.25)',
+                    boxShadow: isDark ? '0 4px 14px rgba(37, 99, 235, 0.4)' : '0 2px 6px rgba(22, 35, 153, 0.25)',
                   }}
                 >
                   Start Auto Subscription
@@ -1344,15 +1397,15 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
             {activeTab === 'fav' && (
               <div style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b' }}>
                 <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>⭐</div>
-                <h4 style={{ fontWeight: 700, color: '#1e293b', marginBottom: 6 }}>No Favorite Services Yet</h4>
-                <p style={{ fontSize: '0.88rem', color: '#64748b', maxWidth: 360, margin: '0 auto 16px' }}>
+                <h4 style={{ fontWeight: 700, color: isDark ? '#f8fafc' : '#1e293b', marginBottom: 6 }}>No Favorite Services Yet</h4>
+                <p style={{ fontSize: '0.88rem', color: isDark ? '#94a3b8' : '#64748b', maxWidth: 360, margin: '0 auto 16px' }}>
                   Click the star icon next to any service on the Services page to bookmark it here for fast one-click ordering.
                 </p>
                 <button
                   type="button"
                   onClick={() => setActiveTab('new')}
                   style={{
-                    background: '#162399',
+                    background: isDark ? '#2563eb' : '#162399',
                     color: '#ffffff',
                     border: 'none',
                     borderRadius: 8,
@@ -1370,7 +1423,7 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
             {/* TAB 4: COUNTRIES */}
             {activeTab === 'countries' && (
               <div>
-                <p style={{ fontSize: '0.86rem', color: '#64748b', marginBottom: 16 }}>
+                <p style={{ fontSize: '0.86rem', color: isDark ? '#94a3b8' : '#64748b', marginBottom: 16 }}>
                   Select a targeted country to filter geo-specific social media packages:
                 </p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 10, marginBottom: 20 }}>
@@ -1396,15 +1449,15 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                       }}
                       style={{
                         padding: '10px 12px',
-                        background: '#f8fafc',
-                        border: '1px solid #e2e8f0',
+                        background: isDark ? '#0f172a' : '#f8fafc',
+                        border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
                         borderRadius: 8,
                         display: 'flex',
                         alignItems: 'center',
                         gap: 8,
                         fontSize: '0.84rem',
                         fontWeight: 600,
-                        color: '#334155',
+                        color: isDark ? '#f8fafc' : '#334155',
                         cursor: 'pointer',
                         transition: 'all 0.15s ease',
                       }}
@@ -1421,18 +1474,19 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
             {activeTab === 'mass' && (
               <form onSubmit={handleMassOrderSubmit}>
                 <div className="form-group" style={{ marginBottom: 16 }}>
-                  <label className="form-label" style={{ fontWeight: 600, color: '#334155' }}>
+                  <label className="form-label" style={{ fontWeight: 600, color: isDark ? '#cbd5e1' : '#334155' }}>
                     One order per line in format:
                   </label>
                   <div
                     style={{
-                      background: '#f1f5f9',
+                      background: isDark ? '#0f172a' : '#f1f5f9',
                       padding: '8px 12px',
                       borderRadius: 6,
                       fontSize: '0.8rem',
                       fontFamily: 'monospace',
                       marginBottom: 10,
-                      color: '#334155',
+                      color: isDark ? '#38bdf8' : '#334155',
+                      border: isDark ? '1px solid #334155' : 'none',
                     }}
                   >
                     service_id | link | quantity
@@ -1443,7 +1497,15 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                     placeholder={`102 | https://instagram.com/p/123 | 1000\n102 | https://instagram.com/p/456 | 2000`}
                     value={massOrderText}
                     onChange={(e) => setMassOrderText(e.target.value)}
-                    style={{ minHeight: 200, fontFamily: 'monospace', fontSize: '0.88rem', borderRadius: 8 }}
+                    style={{
+                      minHeight: 200,
+                      fontFamily: 'monospace',
+                      fontSize: '0.88rem',
+                      borderRadius: 8,
+                      background: isDark ? '#0f172a' : '#ffffff',
+                      color: isDark ? '#f8fafc' : '#1e293b',
+                      borderColor: isDark ? '#334155' : '#e2e8f0',
+                    }}
                   />
                 </div>
 
@@ -1454,8 +1516,9 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                       borderRadius: 8,
                       marginBottom: 16,
                       fontSize: '0.85rem',
-                      background: message.type === 'error' ? '#fee2e2' : '#dcfce7',
-                      color: message.type === 'error' ? '#b91c1c' : '#15803d',
+                      background: message.type === 'error' ? (isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2') : (isDark ? 'rgba(34, 197, 94, 0.2)' : '#dcfce7'),
+                      color: message.type === 'error' ? (isDark ? '#f87171' : '#b91c1c') : (isDark ? '#4ade80' : '#15803d'),
+                      border: isDark ? (message.type === 'error' ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(34, 197, 94, 0.3)') : 'none',
                     }}
                   >
                     {message.text}
@@ -1467,7 +1530,7 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                   disabled={isSubmittingMass}
                   style={{
                     width: '100%',
-                    background: '#162399',
+                    background: isDark ? '#2563eb' : '#162399',
                     color: '#ffffff',
                     border: 'none',
                     borderRadius: 8,
@@ -1475,6 +1538,7 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                     fontWeight: 700,
                     fontSize: '0.95rem',
                     cursor: isSubmittingMass ? 'not-allowed' : 'pointer',
+                    boxShadow: isDark ? '0 4px 14px rgba(37, 99, 235, 0.4)' : '0 2px 6px rgba(22, 35, 153, 0.25)',
                   }}
                 >
                   {isSubmittingMass ? 'Placing Mass Order...' : 'Submit Mass Order'}
@@ -1484,15 +1548,15 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
           </div>
         </div>
 
-        {/* ================= RIGHT COLUMN: DESCRIPTION CARD matching Screenshot 1 ================= */}
+        {/* ================= RIGHT COLUMN: DESCRIPTION CARD ================= */}
         <div
           className="card order-description-card"
           style={{
             padding: '24px 26px',
             borderRadius: 12,
-            border: '1px solid #e2e8f0',
-            background: '#ffffff',
-            boxShadow: '0 1px 4px rgba(0, 0, 0, 0.04)',
+            border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
+            background: isDark ? '#1e293b' : '#ffffff',
+            boxShadow: isDark ? '0 4px 16px rgba(0, 0, 0, 0.4)' : '0 1px 4px rgba(0, 0, 0, 0.04)',
             width: '100%',
             maxWidth: '100%',
             boxSizing: 'border-box',
@@ -1502,7 +1566,7 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
             style={{
               fontSize: '1.15rem',
               fontWeight: 700,
-              color: '#0f172a',
+              color: isDark ? '#f8fafc' : '#0f172a',
               marginBottom: 18,
             }}
           >
@@ -1516,79 +1580,79 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
               flexDirection: 'column',
               gap: 8,
               fontSize: '0.86rem',
-              color: '#1e293b',
+              color: isDark ? '#e2e8f0' : '#1e293b',
               marginBottom: 18,
             }}
           >
             <div>
-              <span style={{ fontWeight: 600 }}>📊 Service Type:</span> {specs.baseName}
+              <span style={{ fontWeight: 600, color: isDark ? '#f8fafc' : '#0f172a' }}>📊 Service Type:</span> {specs.baseName}
             </div>
 
             {specs.duration && (
               <div>
-                <span style={{ fontWeight: 600 }}>⏱️ Duration:</span> ({specs.duration})
+                <span style={{ fontWeight: 600, color: isDark ? '#f8fafc' : '#0f172a' }}>⏱️ Duration:</span> ({specs.duration})
               </div>
             )}
 
             {specs.concurrent && (
               <div>
-                <span style={{ fontWeight: 600 }}>👥 Concurrent:</span> {specs.concurrent}
+                <span style={{ fontWeight: 600, color: isDark ? '#f8fafc' : '#0f172a' }}>👥 Concurrent:</span> {specs.concurrent}
               </div>
             )}
 
             {specs.location && (
               <div>
-                <span style={{ fontWeight: 600 }}>🌍 Location:</span> {specs.location}
+                <span style={{ fontWeight: 600, color: isDark ? '#f8fafc' : '#0f172a' }}>🌍 Location:</span> {specs.location}
               </div>
             )}
 
             {specs.package && (
               <div>
-                <span style={{ fontWeight: 600 }}>🏷️ Package:</span> {specs.package}
+                <span style={{ fontWeight: 600, color: isDark ? '#f8fafc' : '#0f172a' }}>🏷️ Package:</span> {specs.package}
               </div>
             )}
 
             <div>
-              <span style={{ fontWeight: 600 }}>✅ Quality:</span> {specs.quality}
+              <span style={{ fontWeight: 600, color: isDark ? '#f8fafc' : '#0f172a' }}>✅ Quality:</span> {specs.quality}
             </div>
 
             <div>
-              <span style={{ fontWeight: 600 }}>⚡ Start:</span> {specs.start}
+              <span style={{ fontWeight: 600, color: isDark ? '#f8fafc' : '#0f172a' }}>⚡ Start:</span> {specs.start}
             </div>
 
             <div>
-              <span style={{ fontWeight: 600 }}>🚀 Speed:</span> {specs.speed}
+              <span style={{ fontWeight: 600, color: isDark ? '#f8fafc' : '#0f172a' }}>🚀 Speed:</span> {specs.speed}
             </div>
 
             {specs.drop && (
               <div>
-                <span style={{ fontWeight: 600 }}>⏬ Drop:</span> {specs.drop}
+                <span style={{ fontWeight: 600, color: isDark ? '#f8fafc' : '#0f172a' }}>⏬ Drop:</span> {specs.drop}
               </div>
             )}
 
             {specs.source && (
               <div>
-                <span style={{ fontWeight: 600 }}>🧭 Source:</span> {specs.source}
+                <span style={{ fontWeight: 600, color: isDark ? '#f8fafc' : '#0f172a' }}>🧭 Source:</span> {specs.source}
               </div>
             )}
 
             <div>
-              <span style={{ fontWeight: 600 }}>♻️ Refill:</span> {specs.refill}
+              <span style={{ fontWeight: 600, color: isDark ? '#f8fafc' : '#0f172a' }}>♻️ Refill:</span> {specs.refill}
             </div>
 
             {specs.cancel && (
               <div>
-                <span style={{ fontWeight: 600 }}>🚫 Cancel Button:</span> {specs.cancel}
+                <span style={{ fontWeight: 600, color: isDark ? '#f8fafc' : '#0f172a' }}>🚫 Cancel Button:</span> {specs.cancel}
               </div>
             )}
 
             <div>
-              <span style={{ fontWeight: 600 }}>⬇️ Min:</span>{' '}
+              <span style={{ fontWeight: 600, color: isDark ? '#f8fafc' : '#0f172a' }}>⬇️ Min:</span>{' '}
               {specs.min || (selectedService?.min ? selectedService.min.toLocaleString() : '10')}
             </div>
 
             <div>
-              <span style={{ fontWeight: 600 }}>🔝 Max:</span>{' '}
+              <span style={{ fontWeight: 600, color: isDark ? '#f8fafc' : '#0f172a' }}>🔝 Max:</span>{' '}
               ({specs.max || (selectedService?.max ? `${selectedService.max.toLocaleString()} depending on the service` : '100K')})
             </div>
           </div>
@@ -1599,7 +1663,7 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
               style={{
                 fontWeight: 700,
                 fontSize: '0.86rem',
-                color: '#0f172a',
+                color: isDark ? '#f8fafc' : '#0f172a',
                 marginBottom: 6,
               }}
             >
@@ -1611,7 +1675,7 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                 flexDirection: 'column',
                 gap: 5,
                 fontSize: '0.80rem',
-                color: '#0284c7',
+                color: isDark ? '#38bdf8' : '#0284c7',
                 fontFamily: 'monospace',
                 wordBreak: 'break-all',
               }}
@@ -1629,7 +1693,7 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
               flexDirection: 'column',
               gap: 7,
               fontSize: '0.84rem',
-              color: '#15803d',
+              color: isDark ? '#4ade80' : '#15803d',
               marginBottom: 18,
             }}
           >
@@ -1644,8 +1708,8 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
           {/* Dynamic Amber Warning Box */}
           <div
             style={{
-              background: '#fffbeb',
-              border: '1px solid #fde68a',
+              background: isDark ? 'rgba(245, 158, 11, 0.1)' : '#fffbeb',
+              border: isDark ? '1px solid rgba(245, 158, 11, 0.25)' : '1px solid #fde68a',
               borderRadius: 8,
               padding: '14px 16px',
             }}
@@ -1653,7 +1717,7 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
             <div
               style={{
                 fontWeight: 700,
-                color: '#92400e',
+                color: isDark ? '#fbbf24' : '#92400e',
                 fontSize: '0.85rem',
                 marginBottom: 8,
                 display: 'flex',
@@ -1670,7 +1734,7 @@ export const NewOrderView: React.FC<NewOrderViewProps> = ({
                 flexDirection: 'column',
                 gap: 6,
                 fontSize: '0.78rem',
-                color: '#78350f',
+                color: isDark ? '#fde68a' : '#78350f',
                 lineHeight: 1.5,
               }}
             >

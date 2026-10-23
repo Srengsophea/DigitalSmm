@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { api } from '../services/api';
 import { Copy, Check, RefreshCw, Play, Terminal, LogIn } from 'lucide-react';
 
@@ -9,6 +10,8 @@ interface ApiDocsProps {
 
 export const ApiDocs: React.FC<ApiDocsProps> = ({ onNavigate }) => {
   const { user, isAuthenticated, refreshProfile, showToast } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [copiedKey, setCopiedKey] = useState(false);
   const [copiedMap, setCopiedMap] = useState<{ [key: string]: boolean }>({});
   const [isRotating, setIsRotating] = useState(false);
@@ -421,8 +424,8 @@ export const ApiDocs: React.FC<ApiDocsProps> = ({ onNavigate }) => {
         <div className="api-live-tester">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Terminal size={18} color="#162399" />
-              <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>
+              <Terminal size={18} color={isDark ? '#38bdf8' : '#162399'} />
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, color: isDark ? '#f8fafc' : '#1e293b', margin: 0 }}>
                 Live API Console Tester
               </h3>
             </div>

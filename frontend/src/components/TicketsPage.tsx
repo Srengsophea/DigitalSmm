@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { api } from '../services/api';
 import {
   Search,
@@ -23,6 +24,8 @@ interface TicketsPageProps {
 
 export const TicketsPage: React.FC<TicketsPageProps> = ({ openAuthModal }) => {
   const { user, isAuthenticated, showToast } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   // Form states
   const [selectedSubject, setSelectedSubject] = useState<string>('Orders');
@@ -305,7 +308,7 @@ export const TicketsPage: React.FC<TicketsPageProps> = ({ openAuthModal }) => {
           <div className="form-group">
             <label className="form-label" style={{ marginBottom: 6 }}>
               Order ID{' '}
-              <span style={{ color: '#dc2626', fontSize: '0.78rem', fontWeight: 400 }}>
+              <span style={{ color: isDark ? '#f87171' : '#dc2626', fontSize: '0.78rem', fontWeight: 400 }}>
                 (To receive a faster response, ensure that you assign the correct order IDs.)
               </span>
             </label>
@@ -338,7 +341,7 @@ export const TicketsPage: React.FC<TicketsPageProps> = ({ openAuthModal }) => {
           <div className="form-group">
             <label className="form-label" style={{ marginBottom: 6 }}>
               How did you hear about our website?{' '}
-              <span style={{ color: '#dc2626', fontSize: '0.78rem', fontWeight: 400 }}>
+              <span style={{ color: isDark ? '#f87171' : '#dc2626', fontSize: '0.78rem', fontWeight: 400 }}>
                 (Please mention how did hear about us [Search engines, Social media, Referral, Forum, Other])
               </span>
             </label>
@@ -367,12 +370,12 @@ export const TicketsPage: React.FC<TicketsPageProps> = ({ openAuthModal }) => {
                 alignItems: 'center',
                 gap: 6,
                 fontSize: '0.86rem',
-                color: '#475569',
+                color: isDark ? '#94a3b8' : '#475569',
                 cursor: 'pointer',
                 userSelect: 'none',
               }}
             >
-              <Paperclip size={16} color="#64748b" />
+              <Paperclip size={16} color={isDark ? '#94a3b8' : '#64748b'} />
               <span style={{ fontWeight: 500 }}>Attach files</span>
             </div>
 
@@ -384,11 +387,11 @@ export const TicketsPage: React.FC<TicketsPageProps> = ({ openAuthModal }) => {
                   alignItems: 'center',
                   gap: 8,
                   padding: '4px 12px',
-                  background: '#f1f5f9',
+                  background: isDark ? '#0f172a' : '#f1f5f9',
                   borderRadius: 6,
-                  border: '1px solid #cbd5e1',
+                  border: isDark ? '1px solid #334155' : '1px solid #cbd5e1',
                   fontSize: '0.8rem',
-                  color: '#1e293b',
+                  color: isDark ? '#f8fafc' : '#1e293b',
                 }}
               >
                 <FileCheck size={14} color="#15803d" />
@@ -419,7 +422,7 @@ export const TicketsPage: React.FC<TicketsPageProps> = ({ openAuthModal }) => {
             className="btn btn-primary btn-block"
             disabled={isSubmitting}
             style={{
-              background: '#162399',
+              background: isDark ? '#2563eb' : '#162399',
               padding: '13px',
               fontSize: '0.95rem',
               fontWeight: 700,
@@ -433,7 +436,7 @@ export const TicketsPage: React.FC<TicketsPageProps> = ({ openAuthModal }) => {
 
       {/* ================= RIGHT COLUMN: TICKETS HISTORY CARD ================= */}
       <div className="ticket-history-card">
-        <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#1e293b', marginBottom: 16 }}>
+        <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: isDark ? '#f8fafc' : '#1e293b', marginBottom: 16 }}>
           Tickets History
         </h3>
 
@@ -486,9 +489,9 @@ export const TicketsPage: React.FC<TicketsPageProps> = ({ openAuthModal }) => {
               >
                 {/* Top line with Mail icon, ticket ID, and subject title */}
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                  <Mail size={16} color="#2563eb" style={{ flexShrink: 0, marginTop: 2 }} />
-                  <div style={{ fontSize: '0.84rem', fontWeight: 600, color: '#1e293b', lineHeight: 1.4, wordBreak: 'break-word' }}>
-                    <span style={{ color: '#162399' }}>{t.ticketNumber}</span> - {t.message.slice(0, 48)}
+                  <Mail size={16} color={isDark ? '#38bdf8' : '#2563eb'} style={{ flexShrink: 0, marginTop: 2 }} />
+                  <div style={{ fontSize: '0.84rem', fontWeight: 600, color: isDark ? '#f8fafc' : '#1e293b', lineHeight: 1.4, wordBreak: 'break-word' }}>
+                    <span style={{ color: isDark ? '#38bdf8' : '#162399' }}>{t.ticketNumber}</span> - {t.message.slice(0, 48)}
                     {t.message.length > 48 ? '...' : ''}
                   </div>
                 </div>
@@ -500,7 +503,7 @@ export const TicketsPage: React.FC<TicketsPageProps> = ({ openAuthModal }) => {
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     fontSize: '0.74rem',
-                    color: '#64748b',
+                    color: isDark ? '#94a3b8' : '#64748b',
                     marginTop: 6,
                     paddingLeft: 24,
                   }}
@@ -510,8 +513,12 @@ export const TicketsPage: React.FC<TicketsPageProps> = ({ openAuthModal }) => {
                   </span>
                   <span
                     style={{
-                      background: t.status === 'New' ? '#dbeafe' : t.status === 'Answered' ? '#dcfce7' : '#f1f5f9',
-                      color: t.status === 'New' ? '#1e40af' : t.status === 'Answered' ? '#15803d' : '#475569',
+                      background: isDark
+                        ? t.status === 'New' ? 'rgba(56, 189, 248, 0.2)' : t.status === 'Answered' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(148, 163, 184, 0.2)'
+                        : t.status === 'New' ? '#dbeafe' : t.status === 'Answered' ? '#dcfce7' : '#f1f5f9',
+                      color: isDark
+                        ? t.status === 'New' ? '#38bdf8' : t.status === 'Answered' ? '#4ade80' : '#cbd5e1'
+                        : t.status === 'New' ? '#1e40af' : t.status === 'Answered' ? '#15803d' : '#475569',
                       padding: '2px 8px',
                       borderRadius: 4,
                       fontWeight: 700,
@@ -551,7 +558,7 @@ export const TicketsPage: React.FC<TicketsPageProps> = ({ openAuthModal }) => {
               width: 28,
               height: 28,
               borderRadius: 4,
-              background: '#162399',
+              background: isDark ? '#2563eb' : '#162399',
               color: '#ffffff',
               border: 'none',
               fontWeight: 700,

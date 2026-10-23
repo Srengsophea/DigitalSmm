@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { OrderItem } from './OrdersHistory';
 import {
   Search,
@@ -35,6 +36,8 @@ export interface OrdersViewProps {
 
 export const OrdersView: React.FC<OrdersViewProps> = ({ onBuyService }) => {
   const { user, showToast } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [allOrders, setAllOrders] = useState<OrderItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -186,13 +189,19 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ onBuyService }) => {
         <div className="orders-spend-card">
           <div className="orders-spend-card-header">
             <span className="orders-spend-card-title">Total Lifetime Spend</span>
-            <div className="orders-spend-card-icon" style={{ backgroundColor: '#eef2ff', color: '#162399' }}>
+            <div
+              className="orders-spend-card-icon"
+              style={{
+                backgroundColor: isDark ? 'rgba(37, 99, 235, 0.2)' : '#eef2ff',
+                color: isDark ? '#60a5fa' : '#162399',
+              }}
+            >
               <DollarSign size={18} />
             </div>
           </div>
           <div className="orders-spend-card-value">${lifetimeSpend.totalSpent.toFixed(3)}</div>
           <div className="orders-spend-card-sub">
-            <span>Net Realized: <b>${lifetimeSpend.netSpent.toFixed(3)}</b></span>
+            <span>Net Realized: <b style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>${lifetimeSpend.netSpent.toFixed(3)}</b></span>
           </div>
         </div>
 
@@ -200,7 +209,13 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ onBuyService }) => {
         <div className="orders-spend-card">
           <div className="orders-spend-card-header">
             <span className="orders-spend-card-title">Total Orders</span>
-            <div className="orders-spend-card-icon" style={{ backgroundColor: '#f0f9ff', color: '#0284c7' }}>
+            <div
+              className="orders-spend-card-icon"
+              style={{
+                backgroundColor: isDark ? 'rgba(2, 132, 199, 0.2)' : '#f0f9ff',
+                color: isDark ? '#38bdf8' : '#0284c7',
+              }}
+            >
               <Package size={18} />
             </div>
           </div>
@@ -214,15 +229,21 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ onBuyService }) => {
         <div className="orders-spend-card">
           <div className="orders-spend-card-header">
             <span className="orders-spend-card-title">Completed Orders</span>
-            <div className="orders-spend-card-icon" style={{ backgroundColor: '#ecfdf5', color: '#16a34a' }}>
+            <div
+              className="orders-spend-card-icon"
+              style={{
+                backgroundColor: isDark ? 'rgba(22, 163, 74, 0.2)' : '#ecfdf5',
+                color: isDark ? '#4ade80' : '#16a34a',
+              }}
+            >
               <CheckCircle2 size={18} />
             </div>
           </div>
-          <div className="orders-spend-card-value" style={{ color: '#15803d' }}>
+          <div className="orders-spend-card-value" style={{ color: isDark ? '#4ade80' : '#15803d' }}>
             {lifetimeSpend.completedCount.toLocaleString()}
           </div>
           <div className="orders-spend-card-sub">
-            <span>Fulfilled: <b>${lifetimeSpend.completedSpent.toFixed(3)}</b></span>
+            <span>Fulfilled: <b style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>${lifetimeSpend.completedSpent.toFixed(3)}</b></span>
           </div>
         </div>
 
@@ -230,18 +251,24 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ onBuyService }) => {
         <div className="orders-spend-card">
           <div className="orders-spend-card-header">
             <span className="orders-spend-card-title">Active & Refunded</span>
-            <div className="orders-spend-card-icon" style={{ backgroundColor: '#fef2f2', color: '#dc2626' }}>
+            <div
+              className="orders-spend-card-icon"
+              style={{
+                backgroundColor: isDark ? 'rgba(220, 38, 38, 0.2)' : '#fef2f2',
+                color: isDark ? '#f87171' : '#dc2626',
+              }}
+            >
               <RefundIcon size={18} />
             </div>
           </div>
           <div className="orders-spend-card-value">
             {lifetimeSpend.processingCount + lifetimeSpend.inProgressCount + lifetimeSpend.pendingCount}{' '}
-            <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#64748b' }}>
+            <span style={{ fontSize: '0.82rem', fontWeight: 600, color: isDark ? '#94a3b8' : '#64748b' }}>
               Active / {lifetimeSpend.canceledCount} Canceled
             </span>
           </div>
-          <div className="orders-spend-card-sub" style={{ color: '#16a34a' }}>
-            <span>Refunded to wallet: <b>${lifetimeSpend.totalRefunded.toFixed(3)}</b></span>
+          <div className="orders-spend-card-sub" style={{ color: isDark ? '#4ade80' : '#16a34a' }}>
+            <span>Refunded to wallet: <b style={{ color: isDark ? '#4ade80' : '#16a34a' }}>${lifetimeSpend.totalRefunded.toFixed(3)}</b></span>
           </div>
         </div>
       </div>
@@ -275,7 +302,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ onBuyService }) => {
             disabled={isLoading}
             title="Refresh orders & update live status"
             style={{
-              backgroundColor: '#162399',
+              backgroundColor: isDark ? '#2563eb' : '#162399',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -452,25 +479,25 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ onBuyService }) => {
                             height: 26,
                             padding: 0,
                             borderRadius: 5,
-                            border: '1px solid #e2e8f0',
-                            background: copiedOrderId === order.id ? '#dcfce7' : '#ffffff',
-                            color: copiedOrderId === order.id ? '#16a34a' : '#64748b',
+                            border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
+                            background: copiedOrderId === order.id ? (isDark ? 'rgba(34, 197, 94, 0.2)' : '#dcfce7') : (isDark ? '#0f172a' : '#ffffff'),
+                            color: copiedOrderId === order.id ? (isDark ? '#4ade80' : '#16a34a') : (isDark ? '#94a3b8' : '#64748b'),
                             cursor: 'pointer',
                             transition: 'all 0.15s ease',
                             flexShrink: 0,
                           }}
                           onMouseEnter={(e) => {
                             if (copiedOrderId !== order.id) {
-                              e.currentTarget.style.background = '#f8fafc';
-                              e.currentTarget.style.borderColor = '#cbd5e1';
-                              e.currentTarget.style.color = '#334155';
+                              e.currentTarget.style.background = isDark ? '#1e293b' : '#f8fafc';
+                              e.currentTarget.style.borderColor = isDark ? '#475569' : '#cbd5e1';
+                              e.currentTarget.style.color = isDark ? '#f8fafc' : '#334155';
                             }
                           }}
                           onMouseLeave={(e) => {
                             if (copiedOrderId !== order.id) {
-                              e.currentTarget.style.background = '#ffffff';
-                              e.currentTarget.style.borderColor = '#e2e8f0';
-                              e.currentTarget.style.color = '#64748b';
+                              e.currentTarget.style.background = isDark ? '#0f172a' : '#ffffff';
+                              e.currentTarget.style.borderColor = isDark ? '#334155' : '#e2e8f0';
+                              e.currentTarget.style.color = isDark ? '#94a3b8' : '#64748b';
                             }
                           }}
                         >
@@ -493,9 +520,9 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ onBuyService }) => {
                               borderRadius: 4,
                               fontSize: '0.7rem',
                               fontWeight: 700,
-                              backgroundColor: '#dcfce7',
-                              color: '#15803d',
-                              border: '1px solid #bbf7d0',
+                              backgroundColor: isDark ? 'rgba(34, 197, 94, 0.2)' : '#dcfce7',
+                              color: isDark ? '#4ade80' : '#15803d',
+                              border: isDark ? '1px solid rgba(34, 197, 94, 0.35)' : '1px solid #bbf7d0',
                               width: 'fit-content',
                             }}
                             title={`Refunded $${refundAmt.toFixed(3)} to wallet`}
@@ -506,7 +533,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ onBuyService }) => {
                       ) : order.status === 'PARTIAL' && order.refundAmount ? (
                         <div>
                           <span>${(order.charge - order.refundAmount).toFixed(3)}</span>
-                          <span style={{ display: 'block', fontSize: '0.7rem', color: '#16a34a' }}>
+                          <span style={{ display: 'block', fontSize: '0.7rem', color: isDark ? '#4ade80' : '#16a34a' }}>
                             (Ref: ${order.refundAmount.toFixed(3)})
                           </span>
                         </div>
@@ -521,16 +548,17 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ onBuyService }) => {
                       <span
                         onClick={() => onBuyService && onBuyService(order)}
                         style={{
+                          color: isDark ? '#f8fafc' : '#1e293b',
                           cursor: onBuyService ? 'pointer' : 'default',
                           transition: 'color 0.2s',
                           display: 'inline-block',
                         }}
                         title={onBuyService ? `Click to buy again: ${order.serviceName}` : undefined}
                         onMouseEnter={(e) => {
-                          if (onBuyService) e.currentTarget.style.color = '#2563eb';
+                          if (onBuyService) e.currentTarget.style.color = '#38bdf8';
                         }}
                         onMouseLeave={(e) => {
-                          if (onBuyService) e.currentTarget.style.color = 'inherit';
+                          if (onBuyService) e.currentTarget.style.color = isDark ? '#f8fafc' : '#1e293b';
                         }}
                       >
                         {order.serviceName}
@@ -546,20 +574,21 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ onBuyService }) => {
                           fontWeight: 700,
                           backgroundColor:
                             order.status === 'COMPLETED'
-                              ? '#dcfce7'
+                              ? isDark ? 'rgba(34, 197, 94, 0.2)' : '#dcfce7'
                               : order.status === 'PROCESSING' || order.status === 'IN_PROGRESS'
-                              ? '#e0f2fe'
+                              ? isDark ? 'rgba(56, 189, 248, 0.2)' : '#e0f2fe'
                               : order.status === 'PENDING'
-                              ? '#fef3c7'
-                              : '#fee2e2',
+                              ? isDark ? 'rgba(245, 158, 11, 0.2)' : '#fef3c7'
+                              : isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2',
                           color:
                             order.status === 'COMPLETED'
-                              ? '#15803d'
+                              ? isDark ? '#4ade80' : '#15803d'
                               : order.status === 'PROCESSING' || order.status === 'IN_PROGRESS'
-                              ? '#0369a1'
+                              ? isDark ? '#38bdf8' : '#0369a1'
                               : order.status === 'PENDING'
-                              ? '#b45309'
-                              : '#b91c1c',
+                              ? isDark ? '#fbbf24' : '#b45309'
+                              : isDark ? '#f87171' : '#b91c1c',
+                          border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
                         }}
                       >
                         {order.status}

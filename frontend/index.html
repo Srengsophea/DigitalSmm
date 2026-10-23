@@ -10,9 +10,26 @@
     <!-- Google Fonts: Outfit & Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <!-- Google Identity Services (GIS) for Google Sign-In & One Tap -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Theme initialization script to prevent FOUC -->
+    <script>
+      (function() {
+        try {
+          var t = localStorage.getItem('digitalsmm_theme') || localStorage.getItem('theme');
+          if (!t && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            t = 'dark';
+          }
+          if (t === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.setAttribute('data-theme', 'light');
+            document.documentElement.classList.remove('dark');
+          }
+        } catch(e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
