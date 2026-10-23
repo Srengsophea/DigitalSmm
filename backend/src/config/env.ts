@@ -23,4 +23,5 @@ export const ENV = {
   BAKONG_MERCHANT_NAME: process.env.BAKONG_MERCHANT_NAME || 'Digital Smm',
   BAKONG_MERCHANT_CITY: process.env.BAKONG_MERCHANT_CITY || 'Phnom Penh',
   BAKONG_TOKEN: process.env.BAKONG_TOKEN || '',
+  DATABASE_URL: process.env.DATABASE_URL || '',
 };

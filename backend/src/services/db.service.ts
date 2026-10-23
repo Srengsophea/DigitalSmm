@@ -17,6 +17,7 @@ import {
 } from '../models/types';
 import { EncryptionService } from './encryption.service';
 import { SMMFollowsService } from './smmfollows.service';
+import { PostgresService } from './postgres.service';
 
 /**
  * Strips password hashes, TOTP secrets, and internal security counters before sending user data over wire.
@@ -110,12 +111,45 @@ export class DatabaseService {
     this.ensureAdminUser();
     this.ensureProviderSettings();
 
-    // Asynchronously preload live services directly from SMMFollows after init finishes
-    setImmediate(() => {
+    // Asynchronously connect to PostgreSQL if configured, then preload services
+    setImmediate(async () => {
+      await this.initPostgres();
       this.getServicesAsync().catch((err) => {
         console.warn('Initial SMMFollows services fetch warning:', err.message);
       });
     });
+  }
+
+  private async initPostgres(): Promise<void> {
+    const pg = PostgresService.getInstance();
+    if (pg.isEnabled()) {
+      const ok = await pg.init();
+      if (ok) {
+        await this.hydrateFromPostgres();
+      }
+    }
+  }
+
+  public async hydrateFromPostgres(): Promise<void> {
+    const pg = PostgresService.getInstance();
+    if (!pg.isHealthy()) return;
+    try {
+      const [users, orders, transactions, tickets, logs] = await Promise.all([
+        pg.getAllUsers(),
+        pg.getOrders(),
+        pg.getTransactions(),
+        pg.getTickets(),
+        pg.getAuditLogs(),
+      ]);
+      this.data.users = users;
+      this.data.orders = orders;
+      this.data.transactions = transactions;
+      this.data.tickets = tickets;
+      this.data.auditLogs = logs;
+      console.log(`⚡ PostgreSQL Active: ${users.length} users, ${orders.length} orders loaded into in-memory hot cache.`);
+    } catch (err: any) {
+      console.warn('Could not hydrate in-memory cache from PostgreSQL:', err.message);
+    }
   }
 
   private seedDefaults(): void {
@@ -343,6 +377,13 @@ export class DatabaseService {
   }
 
   public async createUser(user: Omit<User, 'id' | 'createdAt' | 'updatedAt' | 'apiKey'>): Promise<User> {
+    const pg = PostgresService.getInstance();
+    if (pg.isHealthy()) {
+      const newUser = await pg.createUser(user);
+      this.data.users.push(newUser);
+      return newUser;
+    }
+
     const newUser: User = {
       ...user,
       id: crypto.randomUUID(),
@@ -356,6 +397,16 @@ export class DatabaseService {
   }
 
   public async updateUser(id: string, updates: Partial<User>): Promise<User | null> {
+    const pg = PostgresService.getInstance();
+    if (pg.isHealthy()) {
+      const updated = await pg.updateUser(id, updates);
+      if (updated) {
+        const index = this.data.users.findIndex((u) => u.id === id);
+        if (index !== -1) this.data.users[index] = updated;
+      }
+      return updated;
+    }
+
     const index = this.data.users.findIndex((u) => u.id === id);
     if (index === -1) return null;
 
@@ -378,6 +429,19 @@ export class DatabaseService {
     referenceId?: string,
     description?: string
   ): Promise<{ success: boolean; newBalance: number; error?: string }> {
+    const pg = PostgresService.getInstance();
+    if (pg.isHealthy()) {
+      const result = await pg.adjustUserBalance(userId, amount, type, referenceId, description);
+      if (result.success) {
+        const user = this.data.users.find((u) => u.id === userId);
+        if (user) {
+          user.balance = result.newBalance;
+          user.updatedAt = new Date().toISOString();
+        }
+      }
+      return result;
+    }
+
     const user = this.getUserById(userId);
     if (!user) {
       return { success: false, newBalance: 0, error: 'User not found' };
@@ -793,6 +857,13 @@ export class DatabaseService {
   }
 
   public async createOrder(orderData: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>): Promise<Order> {
+    const pg = PostgresService.getInstance();
+    if (pg.isHealthy()) {
+      const newOrder = await pg.createOrder(orderData);
+      this.data.orders.unshift(newOrder);
+      return newOrder;
+    }
+
     const newOrder: Order = {
       ...orderData,
       id: crypto.randomUUID(),
@@ -805,6 +876,16 @@ export class DatabaseService {
   }
 
   public async updateOrder(id: string, updates: Partial<Order>): Promise<Order | null> {
+    const pg = PostgresService.getInstance();
+    if (pg.isHealthy()) {
+      const updated = await pg.updateOrder(id, updates);
+      if (updated) {
+        const index = this.data.orders.findIndex((o) => o.id === id);
+        if (index !== -1) this.data.orders[index] = updated;
+      }
+      return updated;
+    }
+
     const index = this.data.orders.findIndex((o) => o.id === id);
     if (index === -1) return null;
 
@@ -850,6 +931,12 @@ export class DatabaseService {
     if (encrypt) {
       storedValue = EncryptionService.encryptToString(value);
     }
+
+    const pg = PostgresService.getInstance();
+    if (pg.isHealthy()) {
+      await pg.setSetting(key, storedValue, encrypt);
+    }
+
     this.data.settings[key] = {
       key,
       value: storedValue,
@@ -861,6 +948,11 @@ export class DatabaseService {
 
   // ================= AUDIT LOGS =================
   public async logAudit(action: string, details: string, ip: string, userId?: string, username?: string): Promise<void> {
+    const pg = PostgresService.getInstance();
+    if (pg.isHealthy()) {
+      await pg.logAudit(action, details, ip, userId, username);
+    }
+
     const log: AuditLog = {
       id: crypto.randomUUID(),
       userId,
@@ -893,6 +985,14 @@ export class DatabaseService {
   }
 
   public async createTicket(ticketData: Omit<Ticket, 'id' | 'ticketNumber' | 'createdAt' | 'updatedAt'>): Promise<Ticket> {
+    const pg = PostgresService.getInstance();
+    if (pg.isHealthy()) {
+      const newTicket = await pg.createTicket(ticketData);
+      if (!this.data.tickets) this.data.tickets = [];
+      this.data.tickets.unshift(newTicket);
+      return newTicket;
+    }
+
     const maxNum = (this.data.tickets || []).reduce((max, t) => Math.max(max, t.ticketNumber || 0), 1172280);
     const newTicket: Ticket = {
       ...ticketData,
