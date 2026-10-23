@@ -918,8 +918,8 @@ export class DatabaseService {
     if (item.isEncrypted) {
       try {
         return EncryptionService.decryptFromString(item.value);
-      } catch (err) {
-        console.error(`Failed to decrypt setting ${key}:`, err);
+      } catch {
+        // Return null to trigger automatic fallback/re-encryption with active key
         return null;
       }
     }

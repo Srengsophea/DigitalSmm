@@ -1,8 +1,27 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ServicesController = void 0;
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const db_service_1 = require("../services/db.service");
+const env_1 = require("../config/env");
 let isSyncing = false;
+function isRequesterAdmin(req) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return false;
+    }
+    try {
+        const token = authHeader.split(' ')[1];
+        const decoded = jsonwebtoken_1.default.verify(token, env_1.ENV.JWT_SECRET);
+        return decoded && decoded.role === 'ADMIN';
+    }
+    catch {
+        return false;
+    }
+}
 class ServicesController {
     /**
      * Get all available services with search and filtering directly from SMMFollows cache
@@ -41,12 +60,32 @@ class ServicesController {
             // Extract unique categories & platforms for UI filters from full catalog
             const allPlatforms = Array.from(new Set(allServices.map((s) => s.platform))).sort();
             const allCategories = Array.from(new Set(allServices.map((s) => s.category))).sort();
+            const isAdmin = isRequesterAdmin(req);
+            const outputServices = isAdmin
+                ? services
+                : services.map((s) => ({
+                    id: s.id,
+                    externalId: s.externalId,
+                    name: s.name,
+                    category: s.category,
+                    platform: s.platform,
+                    customRate: s.customRate,
+                    min: s.min,
+                    max: s.max,
+                    type: s.type,
+                    isActive: s.isActive,
+                    dripfeed: s.dripfeed,
+                    refill: s.refill,
+                    cancel: s.cancel,
+                    description: s.description,
+                    updatedAt: s.updatedAt,
+                }));
             res.json({
                 success: true,
-                total: services.length,
+                total: outputServices.length,
                 categories: allCategories,
                 platforms: allPlatforms,
-                services,
+                services: outputServices,
             });
         }
         catch (err) {
@@ -67,7 +106,27 @@ class ServicesController {
                 res.status(404).json({ success: false, error: 'Service not found' });
                 return;
             }
-            res.json({ success: true, service });
+            const isAdmin = isRequesterAdmin(req);
+            const safeService = isAdmin
+                ? service
+                : {
+                    id: service.id,
+                    externalId: service.externalId,
+                    name: service.name,
+                    category: service.category,
+                    platform: service.platform,
+                    customRate: service.customRate,
+                    min: service.min,
+                    max: service.max,
+                    type: service.type,
+                    isActive: service.isActive,
+                    dripfeed: service.dripfeed,
+                    refill: service.refill,
+                    cancel: service.cancel,
+                    description: service.description,
+                    updatedAt: service.updatedAt,
+                };
+            res.json({ success: true, service: safeService });
         }
         catch (err) {
             res.status(500).json({ success: false, error: 'Failed to find service' });

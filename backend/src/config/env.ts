@@ -4,7 +4,7 @@ import crypto from 'crypto';
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-const defaultEncryptionKey = process.env.ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex');
+const defaultEncryptionKey = process.env.ENCRYPTION_KEY || 'digitalsmm_aes256_gcm_master_key_v2_2026_secure!';
 
 export const ENV = {
   PORT: parseInt(process.env.PORT || '5000', 10),

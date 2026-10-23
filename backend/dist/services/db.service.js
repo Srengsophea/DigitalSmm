@@ -12,6 +12,7 @@ const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const env_1 = require("../config/env");
 const encryption_service_1 = require("./encryption.service");
 const smmfollows_service_1 = require("./smmfollows.service");
+const postgres_service_1 = require("./postgres.service");
 /**
  * Strips password hashes, TOTP secrets, and internal security counters before sending user data over wire.
  */
@@ -93,12 +94,45 @@ class DatabaseService {
         }
         this.ensureAdminUser();
         this.ensureProviderSettings();
-        // Asynchronously preload live services directly from SMMFollows after init finishes
-        setImmediate(() => {
+        // Asynchronously connect to PostgreSQL if configured, then preload services
+        setImmediate(async () => {
+            await this.initPostgres();
             this.getServicesAsync().catch((err) => {
                 console.warn('Initial SMMFollows services fetch warning:', err.message);
             });
         });
+    }
+    async initPostgres() {
+        const pg = postgres_service_1.PostgresService.getInstance();
+        if (pg.isEnabled()) {
+            const ok = await pg.init();
+            if (ok) {
+                await this.hydrateFromPostgres();
+            }
+        }
+    }
+    async hydrateFromPostgres() {
+        const pg = postgres_service_1.PostgresService.getInstance();
+        if (!pg.isHealthy())
+            return;
+        try {
+            const [users, orders, transactions, tickets, logs] = await Promise.all([
+                pg.getAllUsers(),
+                pg.getOrders(),
+                pg.getTransactions(),
+                pg.getTickets(),
+                pg.getAuditLogs(),
+            ]);
+            this.data.users = users;
+            this.data.orders = orders;
+            this.data.transactions = transactions;
+            this.data.tickets = tickets;
+            this.data.auditLogs = logs;
+            console.log(`⚡ PostgreSQL Active: ${users.length} users, ${orders.length} orders loaded into in-memory hot cache.`);
+        }
+        catch (err) {
+            console.warn('Could not hydrate in-memory cache from PostgreSQL:', err.message);
+        }
     }
     seedDefaults() {
         this.data = {
@@ -311,6 +345,12 @@ class DatabaseService {
         });
     }
     async createUser(user) {
+        const pg = postgres_service_1.PostgresService.getInstance();
+        if (pg.isHealthy()) {
+            const newUser = await pg.createUser(user);
+            this.data.users.push(newUser);
+            return newUser;
+        }
         const newUser = {
             ...user,
             id: crypto_1.default.randomUUID(),
@@ -323,6 +363,16 @@ class DatabaseService {
         return newUser;
     }
     async updateUser(id, updates) {
+        const pg = postgres_service_1.PostgresService.getInstance();
+        if (pg.isHealthy()) {
+            const updated = await pg.updateUser(id, updates);
+            if (updated) {
+                const index = this.data.users.findIndex((u) => u.id === id);
+                if (index !== -1)
+                    this.data.users[index] = updated;
+            }
+            return updated;
+        }
         const index = this.data.users.findIndex((u) => u.id === id);
         if (index === -1)
             return null;
@@ -338,6 +388,18 @@ class DatabaseService {
      * Atomically adjust a user's wallet balance and record a ledger transaction
      */
     async adjustUserBalance(userId, amount, type, referenceId, description) {
+        const pg = postgres_service_1.PostgresService.getInstance();
+        if (pg.isHealthy()) {
+            const result = await pg.adjustUserBalance(userId, amount, type, referenceId, description);
+            if (result.success) {
+                const user = this.data.users.find((u) => u.id === userId);
+                if (user) {
+                    user.balance = result.newBalance;
+                    user.updatedAt = new Date().toISOString();
+                }
+            }
+            return result;
+        }
         const user = this.getUserById(userId);
         if (!user) {
             return { success: false, newBalance: 0, error: 'User not found' };
@@ -707,6 +769,12 @@ class DatabaseService {
         return this.data.orders.find((o) => o.id === id);
     }
     async createOrder(orderData) {
+        const pg = postgres_service_1.PostgresService.getInstance();
+        if (pg.isHealthy()) {
+            const newOrder = await pg.createOrder(orderData);
+            this.data.orders.unshift(newOrder);
+            return newOrder;
+        }
         const newOrder = {
             ...orderData,
             id: crypto_1.default.randomUUID(),
@@ -718,6 +786,16 @@ class DatabaseService {
         return newOrder;
     }
     async updateOrder(id, updates) {
+        const pg = postgres_service_1.PostgresService.getInstance();
+        if (pg.isHealthy()) {
+            const updated = await pg.updateOrder(id, updates);
+            if (updated) {
+                const index = this.data.orders.findIndex((o) => o.id === id);
+                if (index !== -1)
+                    this.data.orders[index] = updated;
+            }
+            return updated;
+        }
         const index = this.data.orders.findIndex((o) => o.id === id);
         if (index === -1)
             return null;
@@ -748,8 +826,8 @@ class DatabaseService {
             try {
                 return encryption_service_1.EncryptionService.decryptFromString(item.value);
             }
-            catch (err) {
-                console.error(`Failed to decrypt setting ${key}:`, err);
+            catch {
+                // Return null to trigger automatic fallback/re-encryption with active key
                 return null;
             }
         }
@@ -759,6 +837,10 @@ class DatabaseService {
         let storedValue = value;
         if (encrypt) {
             storedValue = encryption_service_1.EncryptionService.encryptToString(value);
+        }
+        const pg = postgres_service_1.PostgresService.getInstance();
+        if (pg.isHealthy()) {
+            await pg.setSetting(key, storedValue, encrypt);
         }
         this.data.settings[key] = {
             key,
@@ -770,6 +852,10 @@ class DatabaseService {
     }
     // ================= AUDIT LOGS =================
     async logAudit(action, details, ip, userId, username) {
+        const pg = postgres_service_1.PostgresService.getInstance();
+        if (pg.isHealthy()) {
+            await pg.logAudit(action, details, ip, userId, username);
+        }
         const log = {
             id: crypto_1.default.randomUUID(),
             userId,
@@ -797,6 +883,14 @@ class DatabaseService {
         return (this.data.tickets || []).filter((t) => t.userId === userId);
     }
     async createTicket(ticketData) {
+        const pg = postgres_service_1.PostgresService.getInstance();
+        if (pg.isHealthy()) {
+            const newTicket = await pg.createTicket(ticketData);
+            if (!this.data.tickets)
+                this.data.tickets = [];
+            this.data.tickets.unshift(newTicket);
+            return newTicket;
+        }
         const maxNum = (this.data.tickets || []).reduce((max, t) => Math.max(max, t.ticketNumber || 0), 1172280);
         const newTicket = {
             ...ticketData,

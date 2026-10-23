@@ -6,9 +6,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ENV = void 0;
 const dotenv_1 = __importDefault(require("dotenv"));
 const path_1 = __importDefault(require("path"));
-const crypto_1 = __importDefault(require("crypto"));
 dotenv_1.default.config({ path: path_1.default.resolve(__dirname, '../../.env') });
-const defaultEncryptionKey = process.env.ENCRYPTION_KEY || crypto_1.default.randomBytes(32).toString('hex');
+const defaultEncryptionKey = process.env.ENCRYPTION_KEY || 'digitalsmm_aes256_gcm_master_key_v2_2026_secure!';
 exports.ENV = {
     PORT: parseInt(process.env.PORT || '5000', 10),
     NODE_ENV: process.env.NODE_ENV || 'development',
@@ -26,4 +25,5 @@ exports.ENV = {
     BAKONG_MERCHANT_NAME: process.env.BAKONG_MERCHANT_NAME || 'Digital Smm',
     BAKONG_MERCHANT_CITY: process.env.BAKONG_MERCHANT_CITY || 'Phnom Penh',
     BAKONG_TOKEN: process.env.BAKONG_TOKEN || '',
+    DATABASE_URL: process.env.DATABASE_URL || '',
 };

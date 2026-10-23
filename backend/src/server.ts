@@ -14,6 +14,9 @@ import { DatabaseService } from './services/db.service';
 
 const app = express();
 
+// Trust reverse proxy (Nginx / Cloudflare) for accurate client IP resolution and rate limiting
+app.set('trust proxy', 1);
+
 // Security HTTP headers (XSS filter, Clickjacking denial, NoSniff, HSTS)
 app.use(
   helmet({

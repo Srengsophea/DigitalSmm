@@ -1,11 +1,17 @@
 import rateLimit from 'express-rate-limit';
 
+const proxyValidateConfig = {
+  xForwardedForHeader: false,
+  default: true,
+};
+
 // Global API rate limit: 120 requests per minute
 export const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 120,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: proxyValidateConfig,
   message: {
     success: false,
     error: 'Too many requests from this IP, please try again in a minute.',
@@ -18,6 +24,7 @@ export const authLimiter = rateLimit({
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: proxyValidateConfig,
   message: {
     success: false,
     error: 'Too many authentication attempts from this IP address. Please wait 15 minutes.',
@@ -30,6 +37,7 @@ export const otpLimiter = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: proxyValidateConfig,
   message: {
     success: false,
     error: 'Verification code request limit reached. Please wait 15 minutes before requesting more codes.',
@@ -42,6 +50,7 @@ export const orderLimiter = rateLimit({
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: proxyValidateConfig,
   message: {
     success: false,
     error: 'Order rate limit exceeded. Please wait a moment before creating more orders.',
@@ -54,8 +63,10 @@ export const ticketLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: proxyValidateConfig,
   message: {
     success: false,
     error: 'Ticket submission limit reached. Please wait a few minutes before submitting more support tickets.',
   },
 });
+

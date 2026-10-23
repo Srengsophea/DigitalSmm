@@ -26,6 +26,14 @@ class TicketsController {
             res.status(400).json({ success: false, error: 'Message description is required' });
             return;
         }
+        if (message.trim().length > 4000) {
+            res.status(400).json({ success: false, error: 'Ticket message cannot exceed 4000 characters' });
+            return;
+        }
+        if (orderIds && typeof orderIds === 'string' && orderIds.trim().length > 500) {
+            res.status(400).json({ success: false, error: 'Order IDs field is too long (max 500 characters)' });
+            return;
+        }
         const db = db_service_1.DatabaseService.getInstance();
         const newTicket = await db.createTicket({
             userId: req.user.id,
@@ -45,6 +53,10 @@ class TicketsController {
         });
     }
     static async getAllTickets(req, res) {
+        if (!req.user || req.user.role !== 'ADMIN') {
+            res.status(403).json({ success: false, error: 'Administrative clearance required' });
+            return;
+        }
         const db = db_service_1.DatabaseService.getInstance();
         const tickets = db.getTickets();
         res.json({

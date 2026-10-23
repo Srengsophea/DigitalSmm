@@ -17,6 +17,8 @@ const api_v2_routes_1 = __importDefault(require("./routes/api-v2.routes"));
 const tickets_routes_1 = __importDefault(require("./routes/tickets.routes"));
 const db_service_1 = require("./services/db.service");
 const app = (0, express_1.default)();
+// Trust reverse proxy (Nginx / Cloudflare) for accurate client IP resolution and rate limiting
+app.set('trust proxy', 1);
 // Security HTTP headers (XSS filter, Clickjacking denial, NoSniff, HSTS)
 app.use((0, helmet_1.default)({
     contentSecurityPolicy: false,
