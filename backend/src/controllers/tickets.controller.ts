@@ -60,6 +60,11 @@ export class TicketsController {
   }
 
   public static async getAllTickets(req: AuthenticatedRequest, res: Response): Promise<void> {
+    if (!req.user || req.user.role !== 'ADMIN') {
+      res.status(403).json({ success: false, error: 'Administrative clearance required' });
+      return;
+    }
+
     const db = DatabaseService.getInstance();
     const tickets = db.getTickets();
 
