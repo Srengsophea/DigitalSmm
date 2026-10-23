@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTheme } from '../context/ThemeContext';
 import {
   Sparkles,
   Zap,
@@ -29,6 +30,9 @@ export const PublicHomeView: React.FC<PublicHomeViewProps> = ({
   onSelectPlatform,
   selectedPlatform,
 }) => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   return (
     <div>
       {/* 1. Hero Banner */}
@@ -60,7 +64,7 @@ export const PublicHomeView: React.FC<PublicHomeViewProps> = ({
               className="btn-hero-secondary"
               onClick={onExploreServices}
             >
-              <Layers size={18} color="#162399" />
+              <Layers size={18} color={isDark ? '#38bdf8' : '#162399'} />
               Browse 7,500+ Services & Rates
             </button>
           </div>
@@ -68,7 +72,7 @@ export const PublicHomeView: React.FC<PublicHomeViewProps> = ({
           {/* Public Hero Stats Grid */}
           <div className="public-stats-grid">
             <div className="public-stat-card">
-              <Zap size={22} color="#162399" />
+              <Zap size={22} color={isDark ? '#38bdf8' : '#162399'} />
               <div className="public-stat-value">7,568+</div>
               <div className="public-stat-label">Active Provider Services</div>
             </div>
@@ -97,10 +101,10 @@ export const PublicHomeView: React.FC<PublicHomeViewProps> = ({
       {/* 2. Supported Platforms Showcase with Enlarged PlatformPillsBar */}
       <section style={{ maxWidth: 1380, margin: '40px auto', padding: '0 24px' }}>
         <div style={{ textAlign: 'center', marginBottom: 20 }}>
-          <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', margin: '0 0 6px 0' }}>
+          <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a', margin: '0 0 6px 0', transition: 'color 0.2s ease' }}>
             Supported Networks & Platforms
           </h2>
-          <p style={{ color: '#64748b', fontSize: '0.94rem' }}>
+          <p style={{ color: isDark ? '#94a3b8' : '#64748b', fontSize: '0.94rem', transition: 'color 0.2s ease' }}>
             Select any platform below to instantly filter all active wholesale services and pricing.
           </p>
         </div>
@@ -115,50 +119,88 @@ export const PublicHomeView: React.FC<PublicHomeViewProps> = ({
       </section>
 
       {/* 3. Three-Step Quick How It Works */}
-      <section style={{ background: '#ffffff', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', padding: '60px 24px' }}>
+      <section
+        style={{
+          background: isDark ? '#0b0f19' : '#ffffff',
+          borderTop: isDark ? '1px solid #1e293b' : '1px solid #e2e8f0',
+          borderBottom: isDark ? '1px solid #1e293b' : '1px solid #e2e8f0',
+          padding: '60px 24px',
+          transition: 'background 0.2s ease, border-color 0.2s ease',
+        }}
+      >
         <div style={{ maxWidth: 1180, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 40 }}>
-            <span style={{ fontSize: '0.80rem', fontWeight: 800, color: '#162399', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            <span style={{ fontSize: '0.80rem', fontWeight: 800, color: isDark ? '#38bdf8' : '#162399', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
               HOW IT WORKS
             </span>
-            <h2 style={{ fontSize: '1.9rem', fontWeight: 800, color: '#0f172a', margin: '6px 0 0 0' }}>
+            <h2 style={{ fontSize: '1.9rem', fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a', margin: '6px 0 0 0', transition: 'color 0.2s ease' }}>
               Start Growing in 3 Simple Steps
             </h2>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
-            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: 28, position: 'relative' }}>
+            <div
+              style={{
+                background: isDark ? '#1e293b' : '#f8fafc',
+                border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
+                borderRadius: 14,
+                padding: 28,
+                position: 'relative',
+                boxShadow: isDark ? '0 8px 24px rgba(0, 0, 0, 0.35)' : 'none',
+                transition: 'all 0.2s ease',
+              }}
+            >
               <div style={{ width: 42, height: 42, borderRadius: 10, background: '#162399', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1.1rem', marginBottom: 18 }}>
                 1
               </div>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f172a', marginBottom: 8 }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: isDark ? '#f8fafc' : '#0f172a', marginBottom: 8, transition: 'color 0.2s ease' }}>
                 Create Free Account
               </h3>
-              <p style={{ fontSize: '0.88rem', color: '#64748b', lineHeight: 1.6, margin: 0 }}>
+              <p style={{ fontSize: '0.88rem', color: isDark ? '#94a3b8' : '#64748b', lineHeight: 1.6, margin: 0, transition: 'color 0.2s ease' }}>
                 Sign up in under 30 seconds with Google or email. Access direct wholesale pricing and launch orders immediately.
               </p>
             </div>
 
-            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: 28, position: 'relative' }}>
+            <div
+              style={{
+                background: isDark ? '#1e293b' : '#f8fafc',
+                border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
+                borderRadius: 14,
+                padding: 28,
+                position: 'relative',
+                boxShadow: isDark ? '0 8px 24px rgba(0, 0, 0, 0.35)' : 'none',
+                transition: 'all 0.2s ease',
+              }}
+            >
               <div style={{ width: 42, height: 42, borderRadius: 10, background: '#0284c7', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1.1rem', marginBottom: 18 }}>
                 2
               </div>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f172a', marginBottom: 8 }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: isDark ? '#f8fafc' : '#0f172a', marginBottom: 8, transition: 'color 0.2s ease' }}>
                 Select Service & Target Link
               </h3>
-              <p style={{ fontSize: '0.88rem', color: '#64748b', lineHeight: 1.6, margin: 0 }}>
+              <p style={{ fontSize: '0.88rem', color: isDark ? '#94a3b8' : '#64748b', lineHeight: 1.6, margin: 0, transition: 'color 0.2s ease' }}>
                 Browse our catalog of 7,500+ services. Enter your public profile link and desired quantity. No passwords ever required.
               </p>
             </div>
 
-            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: 28, position: 'relative' }}>
+            <div
+              style={{
+                background: isDark ? '#1e293b' : '#f8fafc',
+                border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
+                borderRadius: 14,
+                padding: 28,
+                position: 'relative',
+                boxShadow: isDark ? '0 8px 24px rgba(0, 0, 0, 0.35)' : 'none',
+                transition: 'all 0.2s ease',
+              }}
+            >
               <div style={{ width: 42, height: 42, borderRadius: 10, background: '#16a34a', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1.1rem', marginBottom: 18 }}>
                 3
               </div>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f172a', marginBottom: 8 }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: isDark ? '#f8fafc' : '#0f172a', marginBottom: 8, transition: 'color 0.2s ease' }}>
                 Automated High-Speed Delivery
               </h3>
-              <p style={{ fontSize: '0.88rem', color: '#64748b', lineHeight: 1.6, margin: 0 }}>
+              <p style={{ fontSize: '0.88rem', color: isDark ? '#94a3b8' : '#64748b', lineHeight: 1.6, margin: 0, transition: 'color 0.2s ease' }}>
                 Our proprietary automated dispatch engine processes your order in seconds. Track live progress, delivery speed, and refills in real time.
               </p>
             </div>
@@ -170,7 +212,10 @@ export const PublicHomeView: React.FC<PublicHomeViewProps> = ({
       <section style={{ maxWidth: 1180, margin: '60px auto', padding: '0 24px' }}>
         <div
           style={{
-            background: 'linear-gradient(135deg, #162399 0%, #0c1666 100%)',
+            background: isDark
+              ? 'linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)'
+              : 'linear-gradient(135deg, #162399 0%, #0c1666 100%)',
+            border: isDark ? '1px solid #334155' : 'none',
             borderRadius: 20,
             padding: '48px 40px',
             color: '#ffffff',
@@ -179,7 +224,9 @@ export const PublicHomeView: React.FC<PublicHomeViewProps> = ({
             alignItems: 'center',
             flexWrap: 'wrap',
             gap: 24,
-            boxShadow: '0 16px 36px rgba(22, 35, 153, 0.28)',
+            boxShadow: isDark
+              ? '0 16px 36px rgba(0, 0, 0, 0.5)'
+              : '0 16px 36px rgba(22, 35, 153, 0.28)',
           }}
         >
           <div style={{ maxWidth: 640 }}>
@@ -189,7 +236,7 @@ export const PublicHomeView: React.FC<PublicHomeViewProps> = ({
             <h2 style={{ fontSize: '2.1rem', fontWeight: 900, color: '#ffffff', margin: '0 0 10px 0' }}>
               Ready to Accelerate Your Social Growth?
             </h2>
-            <p style={{ fontSize: '0.98rem', color: '#cbd5e1', lineHeight: 1.6, margin: 0 }}>
+            <p style={{ fontSize: '0.98rem', color: isDark ? '#94a3b8' : '#cbd5e1', lineHeight: 1.6, margin: 0 }}>
               Join over 50,000+ creators, agencies, and resellers worldwide. Scale your social presence today with automated 24/7 delivery.
             </p>
           </div>
@@ -198,7 +245,11 @@ export const PublicHomeView: React.FC<PublicHomeViewProps> = ({
             <button
               type="button"
               className="btn-hero-primary"
-              style={{ background: '#ffffff', color: '#162399', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
+              style={{
+                background: isDark ? '#ffffff' : '#ffffff',
+                color: '#162399',
+                boxShadow: isDark ? '0 4px 16px rgba(0,0,0,0.4)' : '0 4px 12px rgba(0,0,0,0.15)',
+              }}
               onClick={onSignUp}
             >
               Get Started Now →

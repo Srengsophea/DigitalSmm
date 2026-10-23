@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import {
   ShieldCheck,
   TrendingUp,
@@ -54,6 +55,8 @@ interface ServiceItem {
 
 export const AdminDashboard: React.FC = () => {
   const { showToast } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [activeTab, setActiveTab] = useState<'services' | 'margins' | 'users' | 'provider' | 'logs'>('services');
 
   // Stats & Data
@@ -650,8 +653,24 @@ export const AdminDashboard: React.FC = () => {
 
             {/* Quick Bulk Actions if items selected */}
             {selectedIds.length > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f0f9ff', padding: '6px 12px', borderRadius: 8, border: '1px solid #bae6fd' }}>
-                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0369a1' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  background: isDark ? 'rgba(2, 132, 199, 0.2)' : '#f0f9ff',
+                  padding: '6px 12px',
+                  borderRadius: 8,
+                  border: isDark ? '1px solid rgba(56, 189, 248, 0.35)' : '1px solid #bae6fd',
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    color: isDark ? '#38bdf8' : '#0369a1',
+                  }}
+                >
                   {selectedIds.length} selected
                 </span>
                 <button
@@ -853,10 +872,10 @@ export const AdminDashboard: React.FC = () => {
                                 {service.category}
                               </span>
                             </div>
-                            <div style={{ fontWeight: 600, color: '#0f172a', lineHeight: 1.35 }}>
+                            <div style={{ fontWeight: 600, color: isDark ? '#f8fafc' : '#0f172a', lineHeight: 1.35 }}>
                               {service.name}
                             </div>
-                            <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: 3 }}>
+                            <div style={{ fontSize: '0.74rem', color: isDark ? '#94a3b8' : '#64748b', marginTop: 3 }}>
                               Min: {service.min?.toLocaleString()} · Max: {service.max?.toLocaleString()}
                             </div>
                           </td>
@@ -864,7 +883,7 @@ export const AdminDashboard: React.FC = () => {
                           {/* Provider Cost */}
                           <td>
                             <div className="price-cost">${service.originalRate.toFixed(4)}</div>
-                            <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Wholesale / 1k</span>
+                            <span style={{ fontSize: '0.72rem', color: isDark ? '#94a3b8' : '#64748b' }}>Wholesale / 1k</span>
                           </td>
 
                           {/* Profit / Margin */}
@@ -880,7 +899,7 @@ export const AdminDashboard: React.FC = () => {
                           {/* Selling Price */}
                           <td>
                             <div className="price-selling">${service.customRate.toFixed(4)}</div>
-                            <span style={{ fontSize: '0.72rem', color: '#64748b' }}>User Pays / 1k</span>
+                            <span style={{ fontSize: '0.72rem', color: isDark ? '#94a3b8' : '#64748b' }}>User Pays / 1k</span>
                           </td>
 
                           {/* Status Switch */}
@@ -964,20 +983,20 @@ export const AdminDashboard: React.FC = () => {
               <h3><Percent size={18} color="#162399" /> 1. Global Percentage Profit Margin</h3>
             </div>
             <div className="admin-panel-body">
-              <p style={{ fontSize: '0.86rem', color: '#64748b', marginBottom: 18 }}>
+              <p style={{ fontSize: '0.86rem', color: isDark ? '#94a3b8' : '#64748b', marginBottom: 18 }}>
                 Recalculate selling prices across <strong>ALL 7,500+ services</strong> using a standard profit margin percentage on top of SMMFollows wholesale rates.
               </p>
 
               <form onSubmit={handleApplyGlobalMarkup}>
                 <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 6, color: '#334155' }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 6, color: isDark ? '#cbd5e1' : '#334155' }}>
                     Global Profit Margin (%)
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input
                       type="number"
                       className="form-input"
-                      style={{ width: '100%', height: 42, padding: '8px 30px 8px 12px', border: '1px solid #cbd5e1', borderRadius: 8, fontSize: '0.92rem' }}
+                      style={{ width: '100%', height: 42, padding: '8px 30px 8px 12px', border: isDark ? '1px solid #334155' : '1px solid #cbd5e1', borderRadius: 8, fontSize: '0.92rem' }}
                       value={batchGlobalMarkup}
                       onChange={(e) => setBatchGlobalMarkup(e.target.value)}
                       min={0}
@@ -991,7 +1010,7 @@ export const AdminDashboard: React.FC = () => {
 
                 {/* Example Preview Box */}
                 <div className="calc-preview-card" style={{ marginBottom: 20 }}>
-                  <div style={{ fontSize: '0.80rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>
+                  <div style={{ fontSize: '0.80rem', fontWeight: 700, color: isDark ? '#94a3b8' : '#475569', marginBottom: 6 }}>
                     MARGIN CALCULATION EXAMPLE
                   </div>
                   <div className="calc-row">
@@ -1027,13 +1046,13 @@ export const AdminDashboard: React.FC = () => {
               <h3><Sliders size={18} color="#0284c7" /> 2. Platform-Specific Margin</h3>
             </div>
             <div className="admin-panel-body">
-              <p style={{ fontSize: '0.86rem', color: '#64748b', marginBottom: 18 }}>
+              <p style={{ fontSize: '0.86rem', color: isDark ? '#94a3b8' : '#64748b', marginBottom: 18 }}>
                 Apply tailored profit margins for specific platforms (e.g. higher margin on TikTok, lower on Instagram).
               </p>
 
               <form onSubmit={handleApplyPlatformMarkup}>
                 <div style={{ marginBottom: 14 }}>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 6, color: '#334155' }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 6, color: isDark ? '#cbd5e1' : '#334155' }}>
                     Select Target Platform
                   </label>
                   <select
@@ -1051,14 +1070,14 @@ export const AdminDashboard: React.FC = () => {
                 </div>
 
                 <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 6, color: '#334155' }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 6, color: isDark ? '#cbd5e1' : '#334155' }}>
                     Markup for {batchPlatform} (%)
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input
                       type="number"
                       className="form-input"
-                      style={{ width: '100%', height: 42, padding: '8px 30px 8px 12px', border: '1px solid #cbd5e1', borderRadius: 8, fontSize: '0.92rem' }}
+                      style={{ width: '100%', height: 42, padding: '8px 30px 8px 12px', border: isDark ? '1px solid #334155' : '1px solid #cbd5e1', borderRadius: 8, fontSize: '0.92rem' }}
                       value={batchPlatformMarkup}
                       onChange={(e) => setBatchPlatformMarkup(e.target.value)}
                       min={0}
@@ -1089,13 +1108,13 @@ export const AdminDashboard: React.FC = () => {
               <h3><DollarSign size={18} color="#16a34a" /> 3. Fixed Dollar Profit Adder</h3>
             </div>
             <div className="admin-panel-body">
-              <p style={{ fontSize: '0.86rem', color: '#64748b', marginBottom: 18 }}>
+              <p style={{ fontSize: '0.86rem', color: isDark ? '#94a3b8' : '#64748b', marginBottom: 18 }}>
                 Add a flat dollar amount profit (e.g. +$0.50 per 1,000) directly on top of wholesale cost.
               </p>
 
               <form onSubmit={handleApplyFixedAdder}>
                 <div style={{ marginBottom: 14 }}>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 6, color: '#334155' }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 6, color: isDark ? '#cbd5e1' : '#334155' }}>
                     Target Platform
                   </label>
                   <select
@@ -1114,7 +1133,7 @@ export const AdminDashboard: React.FC = () => {
                 </div>
 
                 <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 6, color: '#334155' }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 6, color: isDark ? '#cbd5e1' : '#334155' }}>
                     Fixed Profit Increase ($ per 1,000 units)
                   </label>
                   <div style={{ position: 'relative' }}>
@@ -1122,7 +1141,7 @@ export const AdminDashboard: React.FC = () => {
                     <input
                       type="number"
                       className="form-input"
-                      style={{ width: '100%', height: 42, padding: '8px 12px 8px 28px', border: '1px solid #cbd5e1', borderRadius: 8, fontSize: '0.92rem' }}
+                      style={{ width: '100%', height: 42, padding: '8px 12px 8px 28px', border: isDark ? '1px solid #334155' : '1px solid #cbd5e1', borderRadius: 8, fontSize: '0.92rem' }}
                       value={batchFixedAdder}
                       onChange={(e) => setBatchFixedAdder(e.target.value)}
                       min={0}
@@ -1180,7 +1199,7 @@ export const AdminDashboard: React.FC = () => {
                       <td>
                         <strong>{u.username}</strong>
                       </td>
-                      <td style={{ color: '#64748b' }}>{u.email}</td>
+                      <td style={{ color: isDark ? '#94a3b8' : '#64748b' }}>{u.email}</td>
                       <td>
                         <span
                           style={{
@@ -1188,8 +1207,12 @@ export const AdminDashboard: React.FC = () => {
                             borderRadius: 6,
                             fontSize: '0.72rem',
                             fontWeight: 700,
-                            background: u.role === 'ADMIN' ? '#e0f2fe' : '#f1f5f9',
-                            color: u.role === 'ADMIN' ? '#0369a1' : '#475569',
+                            background: u.role === 'ADMIN'
+                              ? (isDark ? 'rgba(56, 189, 248, 0.2)' : '#e0f2fe')
+                              : (isDark ? '#334155' : '#f1f5f9'),
+                            color: u.role === 'ADMIN'
+                              ? (isDark ? '#38bdf8' : '#0369a1')
+                              : (isDark ? '#cbd5e1' : '#475569'),
                           }}
                         >
                           {u.role}
@@ -1207,8 +1230,12 @@ export const AdminDashboard: React.FC = () => {
                             borderRadius: 6,
                             fontSize: '0.72rem',
                             fontWeight: 700,
-                            background: u.status === 'active' ? '#dcfce7' : '#fee2e2',
-                            color: u.status === 'active' ? '#15803d' : '#b91c1c',
+                            background: u.status === 'active'
+                              ? (isDark ? 'rgba(22, 163, 74, 0.2)' : '#dcfce7')
+                              : (isDark ? 'rgba(225, 29, 72, 0.2)' : '#fee2e2'),
+                            color: u.status === 'active'
+                              ? (isDark ? '#4ade80' : '#15803d')
+                              : (isDark ? '#fb7185' : '#b91c1c'),
                           }}
                         >
                           {u.status}
@@ -1268,30 +1295,30 @@ export const AdminDashboard: React.FC = () => {
             </div>
             <div className="admin-panel-body">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14, fontSize: '0.88rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: 10 }}>
-                  <span style={{ color: '#64748b' }}>Provider:</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `1px solid ${isDark ? '#334155' : '#f1f5f9'}`, paddingBottom: 10 }}>
+                  <span style={{ color: isDark ? '#94a3b8' : '#64748b' }}>Provider:</span>
                   <strong>SMMFollows.com API v2</strong>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: 10 }}>
-                  <span style={{ color: '#64748b' }}>API Endpoint:</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `1px solid ${isDark ? '#334155' : '#f1f5f9'}`, paddingBottom: 10 }}>
+                  <span style={{ color: isDark ? '#94a3b8' : '#64748b' }}>API Endpoint:</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: isDark ? '#cbd5e1' : '#334155' }}>
                     {settings?.smmfollows_api_url}
                   </span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: 10 }}>
-                  <span style={{ color: '#64748b' }}>Active Key:</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `1px solid ${isDark ? '#334155' : '#f1f5f9'}`, paddingBottom: 10 }}>
+                  <span style={{ color: isDark ? '#94a3b8' : '#64748b' }}>Active Key:</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: isDark ? '#cbd5e1' : '#334155' }}>
                     {settings?.smmfollows_api_key_masked || '••••••••••••••••••••'}
                   </span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: 10 }}>
-                  <span style={{ color: '#64748b' }}>Key Encryption:</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `1px solid ${isDark ? '#334155' : '#f1f5f9'}`, paddingBottom: 10 }}>
+                  <span style={{ color: isDark ? '#94a3b8' : '#64748b' }}>Key Encryption:</span>
                   <span style={{ color: '#16a34a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
                     <Lock size={12} /> AES-256-GCM Secure Vault
                   </span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 4 }}>
-                  <span style={{ color: '#64748b' }}>Live Provider Balance:</span>
+                  <span style={{ color: isDark ? '#94a3b8' : '#64748b' }}>Live Provider Balance:</span>
                   <strong style={{ color: '#d97706', fontFamily: 'var(--font-mono)', fontSize: '1rem' }}>
                     ${stats?.provider?.balance || '0.00'} USD
                   </strong>
@@ -1308,13 +1335,13 @@ export const AdminDashboard: React.FC = () => {
             <div className="admin-panel-body">
               <form onSubmit={handleSaveSettings}>
                 <div style={{ marginBottom: 14 }}>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 6, color: '#334155' }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 6, color: isDark ? '#cbd5e1' : '#334155' }}>
                     SMMFollows API Endpoint URL
                   </label>
                   <input
                     type="url"
                     className="form-input"
-                    style={{ width: '100%', height: 40, padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: 8 }}
+                    style={{ width: '100%', height: 40, padding: '8px 12px', border: isDark ? '1px solid #334155' : '1px solid #cbd5e1', borderRadius: 8 }}
                     value={newApiUrl}
                     onChange={(e) => setNewApiUrl(e.target.value)}
                     placeholder="https://smmfollows.com/api/v2"
@@ -1322,13 +1349,13 @@ export const AdminDashboard: React.FC = () => {
                 </div>
 
                 <div style={{ marginBottom: 18 }}>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 6, color: '#334155' }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 6, color: isDark ? '#cbd5e1' : '#334155' }}>
                     New SMMFollows API Key (leave empty to keep current)
                   </label>
                   <input
                     type="password"
                     className="form-input"
-                    style={{ width: '100%', height: 40, padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: 8 }}
+                    style={{ width: '100%', height: 40, padding: '8px 12px', border: isDark ? '1px solid #334155' : '1px solid #cbd5e1', borderRadius: 8 }}
                     value={newApiKey}
                     onChange={(e) => setNewApiKey(e.target.value)}
                     placeholder="Enter new API key..."
@@ -1377,8 +1404,8 @@ export const AdminDashboard: React.FC = () => {
                 <tbody>
                   {auditLogs.map((log) => (
                     <tr key={log.id}>
-                      <td style={{ color: '#64748b', fontSize: '0.80rem', whiteSpace: 'nowrap' }}>
-                        {new Date(log.timestamp).toLocaleString()}
+                      <td style={{ color: isDark ? '#94a3b8' : '#64748b', fontSize: '0.80rem', whiteSpace: 'nowrap' }}>
+                        {new Date(log.createdAt || log.timestamp).toLocaleString()}
                       </td>
                       <td>
                         <span
@@ -1387,18 +1414,18 @@ export const AdminDashboard: React.FC = () => {
                             borderRadius: 6,
                             fontSize: '0.72rem',
                             fontWeight: 700,
-                            background: '#f1f5f9',
-                            color: '#334155',
+                            background: isDark ? '#334155' : '#f1f5f9',
+                            color: isDark ? '#38bdf8' : '#334155',
                           }}
                         >
                           {log.action}
                         </span>
                       </td>
-                      <td style={{ fontWeight: 500, color: '#1e293b' }}>{log.details}</td>
+                      <td style={{ fontWeight: 500, color: isDark ? '#e2e8f0' : '#1e293b' }}>{log.details}</td>
                       <td>
-                        <strong>{log.username || 'System'}</strong>
+                        <strong style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>{log.username || 'System'}</strong>
                       </td>
-                      <td style={{ color: '#94a3b8', fontFamily: 'var(--font-mono)', fontSize: '0.78rem' }}>
+                      <td style={{ color: isDark ? '#94a3b8' : '#64748b', fontFamily: 'var(--font-mono)', fontSize: '0.78rem' }}>
                         {log.ip}
                       </td>
                     </tr>
@@ -1430,28 +1457,28 @@ export const AdminDashboard: React.FC = () => {
             <form onSubmit={handleSaveModalService}>
               <div className="admin-modal-body">
                 {/* Service Details Header */}
-                <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: 10, border: '1px solid #e2e8f0', marginBottom: 18 }}>
+                <div style={{ background: isDark ? '#0f172a' : '#f8fafc', padding: '12px 16px', borderRadius: 10, border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`, marginBottom: 18 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                     <span className="service-id-badge">#{editingService.externalId}</span>
-                    <span style={{ fontSize: '0.76rem', color: '#64748b' }}>{editingService.platform} · {editingService.category}</span>
+                    <span style={{ fontSize: '0.76rem', color: isDark ? '#94a3b8' : '#64748b' }}>{editingService.platform} · {editingService.category}</span>
                   </div>
-                  <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.94rem' }}>
+                  <div style={{ fontWeight: 700, color: isDark ? '#f8fafc' : '#0f172a', fontSize: '0.94rem' }}>
                     {editingService.name}
                   </div>
                 </div>
 
                 {/* Wholesale Cost Callout */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#eff6ff', borderRadius: 8, border: '1px solid #dbeafe', marginBottom: 18 }}>
-                  <span style={{ fontSize: '0.84rem', color: '#1e40af', fontWeight: 600 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: isDark ? 'rgba(30, 58, 138, 0.25)' : '#eff6ff', borderRadius: 8, border: `1px solid ${isDark ? 'rgba(56, 189, 248, 0.3)' : '#dbeafe'}`, marginBottom: 18 }}>
+                  <span style={{ fontSize: '0.84rem', color: isDark ? '#93c5fd' : '#1e40af', fontWeight: 600 }}>
                     Provider Wholesale Cost:
                   </span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: '1rem', color: '#1e3a8a' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: '1rem', color: isDark ? '#60a5fa' : '#1e3a8a' }}>
                     ${editingService.originalRate.toFixed(4)} / 1k
                   </span>
                 </div>
 
                 {/* Pricing Mode Switcher */}
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 8, color: '#334155' }}>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 8, color: isDark ? '#cbd5e1' : '#334155' }}>
                   Choose Pricing Calculation Method:
                 </label>
                 <div className="pricing-mode-tabs">
@@ -1476,14 +1503,14 @@ export const AdminDashboard: React.FC = () => {
                 {/* Mode 1: Percentage Input */}
                 {pricingMode === 'percentage' && (
                   <div style={{ marginBottom: 18 }}>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 6, color: '#334155' }}>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 6, color: isDark ? '#cbd5e1' : '#334155' }}>
                       Profit Markup Percentage (%)
                     </label>
                     <div style={{ position: 'relative' }}>
                       <input
                         type="number"
                         className="form-input"
-                        style={{ width: '100%', height: 42, padding: '8px 30px 8px 12px', border: '1px solid #cbd5e1', borderRadius: 8, fontSize: '0.96rem' }}
+                        style={{ width: '100%', height: 42, padding: '8px 30px 8px 12px', border: isDark ? '1px solid #334155' : '1px solid #cbd5e1', borderRadius: 8, fontSize: '0.96rem' }}
                         value={modalMarkupPercent}
                         onChange={(e) => setModalMarkupPercent(e.target.value)}
                         min={0}
@@ -1499,7 +1526,7 @@ export const AdminDashboard: React.FC = () => {
                 {/* Mode 2: Fixed Selling Price Input */}
                 {pricingMode === 'fixed' && (
                   <div style={{ marginBottom: 18 }}>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 6, color: '#334155' }}>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 6, color: isDark ? '#cbd5e1' : '#334155' }}>
                       Fixed Selling Price for Customers ($ per 1,000 units)
                     </label>
                     <div style={{ position: 'relative' }}>
@@ -1507,7 +1534,7 @@ export const AdminDashboard: React.FC = () => {
                       <input
                         type="number"
                         className="form-input"
-                        style={{ width: '100%', height: 42, padding: '8px 12px 8px 26px', border: '1px solid #cbd5e1', borderRadius: 8, fontSize: '0.96rem' }}
+                        style={{ width: '100%', height: 42, padding: '8px 12px 8px 26px', border: isDark ? '1px solid #334155' : '1px solid #cbd5e1', borderRadius: 8, fontSize: '0.96rem' }}
                         value={modalFixedRate}
                         onChange={(e) => setModalFixedRate(e.target.value)}
                         min={0}
@@ -1542,7 +1569,7 @@ export const AdminDashboard: React.FC = () => {
 
                   return (
                     <div className="calc-preview-card" style={{ marginBottom: 18 }}>
-                      <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 700, color: isDark ? '#94a3b8' : '#475569', marginBottom: 6 }}>
                         LIVE PRICE & PROFIT BREAKDOWN
                       </div>
                       <div className="calc-row">
@@ -1564,12 +1591,12 @@ export const AdminDashboard: React.FC = () => {
                 })()}
 
                 {/* Service Visibility Switch */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderTop: '1px solid #f1f5f9' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderTop: `1px solid ${isDark ? '#334155' : '#f1f5f9'}` }}>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#1e293b' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.88rem', color: isDark ? '#f8fafc' : '#1e293b' }}>
                       Service Visibility Status
                     </div>
-                    <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                    <div style={{ fontSize: '0.78rem', color: isDark ? '#94a3b8' : '#64748b' }}>
                       {modalIsActive ? 'Visible & orderable by all users' : 'Hidden from customers'}
                     </div>
                   </div>
@@ -1624,10 +1651,10 @@ export const AdminDashboard: React.FC = () => {
 
             <form onSubmit={handleSaveUserBalance}>
               <div className="admin-modal-body">
-                <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: 10, border: '1px solid #e2e8f0', marginBottom: 18 }}>
-                  <div style={{ fontWeight: 700, color: '#0f172a' }}>{selectedUser.username}</div>
-                  <div style={{ fontSize: '0.80rem', color: '#64748b' }}>{selectedUser.email}</div>
-                  <div style={{ marginTop: 8, fontSize: '0.85rem' }}>
+                <div style={{ background: isDark ? '#0f172a' : '#f8fafc', padding: '12px 16px', borderRadius: 10, border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`, marginBottom: 18 }}>
+                  <div style={{ fontWeight: 700, color: isDark ? '#f8fafc' : '#0f172a' }}>{selectedUser.username}</div>
+                  <div style={{ fontSize: '0.80rem', color: isDark ? '#94a3b8' : '#64748b' }}>{selectedUser.email}</div>
+                  <div style={{ marginTop: 8, fontSize: '0.85rem', color: isDark ? '#cbd5e1' : '#475569' }}>
                     Current Balance:{' '}
                     <strong style={{ color: '#16a34a', fontFamily: 'var(--font-mono)' }}>
                       ${selectedUser.balance?.toFixed(3)}
@@ -1636,7 +1663,7 @@ export const AdminDashboard: React.FC = () => {
                 </div>
 
                 <div style={{ marginBottom: 14 }}>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 6, color: '#334155' }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 6, color: isDark ? '#cbd5e1' : '#334155' }}>
                     Adjustment Action
                   </label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -1660,13 +1687,13 @@ export const AdminDashboard: React.FC = () => {
                 </div>
 
                 <div style={{ marginBottom: 14 }}>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 6, color: '#334155' }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 6, color: isDark ? '#cbd5e1' : '#334155' }}>
                     Amount ($ USD)
                   </label>
                   <input
                     type="number"
                     className="form-input"
-                    style={{ width: '100%', height: 40, padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: 8 }}
+                    style={{ width: '100%', height: 40, padding: '8px 12px', border: isDark ? '1px solid #334155' : '1px solid #cbd5e1', borderRadius: 8 }}
                     value={adjustAmount}
                     onChange={(e) => setAdjustAmount(e.target.value)}
                     min={0.01}
@@ -1676,13 +1703,13 @@ export const AdminDashboard: React.FC = () => {
                 </div>
 
                 <div style={{ marginBottom: 18 }}>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 6, color: '#334155' }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 6, color: isDark ? '#cbd5e1' : '#334155' }}>
                     Adjustment Reason / Note (Logged in Audit Trail)
                   </label>
                   <input
                     type="text"
                     className="form-input"
-                    style={{ width: '100%', height: 40, padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: 8 }}
+                    style={{ width: '100%', height: 40, padding: '8px 12px', border: isDark ? '1px solid #334155' : '1px solid #cbd5e1', borderRadius: 8 }}
                     value={adjustReason}
                     onChange={(e) => setAdjustReason(e.target.value)}
                     placeholder="e.g. Promotional deposit bonus, Manual refund..."

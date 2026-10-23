@@ -4,6 +4,7 @@ import { Star, Eye, Search, Layers, DollarSign, UserPlus, LogIn, Sparkles, Filte
 import { PlatformPillsBar } from './PlatformPillsBar';
 import { ServiceDetailModal } from './ServiceDetailModal';
 import { ResponsivePickerSheet } from './ResponsivePickerSheet';
+import { useTheme } from '../context/ThemeContext';
 
 const decodeHtmlEntities = (text: string): string => {
   if (!text) return '';
@@ -35,6 +36,9 @@ export const PublicServicesView: React.FC<PublicServicesViewProps> = ({
   onSignUp,
   onSignIn,
 }) => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const [selectedPlatform, setSelectedPlatform] = useState<string>('All');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -82,22 +86,32 @@ export const PublicServicesView: React.FC<PublicServicesViewProps> = ({
       {/* Header with Callout Banner */}
       <div className="public-services-header">
         <div className="public-services-header-text">
-          <h2>
+          <h2 style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>
             Services & Wholesale Pricing Catalog
           </h2>
-          <p>
+          <p style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
             Browse all {services.length.toLocaleString() || '7,500+'} verified SMM services. Click the eye icon on any row to view complete speed and guarantee specifications.
           </p>
         </div>
 
         {/* Callout Card */}
-        <div className="public-bonus-callout-card">
+        <div
+          className="public-bonus-callout-card"
+          style={
+            isDark
+              ? {
+                  background: '#0f172a',
+                  border: '1px solid #334155',
+                }
+              : undefined
+          }
+        >
           <div
             style={{
               width: 38,
               height: 38,
               borderRadius: 8,
-              background: '#162399',
+              background: isDark ? '#2563eb' : '#162399',
               color: '#ffffff',
               display: 'flex',
               alignItems: 'center',
@@ -109,9 +123,9 @@ export const PublicServicesView: React.FC<PublicServicesViewProps> = ({
           </div>
           <div className="public-bonus-callout-text">
             <div>
-              <strong>Instant Wholesale Access</strong>
+              <strong style={{ color: isDark ? '#38bdf8' : '#162399' }}>Instant Wholesale Access</strong>
             </div>
-            <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: 2 }}>
+            <div style={{ fontSize: '0.78rem', color: isDark ? '#94a3b8' : '#64748b', marginTop: 2 }}>
               Direct provider prices & automated API.
             </div>
           </div>
@@ -177,29 +191,38 @@ export const PublicServicesView: React.FC<PublicServicesViewProps> = ({
       </div>
 
       {/* Services Table */}
-      <div className="services-table-wrapper" style={{ background: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 2px 10px rgba(0, 20, 80, 0.03)' }}>
+      <div
+        className="services-table-wrapper"
+        style={{
+          background: isDark ? '#0f172a' : '#ffffff',
+          borderRadius: 12,
+          border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
+          overflow: 'hidden',
+          boxShadow: isDark ? '0 4px 20px rgba(0, 0, 0, 0.45)' : '0 2px 10px rgba(0, 20, 80, 0.03)',
+        }}
+      >
         <table className="services-table">
           <thead>
-            <tr>
-              <th style={{ width: 90 }}>ID</th>
-              <th style={{ minWidth: 320, width: 360 }}>Service Name</th>
-              <th style={{ width: 60, textAlign: 'center' }}>Details</th>
-              <th style={{ width: 140 }}>Rate per 1000</th>
-              <th style={{ width: 130, textAlign: 'center' }}>Min order</th>
-              <th style={{ width: 150, textAlign: 'center' }}>Max order</th>
-              <th style={{ width: 160, textAlign: 'right' }}>Average Speed</th>
+            <tr style={{ background: isDark ? '#0b0f19' : '#ffffff' }}>
+              <th style={{ width: 90, color: isDark ? '#94a3b8' : '#64748b' }}>ID</th>
+              <th style={{ minWidth: 320, width: 360, color: isDark ? '#94a3b8' : '#64748b' }}>Service Name</th>
+              <th style={{ width: 60, textAlign: 'center', color: isDark ? '#94a3b8' : '#64748b' }}>Details</th>
+              <th style={{ width: 140, color: isDark ? '#94a3b8' : '#64748b' }}>Rate per 1000</th>
+              <th style={{ width: 130, textAlign: 'center', color: isDark ? '#94a3b8' : '#64748b' }}>Min order</th>
+              <th style={{ width: 150, textAlign: 'center', color: isDark ? '#94a3b8' : '#64748b' }}>Max order</th>
+              <th style={{ width: 160, textAlign: 'right', color: isDark ? '#94a3b8' : '#64748b' }}>Average Speed</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={7} style={{ textAlign: 'center', padding: 50, color: '#64748b' }}>
+                <td colSpan={7} style={{ textAlign: 'center', padding: 50, color: isDark ? '#94a3b8' : '#64748b', background: isDark ? '#0f172a' : '#ffffff' }}>
                   Loading wholesale services catalog...
                 </td>
               </tr>
             ) : Object.keys(groupedByCategory).length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ textAlign: 'center', padding: 50, color: '#64748b' }}>
+                <td colSpan={7} style={{ textAlign: 'center', padding: 50, color: isDark ? '#94a3b8' : '#64748b', background: isDark ? '#0f172a' : '#ffffff' }}>
                   No services found matching your criteria.
                 </td>
               </tr>
@@ -208,32 +231,49 @@ export const PublicServicesView: React.FC<PublicServicesViewProps> = ({
                 <React.Fragment key={category}>
                   {/* Category Header Row */}
                   <tr>
-                    <td colSpan={7} className="category-row-header" style={{ background: '#f8fafc', fontWeight: 800, color: '#1e293b', borderTop: '2px solid #e2e8f0' }}>
-                      {category}
+                    <td
+                      colSpan={7}
+                      className="category-row-header"
+                      style={{
+                        background: isDark ? '#1e293b' : '#f8fafc',
+                        fontWeight: 800,
+                        color: isDark ? '#38bdf8' : '#1e293b',
+                        borderTop: isDark ? '2px solid #334155' : '2px solid #e2e8f0',
+                        borderBottom: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
+                        textAlign: 'center',
+                      }}
+                    >
+                      {decodeHtmlEntities(category)}
                     </td>
                   </tr>
 
                   {/* Service Items */}
                   {items.map((service) => (
-                    <tr key={service.id}>
+                    <tr
+                      key={service.id}
+                      style={{
+                        background: isDark ? '#0f172a' : '#ffffff',
+                        borderBottom: isDark ? '1px solid #1e293b' : '1px solid #f1f5f9',
+                      }}
+                    >
                       {/* ID with Star */}
-                      <td style={{ color: '#475569', fontWeight: 700 }}>
+                      <td style={{ color: isDark ? '#94a3b8' : '#475569', fontWeight: 700 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <Star size={14} color="#f59e0b" fill="#fef3c7" />
+                          <Star size={14} color="#f59e0b" fill={isDark ? 'rgba(245, 158, 11, 0.25)' : '#fef3c7'} />
                           <span style={{ fontFamily: 'var(--font-mono)' }}>{service.externalId}</span>
                         </div>
                       </td>
 
                       {/* Service Name with Refill & Cancel badges */}
-                      <td style={{ minWidth: 320, maxWidth: 500, fontWeight: 600, color: '#1e293b', lineHeight: 1.45 }}>
+                      <td style={{ minWidth: 320, maxWidth: 500, fontWeight: 600, color: isDark ? '#f8fafc' : '#1e293b', lineHeight: 1.45 }}>
                         <span
                           style={{ cursor: 'pointer', transition: 'color 0.15s ease' }}
                           onClick={() => setSelectedDetailService(service)}
-                          onMouseEnter={(e) => (e.currentTarget.style.color = '#162399')}
-                          onMouseLeave={(e) => (e.currentTarget.style.color = '#1e293b')}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = isDark ? '#38bdf8' : '#162399')}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = isDark ? '#f8fafc' : '#1e293b')}
                           title="Click to view full specifications"
                         >
-                          {service.name}
+                          {decodeHtmlEntities(service.name)}
                         </span>
                         <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
                           {service.refill && (
@@ -246,9 +286,9 @@ export const PublicServicesView: React.FC<PublicServicesViewProps> = ({
                                 borderRadius: 4,
                                 fontSize: '0.70rem',
                                 fontWeight: 700,
-                                backgroundColor: '#dcfce7',
-                                color: '#15803d',
-                                border: '1px solid #bbf7d0',
+                                backgroundColor: isDark ? 'rgba(21, 128, 61, 0.25)' : '#dcfce7',
+                                color: isDark ? '#4ade80' : '#15803d',
+                                border: isDark ? '1px solid rgba(74, 222, 128, 0.3)' : '1px solid #bbf7d0',
                               }}
                               title="Refill Guaranteed on SMMFollows"
                             >
@@ -265,9 +305,9 @@ export const PublicServicesView: React.FC<PublicServicesViewProps> = ({
                                 borderRadius: 4,
                                 fontSize: '0.70rem',
                                 fontWeight: 700,
-                                backgroundColor: '#fef3c7',
-                                color: '#b45309',
-                                border: '1px solid #fde68a',
+                                backgroundColor: isDark ? 'rgba(180, 83, 9, 0.25)' : '#fef3c7',
+                                color: isDark ? '#fde68a' : '#b45309',
+                                border: isDark ? '1px solid rgba(253, 230, 138, 0.3)' : '1px solid #fde68a',
                               }}
                               title="Cancel Button Available on SMMFollows"
                             >
@@ -284,9 +324,9 @@ export const PublicServicesView: React.FC<PublicServicesViewProps> = ({
                                 borderRadius: 4,
                                 fontSize: '0.70rem',
                                 fontWeight: 700,
-                                backgroundColor: '#e0f2fe',
-                                color: '#0369a1',
-                                border: '1px solid #bae6fd',
+                                backgroundColor: isDark ? 'rgba(3, 105, 161, 0.25)' : '#e0f2fe',
+                                color: isDark ? '#7dd3fc' : '#0369a1',
+                                border: isDark ? '1px solid rgba(125, 211, 252, 0.3)' : '1px solid #bae6fd',
                               }}
                               title="Drip-feed Automated Pacing Supported"
                             >
@@ -303,9 +343,9 @@ export const PublicServicesView: React.FC<PublicServicesViewProps> = ({
                           title="View Service Details & Speed"
                           onClick={() => setSelectedDetailService(service)}
                           style={{
-                            background: '#eff6ff',
-                            border: '1px solid #bfdbfe',
-                            color: '#1d4ed8',
+                            background: isDark ? '#1e293b' : '#eff6ff',
+                            border: isDark ? '1px solid #334155' : '1px solid #bfdbfe',
+                            color: isDark ? '#38bdf8' : '#1d4ed8',
                             borderRadius: 6,
                             padding: '5px 8px',
                             cursor: 'pointer',
@@ -316,7 +356,14 @@ export const PublicServicesView: React.FC<PublicServicesViewProps> = ({
                       </td>
 
                       {/* Rate */}
-                      <td className="rate-text" style={{ fontWeight: 800, color: '#162399', fontFamily: 'var(--font-mono)' }}>
+                      <td
+                        className="rate-text"
+                        style={{
+                          fontWeight: 800,
+                          color: isDark ? '#38bdf8' : '#162399',
+                          fontFamily: 'var(--font-mono)',
+                        }}
+                      >
                         ${service.customRate.toFixed(3)}
                       </td>
 
@@ -335,7 +382,7 @@ export const PublicServicesView: React.FC<PublicServicesViewProps> = ({
                       </td>
 
                       {/* Average Speed */}
-                      <td style={{ textAlign: 'right', color: '#64748b', fontSize: '0.82rem' }}>
+                      <td style={{ textAlign: 'right', color: isDark ? '#94a3b8' : '#64748b', fontSize: '0.82rem' }}>
                         <span>Fast Automated</span>
                       </td>
                     </tr>

@@ -21,7 +21,7 @@ interface AdminLoginPageProps {
 
 export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onNavigate }) => {
   const { login, logout } = useAuth();
-  const [adminIdentifier, setAdminIdentifier] = useState('admin@digitalsmm.com');
+  const [adminIdentifier, setAdminIdentifier] = useState('khsophea20@gmail.com');
   const [password, setPassword] = useState('');
   const [securityPin, setSecurityPin] = useState('9901');
   const [showPassword, setShowPassword] = useState(false);

@@ -114,14 +114,15 @@ class DatabaseService {
         this.persistSync();
     }
     ensureAdminUser() {
-        const existingAdmin = this.data.users.find((u) => u.email.toLowerCase() === env_1.ENV.ADMIN_EMAIL.toLowerCase());
+        const targetEmail = env_1.ENV.ADMIN_EMAIL.toLowerCase();
+        const existingAdmin = this.data.users.find((u) => u.email.toLowerCase() === targetEmail);
         if (!existingAdmin) {
             const salt = bcryptjs_1.default.genSaltSync(12);
             const passwordHash = bcryptjs_1.default.hashSync(env_1.ENV.ADMIN_PASSWORD, salt);
             const adminUser = {
                 id: crypto_1.default.randomUUID(),
                 username: 'admin',
-                email: env_1.ENV.ADMIN_EMAIL.toLowerCase(),
+                email: targetEmail,
                 passwordHash,
                 balance: 1000.0,
                 role: 'ADMIN',
@@ -132,7 +133,40 @@ class DatabaseService {
             };
             this.data.users.push(adminUser);
             this.persistSync();
-            console.log('✅ Admin User initialized successfully');
+            console.log(`✅ Admin User (${targetEmail}) initialized successfully`);
+        }
+        else {
+            let changed = false;
+            if (existingAdmin.role !== 'ADMIN') {
+                existingAdmin.role = 'ADMIN';
+                changed = true;
+            }
+            if (existingAdmin.status !== 'active') {
+                existingAdmin.status = 'active';
+                changed = true;
+            }
+            if (existingAdmin.failedLoginAttempts && existingAdmin.failedLoginAttempts > 0) {
+                existingAdmin.failedLoginAttempts = 0;
+                delete existingAdmin.lockoutUntil;
+                changed = true;
+            }
+            if (env_1.ENV.ADMIN_PASSWORD && !bcryptjs_1.default.compareSync(env_1.ENV.ADMIN_PASSWORD, existingAdmin.passwordHash)) {
+                const salt = bcryptjs_1.default.genSaltSync(12);
+                existingAdmin.passwordHash = bcryptjs_1.default.hashSync(env_1.ENV.ADMIN_PASSWORD, salt);
+                changed = true;
+            }
+            if (changed) {
+                existingAdmin.updatedAt = new Date().toISOString();
+                this.persistSync();
+                console.log(`✅ Admin User (${targetEmail}) synchronized with role: ADMIN and updated credentials`);
+            }
+        }
+        // Also unlock default admin@digitalsmm.com if locked
+        const defaultAdmin = this.data.users.find((u) => u.email.toLowerCase() === 'admin@digitalsmm.com');
+        if (defaultAdmin && (defaultAdmin.failedLoginAttempts || defaultAdmin.lockoutUntil)) {
+            defaultAdmin.failedLoginAttempts = 0;
+            delete defaultAdmin.lockoutUntil;
+            this.persistSync();
         }
     }
     ensureProviderSettings() {

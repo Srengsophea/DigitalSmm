@@ -229,7 +229,7 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
                   {/* Category Header Row */}
                   <tr>
                     <td colSpan={7} className="category-row-header">
-                      {category}
+                      {decodeHtmlEntities(category)}
                     </td>
                   </tr>
 
@@ -246,7 +246,7 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
 
                       {/* Service Name with Refill & Cancel badges */}
                       <td style={{ minWidth: 320, maxWidth: 500, fontWeight: 500, color: isDark ? '#f8fafc' : '#334155' }}>
-                        <div style={{ lineHeight: 1.45 }}>{service.name}</div>
+                        <div style={{ lineHeight: 1.45 }}>{decodeHtmlEntities(service.name)}</div>
                         <div style={{ display: 'flex', gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
                           {service.refill && (
                             <span

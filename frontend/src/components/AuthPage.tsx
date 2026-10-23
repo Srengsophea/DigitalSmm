@@ -28,6 +28,7 @@ import { PublicNavbar } from './PublicNavbar';
 import { GoogleAccountPickerModal } from './GoogleAccountPickerModal';
 import { hasGoogleClientId, requestGoogleAccessToken, initGoogleIdentityServices } from '../services/googleAuth';
 import { api } from '../services/api';
+import { useTheme } from '../context/ThemeContext';
 
 interface AuthPageProps {
   initialMode?: 'login' | 'signup';
@@ -38,6 +39,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   initialMode = 'login',
   onNavigate,
 }) => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const { login, sendSignupOtp, verifySignupOtp, resendSignupOtp, loginWithGoogle } = useAuth();
   const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
 
@@ -661,13 +664,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                     </div>
 
                     {/* Terms */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 11, fontSize: '0.78rem', color: '#64748b' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 11, fontSize: '0.78rem', color: isDark ? '#94a3b8' : '#64748b' }}>
                       <input
                         type="checkbox"
                         id="terms-checkbox"
                         checked={agreeTerms}
                         onChange={(e) => setAgreeTerms(e.target.checked)}
-                        style={{ cursor: 'pointer', accentColor: '#162399', width: 14, height: 14 }}
+                        style={{ cursor: 'pointer', accentColor: isDark ? '#38bdf8' : '#162399', width: 14, height: 14 }}
                       />
                       <label htmlFor="terms-checkbox" style={{ cursor: 'pointer' }}>
                         I agree to the Terms of Service & Privacy Policy
@@ -695,8 +698,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   <div style={{ animation: 'fadeIn 0.25s ease' }}>
                     <div
                       style={{
-                        background: '#f0f9ff',
-                        border: '1px solid #bae6fd',
+                        background: isDark ? '#111827' : '#f0f9ff',
+                        border: isDark ? '1px solid #1e3a5f' : '1px solid #bae6fd',
                         borderRadius: 12,
                         padding: '16px',
                         marginBottom: 20,
@@ -718,12 +721,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                       >
                         <MailCheck size={24} />
                       </div>
-                      <h4 style={{ margin: '0 0 6px 0', fontSize: '1.02rem', color: '#0f172a', fontWeight: 700 }}>
+                      <h4 style={{ margin: '0 0 6px 0', fontSize: '1.02rem', color: isDark ? '#f8fafc' : '#0f172a', fontWeight: 700 }}>
                         Verify Your Email
                       </h4>
-                      <p style={{ margin: 0, fontSize: '0.84rem', color: '#475569', lineHeight: 1.5 }}>
+                      <p style={{ margin: 0, fontSize: '0.84rem', color: isDark ? '#cbd5e1' : '#475569', lineHeight: 1.5 }}>
                         We sent a 6-digit verification code to <br />
-                        <strong style={{ color: '#0284c7' }}>{email}</strong>
+                        <strong style={{ color: '#38bdf8' }}>{email}</strong>
                       </p>
                     </div>
 
@@ -753,7 +756,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                           required
                         />
                       </div>
-                      <div style={{ textAlign: 'center', marginTop: 8, fontSize: '0.78rem', color: '#64748b' }}>
+                      <div style={{ textAlign: 'center', marginTop: 8, fontSize: '0.78rem', color: isDark ? '#94a3b8' : '#64748b' }}>
                         Valid for 10 minutes. Check your inbox and spam folder.
                       </div>
                     </div>
@@ -785,7 +788,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                         style={{
                           background: 'none',
                           border: 'none',
-                          color: '#64748b',
+                          color: isDark ? '#94a3b8' : '#64748b',
                           fontSize: '0.80rem',
                           cursor: 'pointer',
                           display: 'flex',
@@ -804,7 +807,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                         style={{
                           background: 'none',
                           border: 'none',
-                          color: resendCooldown > 0 ? '#94a3b8' : '#0284c7',
+                          color: resendCooldown > 0 ? (isDark ? '#64748b' : '#94a3b8') : (isDark ? '#38bdf8' : '#0284c7'),
                           fontSize: '0.80rem',
                           fontWeight: 600,
                           cursor: resendCooldown > 0 ? 'default' : 'pointer',
@@ -827,8 +830,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   <div style={{ animation: 'fadeIn 0.25s ease' }}>
                     <div
                       style={{
-                        background: '#eff6ff',
-                        border: '1px solid #bfdbfe',
+                        background: isDark ? '#111827' : '#eff6ff',
+                        border: isDark ? '1px solid #1e3a5f' : '1px solid #bfdbfe',
                         borderRadius: 12,
                         padding: '18px 16px',
                         marginBottom: 20,
@@ -840,7 +843,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                           width: 48,
                           height: 48,
                           borderRadius: '50%',
-                          background: '#162399',
+                          background: isDark ? '#2563eb' : '#162399',
                           color: '#ffffff',
                           display: 'flex',
                           alignItems: 'center',
@@ -851,11 +854,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                       >
                         <Shield size={26} />
                       </div>
-                      <h4 style={{ margin: '0 0 6px 0', fontSize: '1.05rem', color: '#0f172a', fontWeight: 700 }}>
+                      <h4 style={{ margin: '0 0 6px 0', fontSize: '1.05rem', color: isDark ? '#f8fafc' : '#0f172a', fontWeight: 700 }}>
                         Two-Factor Authentication
                       </h4>
-                      <p style={{ margin: 0, fontSize: '0.84rem', color: '#475569', lineHeight: 1.5 }}>
-                        Enter the 6-digit verification code from your authenticator app for <strong style={{ color: '#162399' }}>{loginIdentifier}</strong>
+                      <p style={{ margin: 0, fontSize: '0.84rem', color: isDark ? '#cbd5e1' : '#475569', lineHeight: 1.5 }}>
+                        Enter the 6-digit verification code from your authenticator app for <strong style={{ color: isDark ? '#38bdf8' : '#162399' }}>{loginIdentifier}</strong>
                       </p>
                     </div>
 
@@ -885,7 +888,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                           required
                         />
                       </div>
-                      <div style={{ textAlign: 'center', marginTop: 8, fontSize: '0.78rem', color: '#64748b' }}>
+                      <div style={{ textAlign: 'center', marginTop: 8, fontSize: '0.78rem', color: isDark ? '#94a3b8' : '#64748b' }}>
                         Open Google Authenticator, 2FA.cn, or Microsoft Authenticator
                       </div>
                     </div>
@@ -918,7 +921,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                         style={{
                           background: 'none',
                           border: 'none',
-                          color: '#64748b',
+                          color: isDark ? '#94a3b8' : '#64748b',
                           fontSize: '0.82rem',
                           cursor: 'pointer',
                           display: 'inline-flex',
@@ -960,7 +963,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                           style={{
                             background: 'none',
                             border: 'none',
-                            color: '#0284c7',
+                            color: isDark ? '#38bdf8' : '#0284c7',
                             fontSize: '0.78rem',
                             fontWeight: 600,
                             cursor: 'pointer',
@@ -991,13 +994,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                     </div>
 
                     {/* Remember Me */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 11, fontSize: '0.78rem', color: '#64748b' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 11, fontSize: '0.78rem', color: isDark ? '#94a3b8' : '#64748b' }}>
                       <input
                         type="checkbox"
                         id="remember-checkbox"
                         checked={rememberMe}
                         onChange={(e) => setRememberMe(e.target.checked)}
-                        style={{ cursor: 'pointer', accentColor: '#162399', width: 14, height: 14 }}
+                        style={{ cursor: 'pointer', accentColor: isDark ? '#38bdf8' : '#162399', width: 14, height: 14 }}
                       />
                       <label htmlFor="remember-checkbox" style={{ cursor: 'pointer' }}>
                         Remember me for 30 days
@@ -1024,7 +1027,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               )}
 
               {/* Toggle Mode Footer Link */}
-              <div style={{ textAlign: 'center', marginTop: 14, fontSize: '0.80rem', color: '#64748b' }}>
+              <div style={{ textAlign: 'center', marginTop: 14, fontSize: '0.80rem', color: isDark ? '#94a3b8' : '#64748b' }}>
                 {mode === 'login' ? (
                   !is2FAPrompt && (
                     <>
@@ -1038,7 +1041,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                           setErrorMessage(null);
                           setSuccessMessage(null);
                         }}
-                        style={{ color: '#0284c7', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
+                        style={{ color: isDark ? '#38bdf8' : '#0284c7', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
                       >
                         Sign up for free
                       </span>
@@ -1056,7 +1059,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                         setErrorMessage(null);
                         setSuccessMessage(null);
                       }}
-                      style={{ color: '#0284c7', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
+                      style={{ color: isDark ? '#38bdf8' : '#0284c7', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
                     >
                       Sign in here
                     </span>
@@ -1081,34 +1084,49 @@ export const AuthPage: React.FC<AuthPageProps> = ({
         <div className="service-details-backdrop" onClick={() => setIsForgotModalOpen(false)}>
           <div
             className="service-details-card"
-            style={{ maxWidth: 460, borderRadius: 16, overflow: 'hidden' }}
+            style={{
+              maxWidth: 460,
+              borderRadius: 16,
+              overflow: 'hidden',
+              background: isDark ? '#0f172a' : '#ffffff',
+              border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
+              boxShadow: isDark ? '0 24px 60px rgba(0, 0, 0, 0.7)' : '0 24px 48px rgba(0, 0, 0, 0.25)',
+            }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="service-details-header" style={{ padding: '18px 24px', borderBottom: '1px solid #f1f5f9' }}>
+            <div
+              className="service-details-header"
+              style={{
+                padding: '18px 24px',
+                borderBottom: isDark ? '1px solid #1e293b' : '1px solid #f1f5f9',
+                background: isDark ? '#0b0f19' : '#fafcff',
+              }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div
                   style={{
                     width: 36,
                     height: 36,
                     borderRadius: 10,
-                    background: 'linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%)',
+                    background: isDark ? '#1e293b' : 'linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#0284c7',
+                    color: isDark ? '#38bdf8' : '#0284c7',
+                    border: isDark ? '1px solid #334155' : 'none',
                   }}
                 >
                   <KeyRound size={20} />
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a' }}>
                     {forgotStep === 'success'
                       ? 'Password Reset Complete'
                       : forgotStep === 'otp'
                       ? 'Set New Password'
                       : 'Recover Account Password'}
                   </h3>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 2 }}>
+                  <div style={{ fontSize: '0.75rem', color: isDark ? '#94a3b8' : '#64748b', marginTop: 2 }}>
                     {forgotStep === 'success'
                       ? 'Account successfully secured'
                       : forgotStep === 'otp'
@@ -1124,7 +1142,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   background: 'none',
                   border: 'none',
                   cursor: 'pointer',
-                  color: '#94a3b8',
+                  color: isDark ? '#94a3b8' : '#64748b',
                   padding: 4,
                   display: 'flex',
                   alignItems: 'center',
@@ -1135,7 +1153,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               </button>
             </div>
 
-            <div className="service-details-body" style={{ padding: '24px' }}>
+            <div className="service-details-body" style={{ padding: '24px', background: isDark ? '#0f172a' : '#ffffff' }}>
               {/* Error Alert */}
               {forgotError && (
                 <div
@@ -1161,11 +1179,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               {forgotSuccessMsg && forgotStep !== 'success' && (
                 <div
                   style={{
-                    background: '#f0fdf4',
-                    border: '1px solid #bbf7d0',
+                    background: isDark ? 'rgba(21, 128, 61, 0.2)' : '#f0fdf4',
+                    border: isDark ? '1px solid rgba(74, 222, 128, 0.3)' : '1px solid #bbf7d0',
                     padding: '12px 14px',
                     borderRadius: 10,
-                    color: '#15803d',
+                    color: isDark ? '#4ade80' : '#15803d',
                     fontSize: '0.85rem',
                     marginBottom: 16,
                     display: 'flex',
@@ -1186,8 +1204,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                       width: 64,
                       height: 64,
                       borderRadius: '50%',
-                      background: '#dcfce7',
-                      color: '#16a34a',
+                      background: isDark ? 'rgba(22, 163, 74, 0.2)' : '#dcfce7',
+                      color: isDark ? '#4ade80' : '#16a34a',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -1197,10 +1215,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   >
                     <CheckCircle2 size={36} />
                   </div>
-                  <h4 style={{ margin: '0 0 8px 0', fontSize: '1.15rem', color: '#0f172a', fontWeight: 800 }}>
+                  <h4 style={{ margin: '0 0 8px 0', fontSize: '1.15rem', color: isDark ? '#f8fafc' : '#0f172a', fontWeight: 800 }}>
                     Password Updated!
                   </h4>
-                  <p style={{ fontSize: '0.88rem', color: '#64748b', margin: '0 0 24px 0', lineHeight: 1.5 }}>
+                  <p style={{ fontSize: '0.88rem', color: isDark ? '#94a3b8' : '#64748b', margin: '0 0 24px 0', lineHeight: 1.5 }}>
                     Your password has been securely reset. You can now log into your account with your new credentials.
                   </p>
                   <button
@@ -1231,28 +1249,28 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 <form onSubmit={handleForgotResetPassword}>
                   <div
                     style={{
-                      background: '#f8fafc',
-                      border: '1px solid #e2e8f0',
+                      background: isDark ? '#1e293b' : '#f8fafc',
+                      border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
                       borderRadius: 10,
                       padding: '12px 14px',
                       marginBottom: 16,
                       fontSize: '0.82rem',
-                      color: '#475569',
+                      color: isDark ? '#cbd5e1' : '#475569',
                       display: 'flex',
                       alignItems: 'center',
                       gap: 10,
                     }}
                   >
-                    <MailCheck size={20} color="#0284c7" style={{ flexShrink: 0 }} />
+                    <MailCheck size={20} color={isDark ? '#38bdf8' : '#0284c7'} style={{ flexShrink: 0 }} />
                     <div>
-                      We dispatched a 6-digit code to <strong>{forgotEmail}</strong>.
+                      We dispatched a 6-digit code to <strong style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>{forgotEmail}</strong>.
                     </div>
                   </div>
 
                   {/* 6-Digit Code */}
                   <div style={{ marginBottom: 16 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                      <label style={{ fontSize: '0.80rem', fontWeight: 700, color: '#334155' }}>
+                      <label style={{ fontSize: '0.80rem', fontWeight: 700, color: isDark ? '#cbd5e1' : '#334155' }}>
                         Verification Code
                       </label>
                       <button
@@ -1262,7 +1280,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                         style={{
                           background: 'none',
                           border: 'none',
-                          color: forgotCooldown > 0 ? '#94a3b8' : '#0284c7',
+                          color: forgotCooldown > 0 ? (isDark ? '#64748b' : '#94a3b8') : (isDark ? '#38bdf8' : '#0284c7'),
                           fontSize: '0.78rem',
                           fontWeight: 600,
                           cursor: forgotCooldown > 0 ? 'default' : 'pointer',
@@ -1284,9 +1302,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                         letterSpacing: '8px',
                         fontWeight: 800,
                         fontFamily: 'monospace',
-                        border: '2px solid #cbd5e1',
+                        border: isDark ? '2px solid #334155' : '2px solid #cbd5e1',
                         borderRadius: 10,
-                        background: '#ffffff',
+                        background: isDark ? '#1e293b' : '#ffffff',
+                        color: isDark ? '#f8fafc' : '#0f172a',
                       }}
                       placeholder="••••••"
                       value={forgotOtp}
@@ -1297,14 +1316,22 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
                   {/* New Password */}
                   <div style={{ marginBottom: 14 }}>
-                    <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                    <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: isDark ? '#cbd5e1' : '#334155', marginBottom: 6 }}>
                       New Password
                     </label>
                     <div style={{ position: 'relative' }}>
                       <input
                         type={showForgotNewPass ? 'text' : 'password'}
                         className="form-input"
-                        style={{ width: '100%', height: 42, padding: '8px 38px 8px 12px', border: '1px solid #cbd5e1', borderRadius: 8 }}
+                        style={{
+                          width: '100%',
+                          height: 42,
+                          padding: '8px 38px 8px 12px',
+                          border: isDark ? '1px solid #334155' : '1px solid #cbd5e1',
+                          borderRadius: 8,
+                          background: isDark ? '#1e293b' : '#ffffff',
+                          color: isDark ? '#f8fafc' : '#0f172a',
+                        }}
                         placeholder="At least 6 characters"
                         value={forgotNewPassword}
                         onChange={(e) => setForgotNewPassword(e.target.value)}
@@ -1333,14 +1360,22 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
                   {/* Confirm New Password */}
                   <div style={{ marginBottom: 20 }}>
-                    <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                    <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: isDark ? '#cbd5e1' : '#334155', marginBottom: 6 }}>
                       Confirm New Password
                     </label>
                     <div style={{ position: 'relative' }}>
                       <input
                         type={showForgotConfirmPass ? 'text' : 'password'}
                         className="form-input"
-                        style={{ width: '100%', height: 42, padding: '8px 38px 8px 12px', border: '1px solid #cbd5e1', borderRadius: 8 }}
+                        style={{
+                          width: '100%',
+                          height: 42,
+                          padding: '8px 38px 8px 12px',
+                          border: isDark ? '1px solid #334155' : '1px solid #cbd5e1',
+                          borderRadius: 8,
+                          background: isDark ? '#1e293b' : '#ffffff',
+                          color: isDark ? '#f8fafc' : '#0f172a',
+                        }}
                         placeholder="Re-type new password"
                         value={forgotConfirmPassword}
                         onChange={(e) => setForgotConfirmPassword(e.target.value)}
@@ -1404,7 +1439,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                       style={{
                         background: 'none',
                         border: 'none',
-                        color: '#64748b',
+                        color: isDark ? '#94a3b8' : '#64748b',
                         fontSize: '0.80rem',
                         cursor: 'pointer',
                         display: 'inline-flex',
@@ -1420,11 +1455,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               ) : (
                 /* STEP 1: ENTER EMAIL OR USERNAME */
                 <form onSubmit={handleForgotSendOtp}>
-                  <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: 0, marginBottom: 16, lineHeight: 1.5 }}>
+                  <p style={{ fontSize: '0.85rem', color: isDark ? '#94a3b8' : '#64748b', marginTop: 0, marginBottom: 16, lineHeight: 1.5 }}>
                     Enter your account email address or username. We will dispatch a 6-digit security code to verify your identity.
                   </p>
                   <div style={{ marginBottom: 18 }}>
-                    <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                    <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: isDark ? '#cbd5e1' : '#334155', marginBottom: 6 }}>
                       Account Email or Username
                     </label>
                     <div style={{ position: 'relative' }}>
@@ -1435,9 +1470,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                           width: '100%',
                           height: 42,
                           padding: '8px 12px 8px 38px',
-                          border: '1px solid #cbd5e1',
+                          border: isDark ? '1px solid #334155' : '1px solid #cbd5e1',
                           borderRadius: 8,
                           fontSize: '0.90rem',
+                          background: isDark ? '#1e293b' : '#ffffff',
+                          color: isDark ? '#f8fafc' : '#0f172a',
                         }}
                         value={forgotEmail}
                         onChange={(e) => setForgotEmail(e.target.value)}
@@ -1487,12 +1524,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                       style={{
                         background: 'none',
                         border: 'none',
-                        color: '#64748b',
+                        color: isDark ? '#94a3b8' : '#64748b',
                         fontSize: '0.82rem',
                         cursor: 'pointer',
                       }}
                     >
-                      Remember your password? <strong>Sign in</strong>
+                      Remember your password? <strong style={{ color: isDark ? '#38bdf8' : '#162399' }}>Sign in</strong>
                     </button>
                   </div>
                 </form>

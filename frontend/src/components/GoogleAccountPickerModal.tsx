@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, ShieldCheck, KeyRound, ExternalLink } from 'lucide-react';
 import { setGoogleClientId } from '../services/googleAuth';
+import { useTheme } from '../context/ThemeContext';
 
 interface GoogleAccountPickerModalProps {
   isOpen: boolean;
@@ -15,6 +16,8 @@ export const GoogleAccountPickerModal: React.FC<GoogleAccountPickerModalProps> =
   onConfigured,
   isLoading,
 }) => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [clientIdInput, setClientIdInput] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -53,9 +56,10 @@ export const GoogleAccountPickerModal: React.FC<GoogleAccountPickerModalProps> =
         style={{
           width: '100%',
           maxWidth: 460,
-          background: '#ffffff',
+          background: isDark ? '#0f172a' : '#ffffff',
           borderRadius: 20,
-          boxShadow: '0 20px 50px -10px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.06)',
+          border: isDark ? '1px solid #334155' : '1px solid rgba(0, 0, 0, 0.06)',
+          boxShadow: isDark ? '0 20px 60px rgba(0, 0, 0, 0.7)' : '0 20px 50px -10px rgba(0, 0, 0, 0.25)',
           overflow: 'hidden',
           fontFamily: "'Roboto', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
           animation: 'modalScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -74,7 +78,7 @@ export const GoogleAccountPickerModal: React.FC<GoogleAccountPickerModalProps> =
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              color: '#5f6368',
+              color: isDark ? '#94a3b8' : '#5f6368',
               borderRadius: '50%',
               padding: 6,
               display: 'flex',
@@ -82,7 +86,7 @@ export const GoogleAccountPickerModal: React.FC<GoogleAccountPickerModalProps> =
               justifyContent: 'center',
               transition: 'background 0.15s ease',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = '#f1f3f4')}
+            onMouseEnter={(e) => (e.currentTarget.style.background = isDark ? '#1e293b' : '#f1f3f4')}
             onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
           >
             <X size={18} />
@@ -108,7 +112,7 @@ export const GoogleAccountPickerModal: React.FC<GoogleAccountPickerModalProps> =
                 d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
               />
             </svg>
-            <span style={{ fontSize: '0.90rem', fontWeight: 600, color: '#3c4043', letterSpacing: '-0.01em' }}>
+            <span style={{ fontSize: '0.90rem', fontWeight: 600, color: isDark ? '#cbd5e1' : '#3c4043', letterSpacing: '-0.01em' }}>
               Sign in with Google
             </span>
           </div>
@@ -118,13 +122,13 @@ export const GoogleAccountPickerModal: React.FC<GoogleAccountPickerModalProps> =
               margin: '0 0 6px',
               fontSize: '1.35rem',
               fontWeight: 600,
-              color: '#202124',
+              color: isDark ? '#f8fafc' : '#202124',
               lineHeight: 1.3,
             }}
           >
             Connect Browser Google Account
           </h3>
-          <p style={{ margin: 0, fontSize: '0.86rem', color: '#5f6368', lineHeight: 1.5 }}>
+          <p style={{ margin: 0, fontSize: '0.86rem', color: isDark ? '#94a3b8' : '#5f6368', lineHeight: 1.5 }}>
             To show the real Gmail accounts currently signed into your browser, Google Identity Services requires your Google OAuth Client ID.
           </p>
         </div>
@@ -137,7 +141,7 @@ export const GoogleAccountPickerModal: React.FC<GoogleAccountPickerModalProps> =
                 display: 'block',
                 fontSize: '0.80rem',
                 fontWeight: 700,
-                color: '#334155',
+                color: isDark ? '#cbd5e1' : '#334155',
                 marginBottom: 6,
               }}
             >
@@ -156,19 +160,21 @@ export const GoogleAccountPickerModal: React.FC<GoogleAccountPickerModalProps> =
                   height: 44,
                   padding: '8px 12px',
                   borderRadius: 8,
-                  border: '1.5px solid #cbd5e1',
+                  border: isDark ? '1.5px solid #334155' : '1.5px solid #cbd5e1',
+                  background: isDark ? '#1e293b' : '#ffffff',
+                  color: isDark ? '#f8fafc' : '#0f172a',
                   fontSize: '0.86rem',
                   fontFamily: 'monospace',
                   outline: 'none',
                   boxSizing: 'border-box',
                 }}
-                onFocus={(e) => (e.currentTarget.style.borderColor = '#1a73e8')}
-                onBlur={(e) => (e.currentTarget.style.borderColor = '#cbd5e1')}
+                onFocus={(e) => (e.currentTarget.style.borderColor = isDark ? '#38bdf8' : '#1a73e8')}
+                onBlur={(e) => (e.currentTarget.style.borderColor = isDark ? '#334155' : '#cbd5e1')}
               />
             </div>
-            <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: 6, lineHeight: 1.4 }}>
+            <div style={{ fontSize: '0.74rem', color: isDark ? '#94a3b8' : '#64748b', marginTop: 6, lineHeight: 1.4 }}>
               Origin required in Google Cloud Console:{' '}
-              <code style={{ background: '#f1f5f9', padding: '2px 5px', borderRadius: 4, color: '#0f172a' }}>
+              <code style={{ background: isDark ? '#1e293b' : '#f1f5f9', padding: '2px 5px', borderRadius: 4, color: isDark ? '#38bdf8' : '#0f172a', border: isDark ? '1px solid #334155' : 'none' }}>
                 http://localhost:5173
               </code>
             </div>
@@ -215,13 +221,13 @@ export const GoogleAccountPickerModal: React.FC<GoogleAccountPickerModalProps> =
         </form>
 
         {/* Footer */}
-        <div style={{ padding: '16px 28px', background: '#fafbfc', borderTop: '1px solid #dadce0' }}>
+        <div style={{ padding: '16px 28px', background: isDark ? '#0b0f19' : '#fafbfc', borderTop: isDark ? '1px solid #1e293b' : '1px solid #dadce0' }}>
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: 6,
-              color: '#16a34a',
+              color: isDark ? '#4ade80' : '#16a34a',
               fontSize: '0.78rem',
               fontWeight: 600,
             }}
