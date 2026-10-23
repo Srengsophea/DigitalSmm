@@ -358,7 +358,7 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ currentPath, onNavigate }) 
 // 3. MAIN ROUTER APP
 // =========================================================================
 const RouterApp: React.FC = () => {
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated, isAdmin, isLoading } = useAuth();
   const [currentPath, setCurrentPath] = useState<string>(() => {
     const p = window.location.pathname;
     return p && p !== '/' ? p : '/';
@@ -381,6 +381,14 @@ const RouterApp: React.FC = () => {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  if (isLoading && localStorage.getItem('digitalsmm_token')) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0b1120' }}>
+        <div style={{ width: 38, height: 38, border: '3px solid #1e293b', borderTopColor: '#38bdf8', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+      </div>
+    );
+  }
 
   const renderContent = () => {
     // 1. Dedicated User Login Page (Redesigned SMM panel style)

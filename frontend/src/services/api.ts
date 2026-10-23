@@ -187,11 +187,15 @@ export const api = {
       if (params?.maxPrice) query.append('maxPrice', params.maxPrice.toString());
       if (params?.activeOnly !== undefined) query.append('activeOnly', params.activeOnly.toString());
 
-      const res = await fetch(`${API_BASE}/services?${query.toString()}`);
+      const res = await fetch(`${API_BASE}/services?${query.toString()}`, {
+        headers: { ...getAuthHeader() },
+      });
       return handleResponse<any>(res);
     },
     async getServiceById(id: string) {
-      const res = await fetch(`${API_BASE}/services/${id}`);
+      const res = await fetch(`${API_BASE}/services/${id}`, {
+        headers: { ...getAuthHeader() },
+      });
       return handleResponse<any>(res);
     },
     async syncFromProvider(markupPercent?: number) {

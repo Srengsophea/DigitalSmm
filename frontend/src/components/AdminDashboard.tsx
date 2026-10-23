@@ -195,13 +195,13 @@ export const AdminDashboard: React.FC = () => {
 
     // Sort
     result.sort((a, b) => {
-      if (sortOption === 'id_asc') return a.externalId - b.externalId;
-      if (sortOption === 'id_desc') return b.externalId - a.externalId;
-      if (sortOption === 'rate_asc') return a.customRate - b.customRate;
-      if (sortOption === 'rate_desc') return b.customRate - a.customRate;
+      if (sortOption === 'id_asc') return (a.externalId || 0) - (b.externalId || 0);
+      if (sortOption === 'id_desc') return (b.externalId || 0) - (a.externalId || 0);
+      if (sortOption === 'rate_asc') return Number(a.customRate || 0) - Number(b.customRate || 0);
+      if (sortOption === 'rate_desc') return Number(b.customRate || 0) - Number(a.customRate || 0);
       if (sortOption === 'profit_desc') {
-        const profitA = a.customRate - a.originalRate;
-        const profitB = b.customRate - b.originalRate;
+        const profitA = Number(a.customRate || 0) - Number(a.originalRate || 0);
+        const profitB = Number(b.customRate || 0) - Number(b.originalRate || 0);
         return profitB - profitA;
       }
       return 0;
@@ -243,7 +243,7 @@ export const AdminDashboard: React.FC = () => {
     setEditingService(service);
     setPricingMode('percentage');
     setModalMarkupPercent((service.markupPercent || 30).toString());
-    setModalFixedRate(service.customRate.toFixed(4));
+    setModalFixedRate(Number(service.customRate || 0).toFixed(4));
     setModalIsActive(service.isActive);
   };
 
@@ -267,7 +267,7 @@ export const AdminDashboard: React.FC = () => {
         }
         payload.markupPercent = pct;
         // Compute rate for instant optimistic update
-        payload.customRate = Number((editingService.originalRate * (1 + pct / 100)).toFixed(4));
+        payload.customRate = Number((Number(editingService.originalRate || 0) * (1 + pct / 100)).toFixed(4));
       } else {
         const rate = parseFloat(modalFixedRate);
         if (isNaN(rate) || rate < 0) {
@@ -832,8 +832,10 @@ export const AdminDashboard: React.FC = () => {
                   <tbody>
                     {paginatedServices.map((service) => {
                       const isSelected = selectedIds.includes(service.id);
-                      const profitDollar = service.customRate - service.originalRate;
-                      const platformKey = service.platform.toLowerCase();
+                      const origRate = Number(service.originalRate ?? 0);
+                      const custRate = Number(service.customRate ?? 0);
+                      const profitDollar = custRate - origRate;
+                      const platformKey = (service.platform || 'other').toLowerCase();
 
                       return (
                         <tr
@@ -882,14 +884,14 @@ export const AdminDashboard: React.FC = () => {
 
                           {/* Provider Cost */}
                           <td>
-                            <div className="price-cost">${service.originalRate.toFixed(4)}</div>
+                            <div className="price-cost">${origRate.toFixed(4)}</div>
                             <span style={{ fontSize: '0.72rem', color: isDark ? '#94a3b8' : '#64748b' }}>Wholesale / 1k</span>
                           </td>
 
                           {/* Profit / Margin */}
                           <td>
                             <span className={`margin-pill ${profitDollar > 0 ? 'positive' : 'neutral'}`}>
-                              +{service.markupPercent?.toFixed(1) || '0.0'}%
+                              +{Number(service.markupPercent ?? 0).toFixed(1)}%
                             </span>
                             <div style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: 600, marginTop: 3 }}>
                               +${profitDollar.toFixed(4)} / 1k
@@ -898,7 +900,7 @@ export const AdminDashboard: React.FC = () => {
 
                           {/* Selling Price */}
                           <td>
-                            <div className="price-selling">${service.customRate.toFixed(4)}</div>
+                            <div className="price-selling">${custRate.toFixed(4)}</div>
                             <span style={{ fontSize: '0.72rem', color: isDark ? '#94a3b8' : '#64748b' }}>User Pays / 1k</span>
                           </td>
 
@@ -1220,7 +1222,7 @@ export const AdminDashboard: React.FC = () => {
                       </td>
                       <td>
                         <span style={{ color: '#16a34a', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
-                          ${u.balance?.toFixed(3)}
+                          ${Number(u.balance || 0).toFixed(3)}
                         </span>
                       </td>
                       <td>
@@ -1657,7 +1659,7 @@ export const AdminDashboard: React.FC = () => {
                   <div style={{ marginTop: 8, fontSize: '0.85rem', color: isDark ? '#cbd5e1' : '#475569' }}>
                     Current Balance:{' '}
                     <strong style={{ color: '#16a34a', fontFamily: 'var(--font-mono)' }}>
-                      ${selectedUser.balance?.toFixed(3)}
+                      ${Number(selectedUser.balance || 0).toFixed(3)}
                     </strong>
                   </div>
                 </div>
