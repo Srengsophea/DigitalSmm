@@ -4,7 +4,6 @@ import {
   ShieldAlert,
   ShieldCheck,
   Lock,
-  KeyRound,
   Mail,
   Eye,
   EyeOff,
@@ -21,9 +20,8 @@ interface AdminLoginPageProps {
 
 export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onNavigate }) => {
   const { login, logout } = useAuth();
-  const [adminIdentifier, setAdminIdentifier] = useState('khsophea20@gmail.com');
+  const [adminIdentifier, setAdminIdentifier] = useState('');
   const [password, setPassword] = useState('');
-  const [securityPin, setSecurityPin] = useState('9901');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -254,9 +252,10 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onNavigate }) =>
               <input
                 type="text"
                 required
-                placeholder="admin@digitalsmm.com"
+                placeholder="Administrator username or email"
                 value={adminIdentifier}
                 onChange={(e) => setAdminIdentifier(e.target.value)}
+                autoComplete="username"
                 style={{
                   width: '100%',
                   padding: '11px 14px 11px 40px',
@@ -272,7 +271,7 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onNavigate }) =>
           </div>
 
           {/* Admin Password */}
-          <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 22 }}>
             <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 600, color: '#cbd5e1', marginBottom: 6 }}>
               Security Passcode
             </label>
@@ -281,9 +280,10 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onNavigate }) =>
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
-                placeholder="••••••••••••"
+                placeholder="Enter administrator passcode"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
                 style={{
                   width: '100%',
                   padding: '11px 40px 11px 40px',
@@ -310,34 +310,6 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onNavigate }) =>
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
-            </div>
-          </div>
-
-          {/* Security PIN Code */}
-          <div style={{ marginBottom: 22 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <label style={{ fontSize: '0.80rem', fontWeight: 600, color: '#cbd5e1' }}>Operator Security PIN</label>
-              <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontFamily: 'monospace' }}>ROOT: 9901</span>
-            </div>
-            <div style={{ position: 'relative' }}>
-              <KeyRound size={16} color="#38bdf8" style={{ position: 'absolute', left: 14, top: 13 }} />
-              <input
-                type="text"
-                placeholder="9901"
-                value={securityPin}
-                onChange={(e) => setSecurityPin(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '11px 14px 11px 40px',
-                  background: 'rgba(0, 0, 0, 0.4)',
-                  border: '1px solid rgba(2, 132, 199, 0.4)',
-                  borderRadius: 10,
-                  color: '#ffffff',
-                  fontSize: '0.88rem',
-                  outline: 'none',
-                  fontFamily: 'monospace',
-                }}
-              />
             </div>
           </div>
 
