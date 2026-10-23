@@ -533,18 +533,171 @@ body.dark {
   color: #38bdf8;
 }
 
-[data-theme="dark"] .public-mobile-drawer {
-  background: var(--bg-card);
-  border-color: var(--border-light);
+/* ================= Public Mobile Navigation Drawer Dark Mode ================= */
+[data-theme="dark"] .public-mobile-drawer,
+html.dark .public-mobile-drawer,
+body.dark .public-mobile-drawer {
+  background: #0f172a !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85) !important;
 }
 
-[data-theme="dark"] .public-mobile-drawer .mobile-drawer-link {
-  color: var(--text-main);
+[data-theme="dark"] .mobile-drawer-header,
+html.dark .mobile-drawer-header,
+body.dark .mobile-drawer-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
-[data-theme="dark"] .public-mobile-drawer .mobile-drawer-link:hover {
-  background: var(--bg-hover);
+[data-theme="dark"] .mobile-drawer-badge,
+html.dark .mobile-drawer-badge,
+body.dark .mobile-drawer-badge {
+  background: rgba(56, 189, 248, 0.12) !important;
+  color: #38bdf8 !important;
+  border: 1px solid rgba(56, 189, 248, 0.25) !important;
 }
+
+[data-theme="dark"] .mobile-drawer-link,
+html.dark .mobile-drawer-link,
+body.dark .mobile-drawer-link {
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .mobile-drawer-link:hover,
+html.dark .mobile-drawer-link:hover,
+body.dark .mobile-drawer-link:hover {
+  background: #334155 !important;
+  border-color: #38bdf8 !important;
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .mobile-drawer-link.active,
+html.dark .mobile-drawer-link.active,
+body.dark .mobile-drawer-link.active {
+  background: #2563eb !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .mobile-drawer-link-icon,
+html.dark .mobile-drawer-link-icon,
+body.dark .mobile-drawer-link-icon {
+  background: #0f172a !important;
+  border: 1px solid #334155 !important;
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .mobile-drawer-link.active .mobile-drawer-link-icon,
+html.dark .mobile-drawer-link.active .mobile-drawer-link-icon,
+body.dark .mobile-drawer-link.active .mobile-drawer-link-icon {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .mobile-drawer-chevron,
+html.dark .mobile-drawer-chevron,
+body.dark .mobile-drawer-chevron {
+  color: #64748b !important;
+}
+
+[data-theme="dark"] .mobile-drawer-link.active .mobile-drawer-chevron,
+html.dark .mobile-drawer-link.active .mobile-drawer-chevron,
+body.dark .mobile-drawer-link.active .mobile-drawer-chevron {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .public-nav-badge,
+html.dark .public-nav-badge,
+body.dark .public-nav-badge {
+  background: rgba(56, 189, 248, 0.18) !important;
+  color: #38bdf8 !important;
+  border: 1px solid rgba(56, 189, 248, 0.3) !important;
+}
+
+[data-theme="dark"] .mobile-drawer-api-tag,
+html.dark .mobile-drawer-api-tag,
+body.dark .mobile-drawer-api-tag {
+  background: rgba(14, 165, 233, 0.18) !important;
+  color: #38bdf8 !important;
+  border: 1px solid rgba(14, 165, 233, 0.3) !important;
+}
+
+[data-theme="dark"] .mobile-drawer-actions,
+html.dark .mobile-drawer-actions,
+body.dark .mobile-drawer-actions {
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .btn-mobile-signup,
+html.dark .btn-mobile-signup,
+body.dark .btn-mobile-signup {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4) !important;
+}
+
+[data-theme="dark"] .btn-mobile-signup:hover,
+html.dark .btn-mobile-signup:hover,
+body.dark .btn-mobile-signup:hover {
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.55) !important;
+}
+
+[data-theme="dark"] .btn-mobile-signin,
+html.dark .btn-mobile-signin,
+body.dark .btn-mobile-signin {
+  background: #1e293b !important;
+  border: 1.5px solid #334155 !important;
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .btn-mobile-signin:hover,
+html.dark .btn-mobile-signin:hover,
+body.dark .btn-mobile-signin:hover {
+  background: #334155 !important;
+  border-color: #38bdf8 !important;
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .mobile-drawer-footer,
+html.dark .mobile-drawer-footer,
+body.dark .mobile-drawer-footer {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .mobile-hamburger-btn,
+html.dark .mobile-hamburger-btn,
+body.dark .mobile-hamburger-btn {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .mobile-hamburger-btn:hover,
+html.dark .mobile-hamburger-btn:hover,
+body.dark .mobile-hamburger-btn:hover {
+  background: #334155 !important;
+  border-color: #38bdf8 !important;
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .mobile-hamburger-btn.active,
+html.dark .mobile-hamburger-btn.active,
+body.dark .mobile-hamburger-btn.active {
+  background: #1e293b !important;
+  border-color: #38bdf8 !important;
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .public-mobile-backdrop,
+html.dark .public-mobile-backdrop,
+body.dark .public-mobile-backdrop {
+  background: rgba(3, 7, 18, 0.75) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+}
+
 
 /* Micro animations for theme button */
 .theme-toggle-btn {
