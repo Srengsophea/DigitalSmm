@@ -1325,6 +1325,19 @@ export class AuthController {
       return;
     }
 
+    // Strict image format validation: must be base64 PNG, JPG, WebP, GIF, or secure HTTPS URL
+    const isValidImage =
+      /^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(avatar.trim()) ||
+      /^https:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\/.*$/.test(avatar.trim());
+
+    if (!isValidImage) {
+      res.status(400).json({
+        success: false,
+        error: 'Invalid image format. Allowed formats: PNG, JPG, WebP, GIF.',
+      });
+      return;
+    }
+
     const updatedUser = await db.updateUser(user.id, {
       customAvatar: avatar,
       avatar: avatar,

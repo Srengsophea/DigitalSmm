@@ -1,8 +1,24 @@
 import { Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
 import { DatabaseService } from '../services/db.service';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
+import { ENV } from '../config/env';
 
 let isSyncing = false;
+
+function isRequesterAdmin(req: Request): boolean {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return false;
+  }
+  try {
+    const token = authHeader.split(' ')[1];
+    const decoded: any = jwt.verify(token, ENV.JWT_SECRET);
+    return decoded && decoded.role === 'ADMIN';
+  } catch {
+    return false;
+  }
+}
 
 export class ServicesController {
   /**
@@ -52,12 +68,33 @@ export class ServicesController {
       const allPlatforms = Array.from(new Set(allServices.map((s) => s.platform))).sort();
       const allCategories = Array.from(new Set(allServices.map((s) => s.category))).sort();
 
+      const isAdmin = isRequesterAdmin(req);
+      const outputServices = isAdmin
+        ? services
+        : services.map((s) => ({
+            id: s.id,
+            externalId: s.externalId,
+            name: s.name,
+            category: s.category,
+            platform: s.platform,
+            customRate: s.customRate,
+            min: s.min,
+            max: s.max,
+            type: s.type,
+            isActive: s.isActive,
+            dripfeed: s.dripfeed,
+            refill: s.refill,
+            cancel: s.cancel,
+            description: s.description,
+            updatedAt: s.updatedAt,
+          }));
+
       res.json({
         success: true,
-        total: services.length,
+        total: outputServices.length,
         categories: allCategories,
         platforms: allPlatforms,
-        services,
+        services: outputServices,
       });
     } catch (err: any) {
       console.error('Error fetching services:', err.message);
@@ -82,7 +119,28 @@ export class ServicesController {
         return;
       }
 
-      res.json({ success: true, service });
+      const isAdmin = isRequesterAdmin(req);
+      const safeService = isAdmin
+        ? service
+        : {
+            id: service.id,
+            externalId: service.externalId,
+            name: service.name,
+            category: service.category,
+            platform: service.platform,
+            customRate: service.customRate,
+            min: service.min,
+            max: service.max,
+            type: service.type,
+            isActive: service.isActive,
+            dripfeed: service.dripfeed,
+            refill: service.refill,
+            cancel: service.cancel,
+            description: service.description,
+            updatedAt: service.updatedAt,
+          };
+
+      res.json({ success: true, service: safeService });
     } catch (err: any) {
       res.status(500).json({ success: false, error: 'Failed to find service' });
     }

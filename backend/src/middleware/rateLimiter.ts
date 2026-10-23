@@ -47,3 +47,15 @@ export const orderLimiter = rateLimit({
     error: 'Order rate limit exceeded. Please wait a moment before creating more orders.',
   },
 });
+
+// Support ticket creation rate limit: 10 tickets per 15 minutes (Anti-Spam / Flooding)
+export const ticketLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: 'Ticket submission limit reached. Please wait a few minutes before submitting more support tickets.',
+  },
+});

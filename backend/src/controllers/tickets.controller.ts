@@ -32,6 +32,16 @@ export class TicketsController {
       return;
     }
 
+    if (message.trim().length > 4000) {
+      res.status(400).json({ success: false, error: 'Ticket message cannot exceed 4000 characters' });
+      return;
+    }
+
+    if (orderIds && typeof orderIds === 'string' && orderIds.trim().length > 500) {
+      res.status(400).json({ success: false, error: 'Order IDs field is too long (max 500 characters)' });
+      return;
+    }
+
     const db = DatabaseService.getInstance();
     const newTicket = await db.createTicket({
       userId: req.user.id,
