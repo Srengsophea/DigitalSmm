@@ -19,9 +19,9 @@ export const NotificationToast: React.FC = () => {
             className={`toast-item toast-${toast.type}`}
           >
             <div className="toast-icon">
-              {isSuccess && <CheckCircle2 size={18} color="#16a34a" />}
-              {isError && <AlertCircle size={18} color="#dc2626" />}
-              {!isSuccess && !isError && <Info size={18} color="#2563eb" />}
+              {isSuccess && <CheckCircle2 size={18} />}
+              {isError && <AlertCircle size={18} />}
+              {!isSuccess && !isError && <Info size={18} />}
             </div>
 
             <div className="toast-message">{toast.message}</div>

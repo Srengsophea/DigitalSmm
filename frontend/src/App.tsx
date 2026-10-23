@@ -258,9 +258,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         isOpen={isTicketModalOpen}
         onClose={() => setIsTicketModalOpen(false)}
       />
-
-      {/* Global Notifications */}
-      <NotificationToast />
     </div>
   );
 };
@@ -353,9 +350,6 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ currentPath, onNavigate }) 
 
       {/* 3. Public Footer */}
       <FooterBanner onOpenTicket={() => onNavigate('/login')} />
-
-      {/* Global Notifications */}
-      <NotificationToast />
     </div>
   );
 };
@@ -388,56 +382,65 @@ const RouterApp: React.FC = () => {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // 1. Dedicated User Login Page (Redesigned SMM panel style)
-  if (currentPath === '/login') {
-    if (isAuthenticated) {
-      return <MainLayout initialPage="new-order" onNavigate={navigate} />;
+  const renderContent = () => {
+    // 1. Dedicated User Login Page (Redesigned SMM panel style)
+    if (currentPath === '/login') {
+      if (isAuthenticated) {
+        return <MainLayout initialPage="new-order" onNavigate={navigate} />;
+      }
+      return <AuthPage initialMode="login" onNavigate={navigate} />;
     }
-    return <AuthPage initialMode="login" onNavigate={navigate} />;
-  }
 
-  // 2. Dedicated User Signup Page (Redesigned SMM panel style)
-  if (currentPath === '/signup') {
-    if (isAuthenticated) {
-      return <MainLayout initialPage="new-order" onNavigate={navigate} />;
+    // 2. Dedicated User Signup Page (Redesigned SMM panel style)
+    if (currentPath === '/signup') {
+      if (isAuthenticated) {
+        return <MainLayout initialPage="new-order" onNavigate={navigate} />;
+      }
+      return <AuthPage initialMode="signup" onNavigate={navigate} />;
     }
-    return <AuthPage initialMode="signup" onNavigate={navigate} />;
-  }
 
-  // 3. Dedicated Admin Login Portal
-  if (currentPath === '/admin/login') {
-    return <AdminLoginPage onNavigate={navigate} />;
-  }
-
-  // 4. Admin Dashboard Route Protection
-  if (currentPath === '/admin') {
-    if (!isAdmin) {
+    // 3. Dedicated Admin Login Portal
+    if (currentPath === '/admin/login') {
       return <AdminLoginPage onNavigate={navigate} />;
     }
-    return <MainLayout activePageProp="admin" onNavigate={navigate} />;
-  }
 
-  // 5. User Settings route protection
-  if (currentPath === '/settings' && !isAuthenticated) {
+    // 4. Admin Dashboard Route Protection
+    if (currentPath === '/admin') {
+      if (!isAdmin) {
+        return <AdminLoginPage onNavigate={navigate} />;
+      }
+      return <MainLayout activePageProp="admin" onNavigate={navigate} />;
+    }
+
+    // 5. User Settings route protection
+    if (currentPath === '/settings' && !isAuthenticated) {
+      return <AuthPage initialMode="login" onNavigate={navigate} />;
+    }
+
+    // 6. If User IS Authenticated (Logged In) -> Show Full User Dashboard with Sidebar
+    if (isAuthenticated) {
+      const pageFromPath = currentPath.replace(/^\//, '') || 'new-order';
+      return <MainLayout initialPage={pageFromPath} onNavigate={navigate} />;
+    }
+
+    // 7. If User is NOT Logged In (Guest) -> Show Public Storefront with Public Navbar (NO sidebar)
+    const validPublicPaths = ['/', '/home', '/services', '/api', '/faq', '/terms'];
+    const cleanPath = currentPath === '/' ? '/home' : currentPath;
+
+    if (validPublicPaths.includes(currentPath) || currentPath === '/') {
+      return <PublicLayout currentPath={cleanPath} onNavigate={navigate} />;
+    }
+
+    // If unauthenticated guest attempts to access user-only routes (/new-order, /orders, /add-funds, etc.)
     return <AuthPage initialMode="login" onNavigate={navigate} />;
-  }
+  };
 
-  // 6. If User IS Authenticated (Logged In) -> Show Full User Dashboard with Sidebar
-  if (isAuthenticated) {
-    const pageFromPath = currentPath.replace(/^\//, '') || 'new-order';
-    return <MainLayout initialPage={pageFromPath} onNavigate={navigate} />;
-  }
-
-  // 6. If User is NOT Logged In (Guest) -> Show Public Storefront with Public Navbar (NO sidebar)
-  const validPublicPaths = ['/', '/home', '/services', '/api', '/faq', '/terms'];
-  const cleanPath = currentPath === '/' ? '/home' : currentPath;
-
-  if (validPublicPaths.includes(currentPath) || currentPath === '/') {
-    return <PublicLayout currentPath={cleanPath} onNavigate={navigate} />;
-  }
-
-  // If unauthenticated guest attempts to access user-only routes (/new-order, /orders, /add-funds, etc.)
-  return <AuthPage initialMode="login" onNavigate={navigate} />;
+  return (
+    <>
+      {renderContent()}
+      <NotificationToast />
+    </>
+  );
 };
 
 export default function App() {
