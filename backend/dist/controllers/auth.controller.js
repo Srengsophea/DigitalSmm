@@ -832,6 +832,7 @@ class AuthController {
         const { credential, accessToken, twoFactorCode } = req.body;
         let targetEmail = null;
         let targetName = null;
+        let targetPicture = null;
         // 1. Verify Google ID Token (Google Identity Services) cryptographically via Google's tokeninfo API
         if (credential && typeof credential === 'string') {
             try {
@@ -842,6 +843,9 @@ class AuthController {
                     if (payload.email && (payload.email_verified === 'true' || payload.email_verified === true)) {
                         targetEmail = payload.email;
                         targetName = payload.name || payload.given_name || payload.email.split('@')[0];
+                        if (payload.picture && typeof payload.picture === 'string') {
+                            targetPicture = payload.picture;
+                        }
                     }
                 }
             }
@@ -860,12 +864,19 @@ class AuthController {
                     if (info.email && info.email_verified !== false) {
                         targetEmail = info.email;
                         targetName = info.name || info.given_name || info.email.split('@')[0];
+                        if (info.picture && typeof info.picture === 'string') {
+                            targetPicture = info.picture;
+                        }
                     }
                 }
             }
             catch (e) {
                 console.error('Failed to verify Google access token:', e);
             }
+        }
+        // Fallback: accept verified picture if passed from client OAuth callback
+        if (!targetPicture && req.body.picture && typeof req.body.picture === 'string' && req.body.picture.startsWith('http')) {
+            targetPicture = req.body.picture;
         }
         // Security check: NEVER accept unverified email strings from client body
         if (!targetEmail || typeof targetEmail !== 'string' || !targetEmail.includes('@')) {
@@ -897,6 +908,8 @@ class AuthController {
                 balance: 0.0,
                 role: 'USER',
                 status: 'active',
+                googlePicture: targetPicture || undefined,
+                avatar: targetPicture || undefined,
             });
             await db.logAudit('GOOGLE_REGISTER', `User registered with Google: ${user.username} (${targetEmail})`, req.ip || '127.0.0.1', user.id, user.username);
         }
@@ -904,6 +917,14 @@ class AuthController {
             if (user.status !== 'active') {
                 res.status(403).json({ success: false, error: 'This account has been suspended by administration' });
                 return;
+            }
+            // Update Google profile picture if new picture exists
+            if (targetPicture && user.googlePicture !== targetPicture) {
+                const updates = { googlePicture: targetPicture };
+                if (!user.customAvatar) {
+                    updates.avatar = targetPicture;
+                }
+                user = (await db.updateUser(user.id, updates)) || user;
             }
             // Enforce 2FA if enabled on this account
             if (user.twoFactorEnabled && user.twoFactorSecret) {
@@ -938,6 +959,55 @@ class AuthController {
             message: 'Signed in with Google successfully!',
             token,
             user: (0, db_service_1.toSafeUser)(user),
+        });
+    }
+    /**
+     * Upload or remove manual user profile avatar
+     */
+    static async updateAvatar(req, res) {
+        if (!req.user) {
+            res.status(401).json({ success: false, error: 'Not authenticated' });
+            return;
+        }
+        const db = db_service_1.DatabaseService.getInstance();
+        const user = db.getUserById(req.user.id);
+        if (!user) {
+            res.status(404).json({ success: false, error: 'User not found' });
+            return;
+        }
+        const { avatar, remove } = req.body;
+        if (remove) {
+            // Revert to Google picture if available, or undefined (falls back to First Character initial)
+            const updatedUser = await db.updateUser(user.id, {
+                customAvatar: undefined,
+                avatar: user.googlePicture || undefined,
+            });
+            await db.logAudit('AVATAR_REMOVE', `User removed custom avatar: ${user.username}`, req.ip || '127.0.0.1', user.id, user.username);
+            res.json({
+                success: true,
+                message: 'Profile photo removed. Default initial avatar restored.',
+                user: updatedUser ? (0, db_service_1.toSafeUser)(updatedUser) : (0, db_service_1.toSafeUser)(user),
+            });
+            return;
+        }
+        if (!avatar || typeof avatar !== 'string') {
+            res.status(400).json({ success: false, error: 'Please provide a valid image file.' });
+            return;
+        }
+        // Limit maximum payload size for avatar (max 4MB base64)
+        if (avatar.length > 5 * 1024 * 1024) {
+            res.status(400).json({ success: false, error: 'Image file size is too large (max 4MB).' });
+            return;
+        }
+        const updatedUser = await db.updateUser(user.id, {
+            customAvatar: avatar,
+            avatar: avatar,
+        });
+        await db.logAudit('AVATAR_UPDATE', `User updated profile avatar: ${user.username}`, req.ip || '127.0.0.1', user.id, user.username);
+        res.json({
+            success: true,
+            message: 'Profile picture updated successfully!',
+            user: updatedUser ? (0, db_service_1.toSafeUser)(updatedUser) : (0, db_service_1.toSafeUser)(user),
         });
     }
 }

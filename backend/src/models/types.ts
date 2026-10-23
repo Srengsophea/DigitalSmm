@@ -18,6 +18,9 @@ export interface User {
   lockoutUntil?: string;
   timezone?: string;
   apiKeyCreatedAt?: string;
+  avatar?: string;
+  customAvatar?: string;
+  googlePicture?: string;
   createdAt: string;
   updatedAt: string;
 }

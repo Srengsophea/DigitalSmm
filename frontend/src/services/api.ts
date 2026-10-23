@@ -73,11 +73,19 @@ export const api = {
       });
       return handleResponse<any>(res);
     },
-    async googleLogin(payload: { email?: string; name?: string; credential?: string; accessToken?: string }) {
+    async googleLogin(payload: { email?: string; name?: string; picture?: string; credential?: string; accessToken?: string }) {
       const res = await fetch(`${API_BASE}/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+      });
+      return handleResponse<any>(res);
+    },
+    async updateAvatar(avatar: string | null) {
+      const res = await fetch(`${API_BASE}/auth/avatar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        body: JSON.stringify(avatar ? { avatar } : { remove: true }),
       });
       return handleResponse<any>(res);
     },

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { UserAvatar } from './UserAvatar';
 import { api } from '../services/api';
 import {
   Copy,
@@ -13,12 +14,96 @@ import {
   AlertCircle,
   RefreshCw,
   X,
+  Camera,
+  Trash2,
 } from 'lucide-react';
 
 export const UserSettingsView: React.FC = () => {
-  const { user, refreshProfile, showToast } = useAuth();
+  const { user, refreshProfile, showToast, updateAvatar } = useAuth();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+
+  // 0. Profile Photo / Avatar State & Handler
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
+  const handleAvatarFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select an image file (PNG, JPG, WebP, GIF)', 'error');
+      return;
+    }
+
+    if (file.size > 8 * 1024 * 1024) {
+      showToast('Image file size must be under 8MB', 'error');
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = (uploadEvent) => {
+        const img = new Image();
+        img.onload = async () => {
+          try {
+            const canvas = document.createElement('canvas');
+            const maxDim = 256;
+            let w = img.width;
+            let h = img.height;
+            if (w > h) {
+              if (w > maxDim) {
+                h = Math.round((h * maxDim) / w);
+                w = maxDim;
+              }
+            } else {
+              if (h > maxDim) {
+                w = Math.round((w * maxDim) / h);
+                h = maxDim;
+              }
+            }
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, w, h);
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.88);
+            await updateAvatar(compressedDataUrl);
+          } catch (err: any) {
+            showToast(err.message || 'Failed to upload photo', 'error');
+          } finally {
+            setIsUploadingAvatar(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+          }
+        };
+        img.onerror = () => {
+          showToast('Failed to process image file', 'error');
+          setIsUploadingAvatar(false);
+        };
+        img.src = uploadEvent.target?.result as string;
+      };
+      reader.onerror = () => {
+        showToast('Failed to read image file', 'error');
+        setIsUploadingAvatar(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (err: any) {
+      showToast(err.message || 'Error processing photo', 'error');
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    if (!window.confirm('Remove your custom profile picture and restore default?')) return;
+    setIsUploadingAvatar(true);
+    try {
+      await updateAvatar(null);
+    } catch (err: any) {
+      showToast(err.message || 'Failed to remove photo', 'error');
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
 
   // 1. Email State & Flow
   // Step: 'idle' | 'verify_old' | 'verify_new'
@@ -410,6 +495,154 @@ export const UserSettingsView: React.FC = () => {
 
   return (
     <div style={{ maxWidth: 960, margin: '0 auto', padding: '16px 20px 48px' }}>
+      {/* 0. Profile Photo / Avatar Card */}
+      <div style={cardStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            <div style={{ fontSize: '1.05rem', fontWeight: 700, color: isDark ? '#f8fafc' : '#0f172a' }}>
+              Profile Photo
+            </div>
+            <div style={{ fontSize: '0.82rem', color: isDark ? '#94a3b8' : '#64748b', marginTop: 2 }}>
+              Choose a custom picture from your files, use your Google profile, or display your initial avatar.
+            </div>
+          </div>
+
+          {/* Badge indicating avatar type */}
+          <div>
+            {user?.customAvatar ? (
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '4px 10px',
+                  borderRadius: 20,
+                  fontSize: '0.74rem',
+                  fontWeight: 600,
+                  background: isDark ? 'rgba(56, 189, 248, 0.15)' : '#e0f2fe',
+                  color: isDark ? '#38bdf8' : '#0284c7',
+                  border: isDark ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid #bae6fd',
+                }}
+              >
+                Custom Photo
+              </span>
+            ) : user?.googlePicture ? (
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '4px 10px',
+                  borderRadius: 20,
+                  fontSize: '0.74rem',
+                  fontWeight: 600,
+                  background: isDark ? 'rgba(34, 197, 94, 0.15)' : '#f0fdf4',
+                  color: isDark ? '#4ade80' : '#15803d',
+                  border: isDark ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid #bbf7d0',
+                }}
+              >
+                Google Connected
+              </span>
+            ) : (
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '4px 10px',
+                  borderRadius: 20,
+                  fontSize: '0.74rem',
+                  fontWeight: 600,
+                  background: isDark ? 'rgba(148, 163, 184, 0.15)' : '#f1f5f9',
+                  color: isDark ? '#cbd5e1' : '#475569',
+                  border: isDark ? '1px solid rgba(148, 163, 184, 0.3)' : '1px solid #e2e8f0',
+                }}
+              >
+                Initial Avatar ({(user?.username || 'U').charAt(0).toUpperCase()})
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+          {/* Avatar Preview */}
+          <div style={{ position: 'relative' }}>
+            <UserAvatar
+              user={user}
+              size={76}
+              fontSize="2rem"
+              onEditClick={() => fileInputRef.current?.click()}
+              showEditOverlay
+              title="Click to choose a photo from your file"
+            />
+          </div>
+
+          {/* Action buttons */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1, minWidth: 220 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleAvatarFileSelect}
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                style={{ display: 'none' }}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingAvatar}
+                style={{
+                  padding: '8px 18px',
+                  background: isDark ? '#2563eb' : '#162399',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: 8,
+                  fontSize: '0.84rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)',
+                }}
+              >
+                <Camera size={15} />
+                <span>{isUploadingAvatar ? 'Saving...' : 'Choose from File'}</span>
+              </button>
+
+              {user?.customAvatar && (
+                <button
+                  type="button"
+                  onClick={handleRemoveAvatar}
+                  disabled={isUploadingAvatar}
+                  style={{
+                    padding: '8px 14px',
+                    background: isDark ? '#0f172a' : '#f8fafc',
+                    color: '#ef4444',
+                    border: isDark ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid #fecaca',
+                    borderRadius: 8,
+                    fontSize: '0.84rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                  title="Remove custom photo and revert to Google or Initial avatar"
+                >
+                  <Trash2 size={14} />
+                  <span>Remove Custom Photo</span>
+                </button>
+              )}
+            </div>
+
+            <div style={{ fontSize: '0.78rem', color: isDark ? '#94a3b8' : '#64748b' }}>
+              Supports PNG, JPG, WebP, or GIF (max 8MB). Photos are automatically optimized.
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* 1. Account / Email Card */}
       <div style={cardStyle}>
         {emailStep === 'idle' && (

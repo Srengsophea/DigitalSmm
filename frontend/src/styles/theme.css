@@ -119,8 +119,8 @@ body.dark {
 }
 
 [data-theme="dark"] .user-avatar-circle {
-  background: #1e293b;
-  border-color: #334155;
+  background: transparent;
+  border: none;
 }
 
 [data-theme="dark"] .sidebar-collapse-btn,

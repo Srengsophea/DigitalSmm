@@ -11,6 +11,9 @@ export interface User {
   role: 'USER' | 'ADMIN';
   status: 'active' | 'suspended';
   apiKey: string;
+  avatar?: string;
+  customAvatar?: string;
+  googlePicture?: string;
   twoFactorEnabled?: boolean;
   timezone?: string;
   apiKeyCreatedAt?: string;
@@ -34,7 +37,8 @@ interface AuthContextType {
   sendSignupOtp: (username: string, email: string, pass: string) => Promise<{ success: boolean; message: string; email: string; deliveryMethod: string }>;
   verifySignupOtp: (email: string, otp: string) => Promise<User>;
   resendSignupOtp: (email: string) => Promise<{ success: boolean; message: string }>;
-  loginWithGoogle: (payload: { email?: string; name?: string; credential?: string; accessToken?: string }) => Promise<User>;
+  loginWithGoogle: (payload: { email?: string; name?: string; picture?: string; credential?: string; accessToken?: string }) => Promise<User>;
+  updateAvatar: (avatarDataUrl: string | null) => Promise<User>;
   logout: () => void;
   refreshProfile: () => Promise<void>;
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
@@ -163,7 +167,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     throw new Error(data.error || 'Failed to resend code');
   };
 
-  const loginWithGoogle = async (payload: { email?: string; name?: string; credential?: string; accessToken?: string }): Promise<User> => {
+  const loginWithGoogle = async (payload: { email?: string; name?: string; picture?: string; credential?: string; accessToken?: string }): Promise<User> => {
     const data = await api.auth.googleLogin(payload);
     if (data.token && data.user) {
       localStorage.setItem('digitalsmm_token', data.token);
@@ -173,6 +177,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return data.user;
     }
     throw new Error('Google authentication failed: Missing user session');
+  };
+
+  const updateAvatar = async (avatarDataUrl: string | null): Promise<User> => {
+    const data = await api.auth.updateAvatar(avatarDataUrl);
+    if (data.success && data.user) {
+      setUser(data.user);
+      showToast(data.message || 'Profile picture updated successfully', 'success');
+      return data.user;
+    }
+    throw new Error(data.error || 'Failed to update profile picture');
   };
 
   const logout = () => {
@@ -196,6 +210,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         verifySignupOtp,
         resendSignupOtp,
         loginWithGoogle,
+        updateAvatar,
         logout,
         refreshProfile,
         showToast,

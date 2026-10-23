@@ -36,6 +36,7 @@ router.post('/email/verify-old', authenticate, authLimiter, AuthController.verif
 router.post('/email/verify-new', authenticate, authLimiter, AuthController.verifyNewEmailChange);
 
 // Password & Settings
+router.post('/avatar', authenticate, AuthController.updateAvatar);
 router.post('/change-password', authenticate, authLimiter, AuthController.changePassword);
 router.post('/update-timezone', authenticate, AuthController.updateTimezone);
 router.post('/api-key/regenerate', authenticate, AuthController.regenerateApiKey);

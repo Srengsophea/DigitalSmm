@@ -23,6 +23,7 @@ router.post('/email/request-change', auth_middleware_1.authenticate, rateLimiter
 router.post('/email/verify-old', auth_middleware_1.authenticate, rateLimiter_1.authLimiter, auth_controller_1.AuthController.verifyOldEmailChange);
 router.post('/email/verify-new', auth_middleware_1.authenticate, rateLimiter_1.authLimiter, auth_controller_1.AuthController.verifyNewEmailChange);
 // Password & Settings
+router.post('/avatar', auth_middleware_1.authenticate, auth_controller_1.AuthController.updateAvatar);
 router.post('/change-password', auth_middleware_1.authenticate, rateLimiter_1.authLimiter, auth_controller_1.AuthController.changePassword);
 router.post('/update-timezone', auth_middleware_1.authenticate, auth_controller_1.AuthController.updateTimezone);
 router.post('/api-key/regenerate', auth_middleware_1.authenticate, auth_controller_1.AuthController.regenerateApiKey);

@@ -329,6 +329,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
         const user = await loginWithGoogle({
           email: googleRes.email,
           name: googleRes.name,
+          picture: googleRes.picture,
           accessToken: googleRes.accessToken,
           credential: googleRes.credential,
         });

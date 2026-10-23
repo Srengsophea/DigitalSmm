@@ -122,16 +122,14 @@
 }
 
 .user-avatar-circle {
-  width: 58px;
-  height: 58px;
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
-  background: #dbeafe;
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 10px;
-  border: 2px solid #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transition: all 0.25s ease;
 }
 
@@ -139,11 +137,6 @@
   width: 38px;
   height: 38px;
   margin: 0 auto;
-}
-
-.sidebar.collapsed .user-avatar-circle svg {
-  width: 24px;
-  height: 24px;
 }
 
 .sidebar.collapsed .user-welcome-text {

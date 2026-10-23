@@ -240,6 +240,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         await loginWithGoogle({
           email: googleRes.email,
           name: googleRes.name,
+          picture: googleRes.picture,
           accessToken: googleRes.accessToken,
           credential: googleRes.credential,
         });

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { UserAvatar } from './UserAvatar';
 import {
   Box,
   Layers,
@@ -130,22 +131,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* User Avatar & Welcome */}
-      <div className="sidebar-user-card">
-        <div className="user-avatar-circle" title={user ? `Signed in as ${username}` : 'Guest'}>
-          {/* Blue illustrated avatar character */}
-          <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
-            <circle cx="24" cy="18" r="10" fill="#3b82f6" />
-            <path
-              d="M10 40C10 32.268 16.268 26 24 26C31.732 26 38 32.268 38 40"
-              fill="#1d4ed8"
-            />
-            <path
-              d="M20 28L24 35L28 28"
-              stroke="#ffffff"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-          </svg>
+      <div
+        className="sidebar-user-card"
+        style={{ cursor: user ? 'pointer' : 'default' }}
+        onClick={() => {
+          if (user && onNavigate) {
+            onNavigate('/settings');
+          }
+        }}
+      >
+        <div className="user-avatar-circle" title={user ? `Signed in as ${username} (Click to manage profile)` : 'Guest'}>
+          <UserAvatar
+            user={user}
+            username={username}
+            size={isCollapsed ? 36 : 52}
+            showEditOverlay={Boolean(user)}
+          />
         </div>
         <div className="user-welcome-text">
           Welcome {username}
