@@ -29,7 +29,7 @@ export const FAQView: React.FC = () => {
     <div className="card" style={{ maxWidth: 960, margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
         <HelpCircle size={22} color={isDark ? '#38bdf8' : '#162399'} />
-        <h2 style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>Frequently Asked Questions</h2>
+        <h1 style={{ fontSize: '1.45rem', fontWeight: 800, margin: 0, color: isDark ? '#f8fafc' : '#0f172a' }}>Frequently Asked Questions</h1>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -52,7 +52,7 @@ export const TermsView: React.FC = () => {
     <div className="card" style={{ maxWidth: 960, margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
         <FileText size={22} color={isDark ? '#38bdf8' : '#162399'} />
-        <h2 style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>Terms of Service & Refund Policy</h2>
+        <h1 style={{ fontSize: '1.45rem', fontWeight: 800, margin: 0, color: isDark ? '#f8fafc' : '#0f172a' }}>Terms of Service & Refund Policy</h1>
       </div>
       <div style={{ fontSize: '0.88rem', color: isDark ? '#cbd5e1' : '#475569', lineHeight: 1.7, display: 'flex', flexDirection: 'column', gap: 14 }}>
         <p>1. By placing an order with DigitalSMM, you automatically accept all the below-listed terms of service whether you read them or not.</p>

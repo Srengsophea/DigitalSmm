@@ -1,0 +1,25 @@
+# robots.txt for DigitalSMM
+# https://digitalsmm.com
+
+User-agent: *
+Allow: /
+Allow: /services
+Allow: /api
+Allow: /faq
+Allow: /terms
+Allow: /login
+Allow: /signup
+
+# Disallow authenticated and administrative areas from search indexing
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /settings
+Disallow: /new-order
+Disallow: /mass-order
+Disallow: /orders
+Disallow: /add-funds
+Disallow: /tickets
+Disallow: /api/
+
+# XML Sitemap reference for search engine crawlers
+Sitemap: https://digitalsmm.com/sitemap.xml

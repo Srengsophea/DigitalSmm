@@ -131,7 +131,7 @@ export const ApiDocs: React.FC<ApiDocsProps> = ({ onNavigate }) => {
     <div style={{ display: 'flex', justifyContent: 'center', width: '100%', paddingBottom: 40 }}>
       <div className="api-page-wrapper">
         {/* Title */}
-        <h1 className="api-page-title">API</h1>
+        <h1 className="api-page-title">DigitalSMM Reseller API Documentation</h1>
 
         {/* Top Info Overview Card (Fully Responsive for Mobile & Desktop) */}
         <div className="api-overview-card">

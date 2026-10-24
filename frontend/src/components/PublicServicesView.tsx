@@ -86,9 +86,9 @@ export const PublicServicesView: React.FC<PublicServicesViewProps> = ({
       {/* Header with Callout Banner */}
       <div className="public-services-header">
         <div className="public-services-header-text">
-          <h2 style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, margin: 0, color: isDark ? '#f8fafc' : '#0f172a' }}>
             Services & Wholesale Pricing Catalog
-          </h2>
+          </h1>
           <p style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
             Browse all {services.length.toLocaleString() || '7,500+'} verified SMM services. Click the eye icon on any row to view complete speed and guarantee specifications.
           </p>

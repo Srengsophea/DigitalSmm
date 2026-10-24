@@ -25,6 +25,7 @@ import { PublicServicesView } from './components/PublicServicesView';
 import { api } from './services/api';
 import { ServiceItem } from './components/ServicesTable';
 import { Bell } from 'lucide-react';
+import { usePageSEO } from './utils/usePageSEO';
 import './styles/index.css';
 import './styles/components.css';
 import './styles/public.css';
@@ -363,6 +364,9 @@ const RouterApp: React.FC = () => {
     const p = window.location.pathname;
     return p && p !== '/' ? p : '/';
   });
+
+  // Dynamically update document title, description, and canonical URL on page change
+  usePageSEO(currentPath);
 
   const navigate = useCallback((targetPath: string) => {
     const cleanPath = targetPath.startsWith('/') ? targetPath : `/${targetPath}`;

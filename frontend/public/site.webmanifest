@@ -1,0 +1,21 @@
+{
+  "name": "DigitalSMM — Premier Automated Social Media Marketing Platform",
+  "short_name": "DigitalSMM",
+  "description": "Access over 7,500+ direct provider services with automated instant delivery, AES-256 encrypted security, and wholesale pricing on DigitalSMM.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b1120",
+  "theme_color": "#0b1120",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/DigitalSmm_logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
