@@ -86,7 +86,7 @@ export const AffiliatesView: React.FC = () => {
           type="text"
           className="form-input"
           readOnly
-          value="https://digitalsmm.com/ref/user1048"
+          value="https://digitalsmm.site/ref/user1048"
           style={{
             background: isDark ? '#1e293b' : '#ffffff',
             color: isDark ? '#38bdf8' : '#162399',

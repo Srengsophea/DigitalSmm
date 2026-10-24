@@ -113,7 +113,7 @@ export function usePageSEO(pathname: string) {
     }
 
     // 3. Update Canonical Link
-    const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://digitalsmm.com';
+    const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://digitalsmm.site';
     const canonicalHref = `${currentOrigin}${seo.canonicalPath || clean}`;
     let linkCanonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
     if (!linkCanonical) {

@@ -1,5 +1,5 @@
 # robots.txt for DigitalSMM
-# https://digitalsmm.com
+# https://digitalsmm.site
 
 User-agent: *
 Allow: /
@@ -22,4 +22,4 @@ Disallow: /tickets
 Disallow: /api/
 
 # XML Sitemap reference for search engine crawlers
-Sitemap: https://digitalsmm.com/sitemap.xml
+Sitemap: https://digitalsmm.site/sitemap.xml

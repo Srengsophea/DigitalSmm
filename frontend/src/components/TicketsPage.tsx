@@ -153,7 +153,7 @@ export const TicketsPage: React.FC<TicketsPageProps> = ({ openAuthModal }) => {
           subjectType: 'Orders',
           subType: 'Refill',
           orderIds: '27417914',
-          message: "Welcome to DigitalSmm.com We're glad you're here! Feel free to reach out anytime.",
+          message: "Welcome to DigitalSmm.site We're glad you're here! Feel free to reach out anytime.",
           referralSource: 'Search engines',
           status: 'New',
           createdAt: new Date().toISOString(),

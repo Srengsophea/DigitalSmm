@@ -410,7 +410,7 @@ export function exportOrdersToPdf(orders: OrderItem[], options: ExportFilterOpti
     },
     didDrawPage: (data) => {
       // Footer page numbering
-      const str = `Page ${data.pageNumber} of ${doc.getNumberOfPages()} • DigitalSMM Statement Report • https://digitalsmm.com`;
+      const str = `Page ${data.pageNumber} of ${doc.getNumberOfPages()} • DigitalSMM Statement Report • https://digitalsmm.site`;
       doc.setFontSize(7.5);
       doc.setTextColor(148, 163, 184);
       doc.text(str, pageWidth / 2, pageHeight - 14, { align: 'center' });

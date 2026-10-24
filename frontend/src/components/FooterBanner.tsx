@@ -15,7 +15,7 @@ export const FooterBanner: React.FC<FooterBannerProps> = ({ onOpenTicket }) => {
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <Mail size={15} color="#93c5fd" />
-          <span>contact@digitalsmm.com</span>
+          <span>contact@digitalsmm.site</span>
         </div>
         <span>OR</span>
         <button className="footer-btn-ticket" onClick={onOpenTicket}>

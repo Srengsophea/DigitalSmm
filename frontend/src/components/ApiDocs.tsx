@@ -21,7 +21,7 @@ export const ApiDocs: React.FC<ApiDocsProps> = ({ onNavigate }) => {
   const apiKey = user?.apiKey || 'ds_usr_demo_key_example_sign_in_to_view';
   const apiUrl = typeof window !== 'undefined'
     ? `${window.location.protocol}//${window.location.hostname}:5000/api/v2`
-    : 'https://digitalsmm.com/api/v2';
+    : 'https://digitalsmm.site/api/v2';
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
