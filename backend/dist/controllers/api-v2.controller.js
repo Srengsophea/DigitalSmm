@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ApiV2Controller = void 0;
 const db_service_1 = require("../services/db.service");
 const smmfollows_service_1 = require("../services/smmfollows.service");
+const provider_service_1 = require("../services/provider.service");
 /**
  * Standard SMM Panel API v2 endpoint for resellers & automated bots
  * Resellers send POST to /api/v2 with { key, action, ... }
@@ -79,8 +80,9 @@ class ApiV2Controller {
                     return;
                 }
                 let providerResult;
+                const providerId = service.provider || 'smmfollows';
                 try {
-                    providerResult = await smm.addOrder({
+                    providerResult = await provider_service_1.ProviderService.getInstance().addOrder(providerId, {
                         service: service.externalId,
                         link,
                         quantity,
@@ -106,6 +108,7 @@ class ApiV2Controller {
                     username: user.username,
                     serviceId: service.id,
                     externalServiceId: service.externalId,
+                    provider: providerId,
                     externalOrderId: providerResult.order,
                     serviceName: service.name,
                     category: service.category,

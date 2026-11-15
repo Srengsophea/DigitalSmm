@@ -13,8 +13,17 @@ router.post('/users/balance', admin_controller_1.AdminController.adjustUserBalan
 router.post('/users/status', admin_controller_1.AdminController.toggleUserStatus);
 router.get('/orders', admin_controller_1.AdminController.getAllOrders);
 router.put('/services/:id', (0, validator_1.validateBody)(validator_1.updateIndividualServiceSchema), admin_controller_1.AdminController.updateService);
+router.delete('/services/:id', admin_controller_1.AdminController.deleteService);
 router.post('/services/markup', (0, validator_1.validateBody)(validator_1.updateServiceMarkupSchema), admin_controller_1.AdminController.batchUpdateMarkup);
 router.post('/services/bulk-status', (0, validator_1.validateBody)(validator_1.bulkStatusSchema), admin_controller_1.AdminController.bulkUpdateServiceStatus);
+router.post('/services/bulk-delete', admin_controller_1.AdminController.bulkDeleteServices);
+router.post('/services/import', admin_controller_1.AdminController.importServices);
+// Providers Management
+router.get('/providers', admin_controller_1.AdminController.getProviders);
+router.post('/providers', admin_controller_1.AdminController.addProvider);
+router.put('/providers/:id', admin_controller_1.AdminController.updateProvider);
+router.delete('/providers/:id', admin_controller_1.AdminController.deleteProvider);
+router.get('/providers/:id/raw-services', admin_controller_1.AdminController.getProviderRawServices);
 router.get('/settings', admin_controller_1.AdminController.getSettings);
 router.post('/settings', (0, validator_1.validateBody)(validator_1.updateProviderSettingsSchema), admin_controller_1.AdminController.updateSettings);
 router.get('/audit-logs', admin_controller_1.AdminController.getAuditLogs);

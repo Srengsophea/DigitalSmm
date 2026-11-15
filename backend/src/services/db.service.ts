@@ -14,9 +14,11 @@ import {
   AuditLog,
   PlatformType,
   Ticket,
+  Provider,
 } from '../models/types';
 import { EncryptionService } from './encryption.service';
 import { SMMFollowsService } from './smmfollows.service';
+import { ProviderService } from './provider.service';
 import { PostgresService } from './postgres.service';
 
 /**
@@ -50,6 +52,7 @@ interface DatabaseSchema {
   orders: Order[];
   transactions: Transaction[];
   settings: Record<string, SettingItem>;
+  providers?: Record<string, Provider>;
   auditLogs: AuditLog[];
   tickets: Ticket[];
 }
@@ -98,8 +101,8 @@ export class DatabaseService {
         this.data = JSON.parse(raw);
         if (!this.data.tickets) this.data.tickets = [];
         if (!this.data.serviceOverrides) this.data.serviceOverrides = {};
-        // Ensure services is empty in this.data; services live in memory from SMMFollows
-        this.data.services = [];
+        if (!this.data.providers) this.data.providers = {};
+        if (!this.data.services) this.data.services = [];
       } catch (err) {
         console.error('Error loading database file, initializing clean DB:', err);
         this.seedDefaults();
@@ -171,6 +174,7 @@ export class DatabaseService {
       orders: [],
       transactions: [],
       settings: {},
+      providers: {},
       auditLogs: [],
       tickets: [],
     };
@@ -306,6 +310,39 @@ export class DatabaseService {
       };
     }
 
+    if (!this.data.providers) {
+      this.data.providers = {};
+    }
+
+    const smmfollowsKey = this.getSettingValue('smmfollows_api_key') || ENV.SMMFOLLOWS_API_KEY;
+    const smmfollowsUrl = this.getSettingValue('smmfollows_api_url') || ENV.SMMFOLLOWS_API_URL;
+
+    if (!this.data.providers['smmfollows']) {
+      this.data.providers['smmfollows'] = {
+        id: 'smmfollows',
+        name: 'SMMFollows',
+        apiUrl: smmfollowsUrl,
+        apiKey: smmfollowsKey,
+        status: 'active',
+        isDefault: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+    }
+
+    if (!this.data.providers['smmpwr']) {
+      this.data.providers['smmpwr'] = {
+        id: 'smmpwr',
+        name: 'SMMPWR',
+        apiUrl: 'https://smmpwr.com/api/v2',
+        apiKey: '63182a0acb6c37b064f338cf2d38e2f8',
+        status: 'active',
+        isDefault: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+    }
+
     this.persistSync();
   }
 
@@ -315,10 +352,9 @@ export class DatabaseService {
   private async persist(): Promise<void> {
     this.writeLock = this.writeLock.then(async () => {
       const tempPath = `${this.filePath}.tmp.${Date.now()}`;
-      // Never store raw services in the JSON file; services are fetched live from SMMFollows
       const toPersist: DatabaseSchema = {
         ...this.data,
-        services: [],
+        services: this.data.services || [],
       };
       const jsonContent = JSON.stringify(toPersist, null, 2);
       try {
@@ -341,7 +377,7 @@ export class DatabaseService {
     const tempPath = `${this.filePath}.tmp.${Date.now()}`;
     const toPersist: DatabaseSchema = {
       ...this.data,
-      services: [],
+      services: this.data.services || [],
     };
     const jsonContent = JSON.stringify(toPersist, null, 2);
     try {
@@ -357,6 +393,78 @@ export class DatabaseService {
     } catch (writeErr) {
       fs.writeFileSync(this.filePath, jsonContent, 'utf8');
     }
+  }
+
+  // ================= PROVIDERS =================
+  public getProviders(): Provider[] {
+    if (!this.data.providers) {
+      this.data.providers = {};
+    }
+    return Object.values(this.data.providers);
+  }
+
+  public getProviderById(id: string): Provider | undefined {
+    if (!this.data.providers) return undefined;
+    const cleanId = id.toLowerCase().trim();
+    return this.data.providers[cleanId];
+  }
+
+  public async saveProvider(providerData: {
+    id?: string;
+    name: string;
+    apiUrl: string;
+    apiKey?: string;
+    status?: 'active' | 'disabled';
+    isDefault?: boolean;
+  }): Promise<Provider> {
+    if (!this.data.providers) {
+      this.data.providers = {};
+    }
+
+    const cleanName = providerData.name.trim();
+    let id = (providerData.id || cleanName.toLowerCase().replace(/[^a-z0-9]/g, '')).trim();
+    if (!id) id = `provider_${Date.now()}`;
+
+    const existing = this.data.providers[id];
+    let apiKey = providerData.apiKey;
+    if (!apiKey && existing) {
+      apiKey = existing.apiKey;
+    }
+
+    let cleanApiUrl = providerData.apiUrl.trim().replace(/\/+$/, '');
+    if (cleanApiUrl.endsWith('/api')) {
+      cleanApiUrl = `${cleanApiUrl}/v2`;
+    }
+
+    const provider: Provider = {
+      id,
+      name: cleanName,
+      apiUrl: cleanApiUrl,
+      apiKey: apiKey || '',
+      status: providerData.status || (existing?.status ?? 'active'),
+      isDefault: providerData.isDefault !== undefined ? providerData.isDefault : (existing?.isDefault ?? false),
+      createdAt: existing?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    this.data.providers[id] = provider;
+    await this.persist();
+    return provider;
+  }
+
+  public async deleteProvider(id: string): Promise<boolean> {
+    if (!this.data.providers) return false;
+    const cleanId = id.toLowerCase().trim();
+    if (!this.data.providers[cleanId]) return false;
+
+    // Do not allow deleting the last remaining provider
+    if (Object.keys(this.data.providers).length <= 1) {
+      throw new Error('Cannot delete the last remaining provider');
+    }
+
+    delete this.data.providers[cleanId];
+    await this.persist();
+    return true;
   }
 
   // ================= USERS =================
@@ -488,9 +596,14 @@ export class DatabaseService {
 
   // ================= SERVICES =================
   /**
-   * Asynchronously fetch services dynamically from SMMFollows with in-memory TTL caching
+   * Asynchronously fetch services dynamically from database or provider with caching
    */
   public async getServicesAsync(forceRefresh = false): Promise<ServiceItem[]> {
+    if (this.data.services && this.data.services.length > 0 && !forceRefresh) {
+      this.inMemoryServices = [...this.data.services];
+      return [...this.inMemoryServices];
+    }
+
     const isCacheValid =
       !forceRefresh &&
       this.inMemoryServices.length > 0 &&
@@ -506,18 +619,29 @@ export class DatabaseService {
 
     this.serviceFetchPromise = (async () => {
       try {
+        if (this.data.services && this.data.services.length > 0) {
+          this.inMemoryServices = [...this.data.services];
+          this.lastServiceFetchTime = Date.now();
+          return [...this.inMemoryServices];
+        }
+
         const smm = SMMFollowsService.getInstance();
         const rawServices = await smm.getServices();
         if (Array.isArray(rawServices) && rawServices.length > 0) {
-          this.inMemoryServices = this.transformRawServices(rawServices);
+          this.data.services = this.transformRawServices(rawServices, 'smmfollows');
+          this.inMemoryServices = [...this.data.services];
           this.lastServiceFetchTime = Date.now();
-          console.log(`✅ Loaded ${this.inMemoryServices.length} live services from SMMFollows`);
+          await this.persist();
+          console.log(`✅ Loaded ${this.inMemoryServices.length} live services into database`);
         }
         return [...this.inMemoryServices];
       } catch (err: any) {
-        console.error('Failed to fetch services from SMMFollows:', err.message);
+        console.error('Failed to fetch services:', err.message);
+        if (this.data.services && this.data.services.length > 0) {
+          this.inMemoryServices = [...this.data.services];
+          return [...this.inMemoryServices];
+        }
         if (this.inMemoryServices.length > 0) {
-          console.log('Serving from existing in-memory cache as fallback');
           return [...this.inMemoryServices];
         }
         return [];
@@ -539,28 +663,37 @@ export class DatabaseService {
   public async getServiceByIdAsync(id: string): Promise<ServiceItem | undefined> {
     const services = await this.getServicesAsync();
     const numId = Number(id);
-    return services.find((s) => s.id === id || (!isNaN(numId) && s.externalId === numId));
+    return services.find(
+      (s) => s.id === id || (!isNaN(numId) && s.externalId === numId) || s.id.endsWith(`_${id}`)
+    );
   }
 
-  public async getServiceByExternalIdAsync(externalId: number): Promise<ServiceItem | undefined> {
+  public async getServiceByExternalIdAsync(externalId: number, providerId?: string): Promise<ServiceItem | undefined> {
     const services = await this.getServicesAsync();
+    if (providerId) {
+      return services.find((s) => s.externalId === externalId && (s.provider || 'smmfollows') === providerId);
+    }
     return services.find((s) => s.externalId === externalId);
   }
 
   public getServiceById(id: string): ServiceItem | undefined {
     const numId = Number(id);
-    return this.inMemoryServices.find((s) => s.id === id || (!isNaN(numId) && s.externalId === numId));
+    return this.inMemoryServices.find(
+      (s) => s.id === id || (!isNaN(numId) && s.externalId === numId) || s.id.endsWith(`_${id}`)
+    );
   }
 
-  public getServiceByExternalId(externalId: number): ServiceItem | undefined {
+  public getServiceByExternalId(externalId: number, providerId?: string): ServiceItem | undefined {
+    if (providerId) {
+      return this.inMemoryServices.find((s) => s.externalId === externalId && (s.provider || 'smmfollows') === providerId);
+    }
     return this.inMemoryServices.find((s) => s.externalId === externalId);
   }
 
   /**
-   * Transform raw SMMFollows catalog items into full DigitalSMM ServiceItem objects,
-   * applying default markup and individual admin service overrides.
+   * Transform raw catalog items into full DigitalSMM ServiceItem objects
    */
-  private transformRawServices(rawServices: any[]): ServiceItem[] {
+  private transformRawServices(rawServices: any[], providerId: string = 'smmfollows'): ServiceItem[] {
     const defaultMarkup = Number(this.getSettingValue('default_markup_percent') || '30');
     const overrides = this.data.serviceOverrides || {};
     const items: ServiceItem[] = [];
@@ -570,8 +703,9 @@ export class DatabaseService {
       if (isNaN(externalId)) continue;
 
       const originalRate = parseFloat(raw.rate || '0');
-      const extKey = String(externalId);
-      const override = overrides[extKey];
+      const extKey = `${providerId}_${externalId}`;
+      const legacyKey = String(externalId);
+      const override = overrides[extKey] || overrides[legacyKey];
 
       let customRate: number;
       let markupPercent: number;
@@ -609,21 +743,23 @@ export class DatabaseService {
       const platform = this.detectPlatform(raw.category, raw.name);
 
       items.push({
-        id: String(externalId),
+        id: `${providerId}_${externalId}`,
         externalId,
+        provider: providerId,
         name: raw.name || `Service #${externalId}`,
         category: raw.category || 'General',
         platform,
         originalRate,
         customRate,
         markupPercent,
-        min: parseInt(raw.min || '10', 10),
-        max: parseInt(raw.max || '10000', 10),
+        min: parseInt(String(raw.min || '10'), 10),
+        max: parseInt(String(raw.max || '10000'), 10),
         type: raw.type || 'Default',
         isActive,
         dripfeed: Boolean(raw.dripfeed),
         refill: override?.refill !== undefined ? Boolean(override.refill) : this.detectRefill(raw),
         cancel: override?.cancel !== undefined ? Boolean(override.cancel) : this.detectCancel(raw),
+        description: raw.desc || raw.description || raw.details || raw.info || raw.service_description || '',
         updatedAt: override?.updatedAt || new Date().toISOString(),
       });
     }
@@ -642,23 +778,166 @@ export class DatabaseService {
     return { count: this.inMemoryServices.length };
   }
 
+  public async importServicesFromProvider(options: {
+    providerId: string;
+    mode: 'all' | 'category' | 'selected' | 'single';
+    category?: string;
+    serviceIds?: (number | string)[];
+    markupPercent?: number;
+    fixedIncrease?: number;
+    isActive?: boolean;
+  }): Promise<{ importedCount: number; updatedCount: number; totalCount: number }> {
+    await this.getServicesAsync();
+    const providerService = ProviderService.getInstance();
+    const rawServices = await providerService.getServices(options.providerId);
+
+    if (!Array.isArray(rawServices) || rawServices.length === 0) {
+      throw new Error(`No services returned from provider "${options.providerId}"`);
+    }
+
+    const defaultMarkup = options.markupPercent !== undefined
+      ? options.markupPercent
+      : Number(this.getSettingValue('default_markup_percent') || '30');
+
+    let filtered = rawServices;
+    if (options.mode === 'category' && options.category && options.category !== 'All') {
+      const catTarget = options.category.toLowerCase().trim();
+      filtered = rawServices.filter(
+        (r) => (r.category || '').toLowerCase().trim() === catTarget
+      );
+    } else if ((options.mode === 'selected' || options.mode === 'single') && options.serviceIds && options.serviceIds.length > 0) {
+      const idSet = new Set(options.serviceIds.map(String));
+      filtered = rawServices.filter((r) => idSet.has(String(r.service)));
+    }
+
+    if (filtered.length === 0) {
+      throw new Error('No matching services found to import with specified criteria');
+    }
+
+    if (!this.data.services) {
+      this.data.services = [];
+    }
+
+    let importedCount = 0;
+    let updatedCount = 0;
+
+    for (const raw of filtered) {
+      const externalId = Number(raw.service);
+      if (isNaN(externalId)) continue;
+
+      const originalRate = parseFloat(raw.rate || '0');
+      let customRate: number;
+      let markupPercent = defaultMarkup;
+
+      if (options.fixedIncrease !== undefined && options.fixedIncrease > 0) {
+        customRate = Number((originalRate + options.fixedIncrease).toFixed(4));
+        markupPercent = originalRate > 0
+          ? Number((((customRate - originalRate) / originalRate) * 100).toFixed(2))
+          : 0;
+      } else {
+        customRate = Number((originalRate * (1 + markupPercent / 100)).toFixed(4));
+      }
+
+      const platform = this.detectPlatform(raw.category, raw.name);
+      const serviceUid = `${options.providerId}_${externalId}`;
+
+      const existingIdx = this.data.services.findIndex(
+        (s) => (s.provider === options.providerId && s.externalId === externalId) || s.id === serviceUid
+      );
+
+      const item: ServiceItem = {
+        id: serviceUid,
+        externalId,
+        provider: options.providerId,
+        name: raw.name || `Service #${externalId}`,
+        category: raw.category || 'General',
+        platform,
+        originalRate,
+        customRate,
+        markupPercent,
+        min: parseInt(String(raw.min || '10'), 10),
+        max: parseInt(String(raw.max || '10000'), 10),
+        type: raw.type || 'Default',
+        isActive: options.isActive !== undefined ? options.isActive : true,
+        dripfeed: Boolean(raw.dripfeed),
+        refill: this.detectRefill(raw),
+        cancel: this.detectCancel(raw),
+        description: raw.desc || raw.description || raw.details || raw.info || raw.service_description || '',
+        updatedAt: new Date().toISOString(),
+      };
+
+      if (existingIdx !== -1) {
+        this.data.services[existingIdx] = {
+          ...this.data.services[existingIdx],
+          ...item,
+        };
+        updatedCount++;
+      } else {
+        this.data.services.push(item);
+        importedCount++;
+      }
+    }
+
+    this.inMemoryServices = [...this.data.services];
+    this.lastServiceFetchTime = Date.now();
+    await this.persist();
+
+    return {
+      importedCount,
+      updatedCount,
+      totalCount: this.data.services.length,
+    };
+  }
+
+  public async deleteService(id: string): Promise<boolean> {
+    await this.getServicesAsync();
+    if (!this.data.services) this.data.services = [];
+    const numId = Number(id);
+    const initialLen = this.data.services.length;
+    this.data.services = this.data.services.filter(
+      (s) => s.id !== id && (!isNaN(numId) ? s.externalId !== numId : true) && !s.id.endsWith(`_${id}`)
+    );
+    this.inMemoryServices = [...this.data.services];
+    if (this.data.services.length !== initialLen) {
+      await this.persist();
+      return true;
+    }
+    return false;
+  }
+
+  public async bulkDeleteServices(ids: string[]): Promise<number> {
+    await this.getServicesAsync();
+    if (!this.data.services) this.data.services = [];
+    const idSet = new Set(ids.map(String));
+    const initialLen = this.data.services.length;
+    this.data.services = this.data.services.filter(
+      (s) => !idSet.has(s.id) && !idSet.has(String(s.externalId))
+    );
+    const deletedCount = initialLen - this.data.services.length;
+    this.inMemoryServices = [...this.data.services];
+    if (deletedCount > 0) {
+      await this.persist();
+    }
+    return deletedCount;
+  }
+
   public async updateService(id: string, updates: Partial<ServiceItem>): Promise<ServiceItem | null> {
     await this.getServicesAsync();
     const numId = Number(id);
-    const target = this.inMemoryServices.find((s) => s.id === id || (!isNaN(numId) && s.externalId === numId));
+    const target = this.inMemoryServices.find((s) => s.id === id || (!isNaN(numId) && s.externalId === numId) || s.id.endsWith(`_${id}`));
     if (!target) return null;
 
-    const extKey = String(target.externalId);
+    const extKey = target.id;
+    const legacyKey = String(target.externalId);
     if (!this.data.serviceOverrides) {
       this.data.serviceOverrides = {};
     }
-    const currentOverride = this.data.serviceOverrides[extKey] || {};
+    const currentOverride = this.data.serviceOverrides[extKey] || this.data.serviceOverrides[legacyKey] || {};
 
     let customRate = updates.customRate !== undefined ? Number(updates.customRate) : target.customRate;
     let markupPercent = updates.markupPercent !== undefined ? Number(updates.markupPercent) : target.markupPercent;
     let isActive = updates.isActive !== undefined ? Boolean(updates.isActive) : target.isActive;
 
-    // If customRate was explicitly provided without markupPercent, compute markupPercent based on originalRate
     if (updates.customRate !== undefined && updates.markupPercent === undefined && target.originalRate > 0) {
       markupPercent = Number((((customRate - target.originalRate) / target.originalRate) * 100).toFixed(2));
     } else if (updates.markupPercent !== undefined && updates.customRate === undefined) {
@@ -677,6 +956,16 @@ export class DatabaseService {
     target.markupPercent = markupPercent;
     target.isActive = isActive;
     target.updatedAt = new Date().toISOString();
+
+    if (this.data.services) {
+      const dbItem = this.data.services.find(s => s.id === target.id);
+      if (dbItem) {
+        dbItem.customRate = customRate;
+        dbItem.markupPercent = markupPercent;
+        dbItem.isActive = isActive;
+        dbItem.updatedAt = new Date().toISOString();
+      }
+    }
 
     await this.persist();
     return target;

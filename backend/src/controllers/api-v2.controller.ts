@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { DatabaseService } from '../services/db.service';
 import { OrdersController } from './orders.controller';
 import { SMMFollowsService } from '../services/smmfollows.service';
+import { ProviderService } from '../services/provider.service';
 
 /**
  * Standard SMM Panel API v2 endpoint for resellers & automated bots
@@ -94,8 +95,9 @@ export class ApiV2Controller {
         }
 
         let providerResult;
+        const providerId = service.provider || 'smmfollows';
         try {
-          providerResult = await smm.addOrder({
+          providerResult = await ProviderService.getInstance().addOrder(providerId, {
             service: service.externalId,
             link,
             quantity,
@@ -130,6 +132,7 @@ export class ApiV2Controller {
           username: user.username,
           serviceId: service.id,
           externalServiceId: service.externalId,
+          provider: providerId,
           externalOrderId: providerResult.order,
           serviceName: service.name,
           category: service.category,

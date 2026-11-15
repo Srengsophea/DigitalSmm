@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { DatabaseService } from '../services/db.service';
 import { SMMFollowsService } from '../services/smmfollows.service';
+import { ProviderService } from '../services/provider.service';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { OrderStatus } from '../models/types';
 
@@ -64,10 +65,12 @@ export class OrdersController {
       return;
     }
 
-    // 2. Dispatch to SMMFollows provider API BEFORE deducting any funds
+    // 2. Dispatch to provider API BEFORE deducting any funds
+    const providerId = service.provider || 'smmfollows';
+    const providerService = ProviderService.getInstance();
     let providerResult;
     try {
-      providerResult = await smm.addOrder({
+      providerResult = await providerService.addOrder(providerId, {
         service: service.externalId,
         link,
         quantity,
@@ -86,11 +89,11 @@ export class OrdersController {
     // 3. Handle provider rejection: ZERO FUNDS ARE DEBITED!
     if (!providerResult || !providerResult.order) {
       const errorMsg = providerResult?.error || 'Provider rejected order';
-      console.warn(`SMMFollows order dispatch rejected: ${errorMsg}`);
+      console.warn(`[${providerId}] order dispatch rejected: ${errorMsg}`);
 
       await db.logAudit(
         'ORDER_REJECTED',
-        `Order for "${service.name.slice(0, 30)}" rejected by provider (${errorMsg}). No funds deducted from ${req.user.username}.`,
+        `Order for "${service.name.slice(0, 30)}" rejected by ${providerId} (${errorMsg}). No funds deducted from ${req.user.username}.`,
         req.ip || '127.0.0.1',
         req.user.id,
         req.user.username
@@ -116,7 +119,7 @@ export class OrdersController {
     if (!debitResult.success) {
       // Extremely rare race condition (concurrent order drained balance during provider call)
       try {
-        await smm.cancelOrders([providerResult.order]);
+        await providerService.cancelOrders(providerId, [providerResult.order]);
       } catch (_) {}
       res.status(400).json({
         success: false,
@@ -133,6 +136,7 @@ export class OrdersController {
       username: req.user.username,
       serviceId: service.id,
       externalServiceId: service.externalId,
+      provider: providerId,
       externalOrderId: providerResult.order,
       serviceName: service.name,
       category: service.category,
@@ -157,7 +161,7 @@ export class OrdersController {
 
     await db.logAudit(
       'ORDER_PLACED',
-      `Order #${localOrder.id.slice(0, 8)} placed on SMMFollows (#${providerResult.order}) for $${charge}`,
+      `Order #${localOrder.id.slice(0, 8)} placed on ${providerId} (#${providerResult.order}) for $${charge}`,
       req.ip || '127.0.0.1',
       req.user.id,
       req.user.username
@@ -313,28 +317,38 @@ export class OrdersController {
     const smm = SMMFollowsService.getInstance();
     let orders = db.getOrdersByUserId(req.user.id);
 
-    // Auto-sync live status from SMMFollows provider for active orders on reload/fetch
+    // Auto-sync live status from upstream provider for active orders on reload/fetch
     const activeOrders = orders.filter(
       (o) => o.externalOrderId && !['COMPLETED', 'CANCELED'].includes(o.status)
     );
 
     if (activeOrders.length > 0) {
       try {
-        const extIds = activeOrders.map((o) => o.externalOrderId as string | number);
-        // Process in chunks of 50 to avoid URL length issues with the provider
-        for (let i = 0; i < extIds.length; i += 50) {
-          const chunk = extIds.slice(i, i + 50);
-          const multiStatus = await smm.getMultipleOrdersStatus(chunk);
-          if (multiStatus && typeof multiStatus === 'object') {
-            for (const order of activeOrders) {
-              const extId = order.externalOrderId!.toString();
-              const statusRes = multiStatus[extId];
-              if (statusRes && !statusRes.error && statusRes.status) {
-                const updated = await OrdersController.processOrderStatusUpdate(order, statusRes);
-                if (updated) {
-                  const idx = orders.findIndex((o) => o.id === order.id);
-                  if (idx !== -1) {
-                    orders[idx] = updated;
+        const providerService = ProviderService.getInstance();
+        // Group active orders by provider
+        const byProvider = new Map<string, typeof activeOrders>();
+        for (const ord of activeOrders) {
+          const pid = ord.provider || 'smmfollows';
+          if (!byProvider.has(pid)) byProvider.set(pid, []);
+          byProvider.get(pid)!.push(ord);
+        }
+
+        for (const [pid, pOrders] of byProvider.entries()) {
+          const extIds = pOrders.map((o) => o.externalOrderId as string | number);
+          for (let i = 0; i < extIds.length; i += 50) {
+            const chunk = extIds.slice(i, i + 50);
+            const multiStatus = await providerService.getMultipleOrdersStatus(pid, chunk);
+            if (multiStatus && typeof multiStatus === 'object') {
+              for (const order of pOrders) {
+                const extId = order.externalOrderId!.toString();
+                const statusRes = multiStatus[extId];
+                if (statusRes && !statusRes.error && statusRes.status) {
+                  const updated = await OrdersController.processOrderStatusUpdate(order, statusRes);
+                  if (updated) {
+                    const idx = orders.findIndex((o) => o.id === order.id);
+                    if (idx !== -1) {
+                      orders[idx] = updated;
+                    }
                   }
                 }
               }
@@ -427,7 +441,8 @@ export class OrdersController {
     }
 
     try {
-      const statusRes = await smm.getOrderStatus(order.externalOrderId);
+      const pid = order.provider || 'smmfollows';
+      const statusRes = await ProviderService.getInstance().getOrderStatus(pid, order.externalOrderId);
 
       if (statusRes.error) {
         res.status(400).json({ success: false, error: statusRes.error });
@@ -568,7 +583,8 @@ export class OrdersController {
     }
 
     try {
-      const refillResult = await smm.refillOrder(order.externalOrderId);
+      const pid = order.provider || 'smmfollows';
+      const refillResult = await ProviderService.getInstance().refillOrder(pid, order.externalOrderId);
 
       if (refillResult.error) {
         res.status(400).json({ success: false, error: refillResult.error });
@@ -577,7 +593,7 @@ export class OrdersController {
 
       await db.logAudit(
         'ORDER_REFILL',
-        `Refill requested for order #${order.id.slice(0, 8)} (refill #${refillResult.refill})`,
+        `Refill requested for order #${order.id.slice(0, 8)} on ${pid} (refill #${refillResult.refill})`,
         req.ip || '127.0.0.1',
         req.user.id,
         req.user.username
@@ -594,7 +610,7 @@ export class OrdersController {
   }
 
   /**
-   * Request cancellation for an order on SMMFollows
+   * Request cancellation for an order
    */
   public static async cancelOrder(req: AuthenticatedRequest, res: Response): Promise<void> {
     if (!req.user) {
@@ -603,7 +619,6 @@ export class OrdersController {
     }
 
     const db = DatabaseService.getInstance();
-    const smm = SMMFollowsService.getInstance();
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 
     const order = db.getOrderById(id);
@@ -623,7 +638,8 @@ export class OrdersController {
     }
 
     try {
-      const cancelResult = await smm.cancelOrders([order.externalOrderId]);
+      const pid = order.provider || 'smmfollows';
+      const cancelResult = await ProviderService.getInstance().cancelOrders(pid, [order.externalOrderId]);
 
       if (Array.isArray(cancelResult) && cancelResult.length > 0) {
         const item = cancelResult[0];

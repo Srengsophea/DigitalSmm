@@ -32,11 +32,17 @@ import {
   ChevronRight,
   Server,
   Zap,
+  DownloadCloud,
+  Trash2,
+  Layers,
+  Globe,
 } from 'lucide-react';
+import { ImportServicesModal } from './ImportServicesModal';
 
 interface ServiceItem {
   id: string;
   externalId: number;
+  provider?: string;
   name: string;
   category: string;
   platform: string;
@@ -72,11 +78,13 @@ export const AdminDashboard: React.FC = () => {
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [isLoadingServices, setIsLoadingServices] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   // Filters & Search for Services
   const [searchQuery, setSearchQuery] = useState('');
   const [filterPlatform, setFilterPlatform] = useState('All');
   const [filterCategory, setFilterCategory] = useState('All');
+  const [filterProvider, setFilterProvider] = useState('All');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'disabled'>('all');
   const [sortOption, setSortOption] = useState<'id_asc' | 'id_desc' | 'rate_asc' | 'rate_desc' | 'profit_desc'>('id_asc');
   const [currentPage, setCurrentPage] = useState(1);
@@ -109,23 +117,30 @@ export const AdminDashboard: React.FC = () => {
   const [adjustReason, setAdjustReason] = useState<string>('Promotional bonus credit');
   const [isAdjustingBalance, setIsAdjustingBalance] = useState(false);
 
-  // Provider Settings State
+  // Multi-Provider Management State
+  const [providersList, setProvidersList] = useState<any[]>([]);
   const [newApiKey, setNewApiKey] = useState('');
   const [newApiUrl, setNewApiUrl] = useState('');
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [isAddingProvider, setIsAddingProvider] = useState(false);
+  const [createProvName, setCreateProvName] = useState('');
+  const [createProvUrl, setCreateProvUrl] = useState('');
+  const [createProvKey, setCreateProvKey] = useState('');
 
   // 1. Fetch High Level Analytics & Settings
   const fetchStatsAndMeta = async () => {
     setIsLoadingStats(true);
     try {
-      const [statsRes, settingsRes, usersRes, auditRes] = await Promise.all([
+      const [statsRes, settingsRes, usersRes, auditRes, provRes] = await Promise.all([
         api.admin.getStats().catch(() => null),
         api.admin.getSettings().catch(() => null),
         api.admin.getAllUsers().catch(() => null),
         api.admin.getAuditLogs().catch(() => null),
+        api.admin.getProviders().catch(() => null),
       ]);
 
       if (statsRes?.success) setStats(statsRes.stats);
+      if (provRes?.success) setProvidersList(provRes.providers || []);
       if (settingsRes?.success) {
         setSettings(settingsRes.settings);
         setNewApiUrl(settingsRes.settings.smmfollows_api_url || '');
@@ -186,6 +201,11 @@ export const AdminDashboard: React.FC = () => {
       result = result.filter((s) => s.category.toLowerCase().includes(filterCategory.toLowerCase()));
     }
 
+    // Provider
+    if (filterProvider !== 'All') {
+      result = result.filter((s) => (s.provider || 'smmfollows').toLowerCase() === filterProvider.toLowerCase());
+    }
+
     // Status
     if (filterStatus === 'active') {
       result = result.filter((s) => s.isActive);
@@ -208,7 +228,7 @@ export const AdminDashboard: React.FC = () => {
     });
 
     return result;
-  }, [services, searchQuery, filterPlatform, filterCategory, filterStatus, sortOption]);
+  }, [services, searchQuery, filterPlatform, filterCategory, filterProvider, filterStatus, sortOption]);
 
   // Pagination Slice
   const totalPages = Math.ceil(filteredServices.length / pageSize) || 1;
@@ -422,6 +442,86 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  // Delete single service
+  const handleDeleteService = async (serviceId: string) => {
+    if (!window.confirm(`Are you sure you want to delete service #${serviceId} from your active catalog?`)) {
+      return;
+    }
+    try {
+      const res = await api.admin.deleteService(serviceId);
+      if (res?.success) {
+        showToast(res.message || 'Service deleted from catalog', 'success');
+        setServices((prev) => prev.filter((s) => s.id !== serviceId && String(s.externalId) !== serviceId));
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Failed to delete service', 'error');
+    }
+  };
+
+  // Bulk delete selected services
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`Delete ${selectedIds.length} selected services from your active catalog?`)) {
+      return;
+    }
+    setIsBulkActionLoading(true);
+    try {
+      const res = await api.admin.bulkDeleteServices(selectedIds);
+      if (res?.success) {
+        showToast(res.message || `Deleted ${res.count} services`, 'success');
+        const idSet = new Set(selectedIds);
+        setServices((prev) => prev.filter((s) => !idSet.has(s.id)));
+        setSelectedIds([]);
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Bulk delete failed', 'error');
+    } finally {
+      setIsBulkActionLoading(false);
+    }
+  };
+
+  // Add Provider
+  const handleAddProviderSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!createProvName.trim() || !createProvUrl.trim() || !createProvKey.trim()) {
+      showToast('Please fill all provider fields', 'error');
+      return;
+    }
+    setIsAddingProvider(true);
+    try {
+      const res = await api.admin.addProvider({
+        name: createProvName.trim(),
+        apiUrl: createProvUrl.trim(),
+        apiKey: createProvKey.trim(),
+      });
+      if (res?.success) {
+        showToast(res.message || 'Provider added successfully!', 'success');
+        setCreateProvName('');
+        setCreateProvUrl('');
+        setCreateProvKey('');
+        await fetchStatsAndMeta();
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Failed to add provider', 'error');
+    } finally {
+      setIsAddingProvider(false);
+    }
+  };
+
+  // Delete Provider
+  const handleDeleteProvider = async (provId: string) => {
+    if (!window.confirm(`Are you sure you want to remove provider "${provId}"?`)) return;
+    try {
+      const res = await api.admin.deleteProvider(provId);
+      if (res?.success) {
+        showToast(res.message || 'Provider removed', 'success');
+        await fetchStatsAndMeta();
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Failed to delete provider', 'error');
+    }
+  };
+
   // Adjust User Balance
   const handleSaveUserBalance = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -516,11 +616,27 @@ export const AdminDashboard: React.FC = () => {
           <button
             type="button"
             className="btn-admin-primary"
+            onClick={() => setIsImportModalOpen(true)}
+            style={{
+              background: 'linear-gradient(135deg, #0284c7, #2563eb)',
+              color: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            <DownloadCloud size={15} />
+            Import Services
+          </button>
+
+          <button
+            type="button"
+            className="btn-admin-secondary"
             onClick={handleForceSync}
             disabled={isSyncing}
           >
             <Zap size={15} className={isSyncing ? 'spin' : ''} />
-            {isSyncing ? 'Syncing Catalog...' : 'Force Sync SMMFollows'}
+            {isSyncing ? 'Syncing...' : 'Sync SMMFollows'}
           </button>
         </div>
       </div>
@@ -561,18 +677,30 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* SMMFollows Provider Live Balance */}
+        {/* Providers Live Balance */}
         <div className="admin-kpi-card">
           <div className="admin-kpi-top">
-            <span className="admin-kpi-label">SMMFollows Live Balance</span>
+            <span className="admin-kpi-label">Live Provider Balances</span>
             <div className="admin-kpi-icon amber"><Server size={20} /></div>
           </div>
-          <div className="admin-kpi-value" style={{ color: '#d97706' }}>
-            ${stats?.provider?.balance || '0.00'} USD
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
+            {stats?.providers?.map((pr: any) => (
+              <div key={pr.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: pr.id === 'smmpwr' ? '#8b5cf6' : '#0284c7' }}>
+                  {pr.name}:
+                </span>
+                <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#d97706', fontSize: '0.95rem' }}>
+                  ${pr.balance} {pr.currency}
+                </span>
+              </div>
+            )) || (
+              <div className="admin-kpi-value" style={{ color: '#d97706' }}>
+                ${stats?.provider?.balance || '0.00'} USD
+              </div>
+            )}
           </div>
-          <div className="admin-kpi-sub" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#16a34a', display: 'inline-block' }}></span>
-            API Connected & Healthy
+          <div className="admin-kpi-sub" style={{ marginTop: 6 }}>
+            {providersList.length} Connected Upstream Gateways
           </div>
         </div>
 
@@ -692,12 +820,37 @@ export const AdminDashboard: React.FC = () => {
                 <button
                   type="button"
                   className="btn-admin-secondary btn-admin-sm"
+                  onClick={handleBulkDelete}
+                  disabled={isBulkActionLoading}
+                  style={{ color: '#ef4444' }}
+                >
+                  <Trash2 size={13} color="#ef4444" /> Delete
+                </button>
+                <button
+                  type="button"
+                  className="btn-admin-secondary btn-admin-sm"
                   onClick={() => setSelectedIds([])}
                 >
                   Clear
                 </button>
               </div>
             )}
+
+            <button
+              type="button"
+              className="btn-admin-primary btn-admin-sm"
+              onClick={() => setIsImportModalOpen(true)}
+              style={{
+                marginLeft: 'auto',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                background: 'linear-gradient(135deg, #0284c7, #2563eb)',
+                color: '#fff',
+              }}
+            >
+              <DownloadCloud size={14} /> Import Services from Provider
+            </button>
           </div>
 
           <div className="admin-panel-body">
@@ -748,6 +901,21 @@ export const AdminDashboard: React.FC = () => {
                 {categories.map((c) => (
                   <option key={c} value={c}>
                     {c.length > 32 ? c.substring(0, 32) + '...' : c}
+                  </option>
+                ))}
+              </select>
+
+              {/* Provider Selector */}
+              <select
+                className="admin-select"
+                value={filterProvider}
+                onChange={(e) => setFilterProvider(e.target.value)}
+                style={{ maxWidth: 170, fontWeight: 700 }}
+              >
+                <option value="All">All Providers</option>
+                {providersList.map((pr) => (
+                  <option key={pr.id} value={pr.id}>
+                    {pr.name} ({pr.id.toUpperCase()})
                   </option>
                 ))}
               </select>
@@ -870,6 +1038,20 @@ export const AdminDashboard: React.FC = () => {
                               >
                                 {service.platform}
                               </span>
+                              <span
+                                style={{
+                                  fontSize: '0.68rem',
+                                  fontWeight: 800,
+                                  padding: '2px 6px',
+                                  borderRadius: 4,
+                                  textTransform: 'uppercase',
+                                  background: (service.provider === 'smmpwr' ? '#8b5cf6' : '#0284c7') + '22',
+                                  color: service.provider === 'smmpwr' ? '#a855f7' : '#0284c7',
+                                  border: `1px solid ${service.provider === 'smmpwr' ? '#8b5cf6' : '#0284c7'}44`,
+                                }}
+                              >
+                                {service.provider || 'smmfollows'}
+                              </span>
                               <span style={{ fontSize: '0.76rem', color: '#94a3b8' }}>
                                 {service.category}
                               </span>
@@ -916,8 +1098,8 @@ export const AdminDashboard: React.FC = () => {
                             </label>
                           </td>
 
-                          {/* Edit Action Button */}
-                          <td style={{ textAlign: 'right' }}>
+                          {/* Edit & Delete Action Buttons */}
+                          <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                             <button
                               type="button"
                               className="btn-admin-secondary btn-admin-sm"
@@ -925,7 +1107,16 @@ export const AdminDashboard: React.FC = () => {
                               title="Set profit margin percentage or fixed selling price"
                             >
                               <Edit3 size={13} color="#162399" />
-                              Edit Price
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-admin-secondary btn-admin-sm"
+                              onClick={() => handleDeleteService(service.id)}
+                              title="Delete service from catalog"
+                              style={{ marginLeft: 6, color: '#ef4444' }}
+                            >
+                              <Trash2 size={13} color="#ef4444" />
                             </button>
                           </td>
                         </tr>
@@ -1286,94 +1477,153 @@ export const AdminDashboard: React.FC = () => {
       )}
 
       {/* =========================================================================
-          TAB 4: PROVIDER API & SECURITY
+          TAB 4: MULTI-PROVIDER API & SECURITY
           ========================================================================= */}
       {activeTab === 'provider' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 24 }}>
-          {/* SMMFollows API Connection Card */}
-          <div className="admin-panel-card">
-            <div className="admin-panel-header">
-              <h3><Server size={18} color="#162399" /> SMMFollows Provider Connection</h3>
-            </div>
-            <div className="admin-panel-body">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, fontSize: '0.88rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `1px solid ${isDark ? '#334155' : '#f1f5f9'}`, paddingBottom: 10 }}>
-                  <span style={{ color: isDark ? '#94a3b8' : '#64748b' }}>Provider:</span>
-                  <strong>SMMFollows.com API v2</strong>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `1px solid ${isDark ? '#334155' : '#f1f5f9'}`, paddingBottom: 10 }}>
-                  <span style={{ color: isDark ? '#94a3b8' : '#64748b' }}>API Endpoint:</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: isDark ? '#cbd5e1' : '#334155' }}>
-                    {settings?.smmfollows_api_url}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          {/* Active Providers Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 20 }}>
+            {providersList.map((pr) => (
+              <div key={pr.id} className="admin-panel-card" style={{ margin: 0 }}>
+                <div className="admin-panel-header">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <Server size={18} color={pr.id === 'smmpwr' ? '#8b5cf6' : '#0284c7'} />
+                    <h3 style={{ margin: 0 }}>{pr.name} Gateway</h3>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: '0.74rem',
+                      fontWeight: 800,
+                      padding: '3px 8px',
+                      borderRadius: 6,
+                      background: pr.liveStatus === 'error' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                      color: pr.liveStatus === 'error' ? '#ef4444' : '#10b981',
+                    }}
+                  >
+                    {pr.liveStatus === 'error' ? 'ERROR' : 'ACTIVE'}
                   </span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `1px solid ${isDark ? '#334155' : '#f1f5f9'}`, paddingBottom: 10 }}>
-                  <span style={{ color: isDark ? '#94a3b8' : '#64748b' }}>Active Key:</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: isDark ? '#cbd5e1' : '#334155' }}>
-                    {settings?.smmfollows_api_key_masked || '••••••••••••••••••••'}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `1px solid ${isDark ? '#334155' : '#f1f5f9'}`, paddingBottom: 10 }}>
-                  <span style={{ color: isDark ? '#94a3b8' : '#64748b' }}>Key Encryption:</span>
-                  <span style={{ color: '#16a34a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Lock size={12} /> AES-256-GCM Secure Vault
-                  </span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 4 }}>
-                  <span style={{ color: isDark ? '#94a3b8' : '#64748b' }}>Live Provider Balance:</span>
-                  <strong style={{ color: '#d97706', fontFamily: 'var(--font-mono)', fontSize: '1rem' }}>
-                    ${stats?.provider?.balance || '0.00'} USD
-                  </strong>
+                <div className="admin-panel-body">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: '0.86rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `1px solid ${isDark ? '#334155' : '#f1f5f9'}`, paddingBottom: 8 }}>
+                      <span style={{ color: isDark ? '#94a3b8' : '#64748b' }}>Provider ID:</span>
+                      <strong style={{ textTransform: 'uppercase', fontFamily: 'monospace' }}>{pr.id}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `1px solid ${isDark ? '#334155' : '#f1f5f9'}`, paddingBottom: 8 }}>
+                      <span style={{ color: isDark ? '#94a3b8' : '#64748b' }}>API Endpoint:</span>
+                      <span style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: isDark ? '#cbd5e1' : '#334155' }}>
+                        {pr.apiUrl}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `1px solid ${isDark ? '#334155' : '#f1f5f9'}`, paddingBottom: 8 }}>
+                      <span style={{ color: isDark ? '#94a3b8' : '#64748b' }}>API Key:</span>
+                      <span style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: isDark ? '#cbd5e1' : '#334155' }}>
+                        {pr.apiKeyMasked}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `1px solid ${isDark ? '#334155' : '#f1f5f9'}`, paddingBottom: 8 }}>
+                      <span style={{ color: isDark ? '#94a3b8' : '#64748b' }}>Key Security:</span>
+                      <span style={{ color: '#16a34a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.78rem' }}>
+                        <Lock size={12} /> AES-256-GCM Secure Vault
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 4 }}>
+                      <span style={{ color: isDark ? '#94a3b8' : '#64748b' }}>Live Provider Balance:</span>
+                      <strong style={{ color: '#d97706', fontFamily: 'monospace', fontSize: '1.1rem' }}>
+                        ${pr.balance} {pr.currency}
+                      </strong>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                      <button
+                        type="button"
+                        className="btn-admin-primary btn-admin-sm"
+                        onClick={() => setIsImportModalOpen(true)}
+                        style={{
+                          flex: 1,
+                          justifyContent: 'center',
+                          background: pr.id === 'smmpwr' ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : undefined,
+                        }}
+                      >
+                        <DownloadCloud size={14} /> Import Services
+                      </button>
+                      {!pr.isDefault && (
+                        <button
+                          type="button"
+                          className="btn-admin-secondary btn-admin-sm"
+                          onClick={() => handleDeleteProvider(pr.id)}
+                          style={{ color: '#ef4444' }}
+                          title="Remove Provider"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+            ))}
 
-          {/* Update API Key / URL Form */}
-          <div className="admin-panel-card">
-            <div className="admin-panel-header">
-              <h3><Lock size={18} color="#0284c7" /> Update Provider Credentials</h3>
-            </div>
-            <div className="admin-panel-body">
-              <form onSubmit={handleSaveSettings}>
-                <div style={{ marginBottom: 14 }}>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 6, color: isDark ? '#cbd5e1' : '#334155' }}>
-                    SMMFollows API Endpoint URL
-                  </label>
-                  <input
-                    type="url"
-                    className="form-input"
-                    style={{ width: '100%', height: 40, padding: '8px 12px', border: isDark ? '1px solid #334155' : '1px solid #cbd5e1', borderRadius: 8 }}
-                    value={newApiUrl}
-                    onChange={(e) => setNewApiUrl(e.target.value)}
-                    placeholder="https://smmfollows.com/api/v2"
-                  />
-                </div>
-
-                <div style={{ marginBottom: 18 }}>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 6, color: isDark ? '#cbd5e1' : '#334155' }}>
-                    New SMMFollows API Key (leave empty to keep current)
-                  </label>
-                  <input
-                    type="password"
-                    className="form-input"
-                    style={{ width: '100%', height: 40, padding: '8px 12px', border: isDark ? '1px solid #334155' : '1px solid #cbd5e1', borderRadius: 8 }}
-                    value={newApiKey}
-                    onChange={(e) => setNewApiKey(e.target.value)}
-                    placeholder="Enter new API key..."
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="btn-admin-primary"
-                  style={{ width: '100%', justifyContent: 'center' }}
-                  disabled={isSavingSettings}
-                >
-                  <Lock size={15} />
-                  {isSavingSettings ? 'Encrypting & Saving...' : 'Save & Encrypt Credentials'}
-                </button>
-              </form>
+            {/* Add New SMM Provider Card */}
+            <div className="admin-panel-card" style={{ margin: 0 }}>
+              <div className="admin-panel-header">
+                <h3><Plus size={18} color="#16a34a" /> Add New SMM Provider</h3>
+              </div>
+              <div className="admin-panel-body">
+                <form onSubmit={handleAddProviderSubmit}>
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, marginBottom: 4, color: isDark ? '#cbd5e1' : '#334155' }}>
+                      Provider Name (e.g. SMMPWR, SMMKing)
+                    </label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      style={{ width: '100%', height: 38, padding: '6px 10px', borderRadius: 8, border: isDark ? '1px solid #334155' : '1px solid #cbd5e1' }}
+                      value={createProvName}
+                      onChange={(e) => setCreateProvName(e.target.value)}
+                      placeholder="SMMPWR"
+                      required
+                    />
+                  </div>
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, marginBottom: 4, color: isDark ? '#cbd5e1' : '#334155' }}>
+                      API URL (v2 endpoint)
+                    </label>
+                    <input
+                      type="url"
+                      className="form-input"
+                      style={{ width: '100%', height: 38, padding: '6px 10px', borderRadius: 8, border: isDark ? '1px solid #334155' : '1px solid #cbd5e1' }}
+                      value={createProvUrl}
+                      onChange={(e) => setCreateProvUrl(e.target.value)}
+                      placeholder="https://smmpwr.com/api/v2"
+                      required
+                    />
+                  </div>
+                  <div style={{ marginBottom: 16 }}>
+                    <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, marginBottom: 4, color: isDark ? '#cbd5e1' : '#334155' }}>
+                      API Key
+                    </label>
+                    <input
+                      type="password"
+                      className="form-input"
+                      style={{ width: '100%', height: 38, padding: '6px 10px', borderRadius: 8, border: isDark ? '1px solid #334155' : '1px solid #cbd5e1' }}
+                      value={createProvKey}
+                      onChange={(e) => setCreateProvKey(e.target.value)}
+                      placeholder="Enter provider API key"
+                      required
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="btn-admin-primary"
+                    style={{ width: '100%', justifyContent: 'center' }}
+                    disabled={isAddingProvider}
+                  >
+                    <Plus size={15} />
+                    {isAddingProvider ? 'Connecting & Saving...' : 'Add & Connect Provider'}
+                  </button>
+                </form>
+              </div>
             </div>
           </div>
         </div>
@@ -1740,6 +1990,16 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Selective & Category Import Modal */}
+      <ImportServicesModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImportSuccess={() => {
+          fetchServices();
+          fetchStatsAndMeta();
+        }}
+      />
     </div>
   );
 };

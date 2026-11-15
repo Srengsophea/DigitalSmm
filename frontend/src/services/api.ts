@@ -390,6 +390,73 @@ export const api = {
       });
       return handleResponse<any>(res);
     },
+    async deleteService(id: string) {
+      const res = await fetch(`${API_BASE}/admin/services/${id}`, {
+        method: 'DELETE',
+        headers: { ...getAuthHeader() },
+      });
+      return handleResponse<any>(res);
+    },
+    async bulkDeleteServices(serviceIds: string[]) {
+      const res = await fetch(`${API_BASE}/admin/services/bulk-delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        body: JSON.stringify({ serviceIds }),
+      });
+      return handleResponse<any>(res);
+    },
+    async importServices(payload: {
+      providerId: string;
+      mode?: 'all' | 'category' | 'selected' | 'single';
+      category?: string;
+      serviceIds?: (number | string)[];
+      markupPercent?: number;
+      fixedIncrease?: number;
+      isActive?: boolean;
+    }) {
+      const res = await fetch(`${API_BASE}/admin/services/import`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        body: JSON.stringify(payload),
+      });
+      return handleResponse<any>(res);
+    },
+    // Multi-Provider Management
+    async getProviders() {
+      const res = await fetch(`${API_BASE}/admin/providers`, {
+        headers: { ...getAuthHeader() },
+      });
+      return handleResponse<any>(res);
+    },
+    async addProvider(payload: { name: string; apiUrl: string; apiKey: string; status?: string; isDefault?: boolean }) {
+      const res = await fetch(`${API_BASE}/admin/providers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        body: JSON.stringify(payload),
+      });
+      return handleResponse<any>(res);
+    },
+    async updateProvider(id: string, payload: { name?: string; apiUrl?: string; apiKey?: string; status?: string; isDefault?: boolean }) {
+      const res = await fetch(`${API_BASE}/admin/providers/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        body: JSON.stringify(payload),
+      });
+      return handleResponse<any>(res);
+    },
+    async deleteProvider(id: string) {
+      const res = await fetch(`${API_BASE}/admin/providers/${id}`, {
+        method: 'DELETE',
+        headers: { ...getAuthHeader() },
+      });
+      return handleResponse<any>(res);
+    },
+    async getProviderRawServices(providerId: string) {
+      const res = await fetch(`${API_BASE}/admin/providers/${providerId}/raw-services`, {
+        headers: { ...getAuthHeader() },
+      });
+      return handleResponse<any>(res);
+    },
     async getSettings() {
       const res = await fetch(`${API_BASE}/admin/settings`, {
         headers: { ...getAuthHeader() },

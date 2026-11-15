@@ -66,6 +66,7 @@ class ServicesController {
                 : services.map((s) => ({
                     id: s.id,
                     externalId: s.externalId,
+                    provider: s.provider || 'smmfollows',
                     name: s.name,
                     category: s.category,
                     platform: s.platform,
@@ -112,6 +113,7 @@ class ServicesController {
                 : {
                     id: service.id,
                     externalId: service.externalId,
+                    provider: service.provider || 'smmfollows',
                     name: service.name,
                     category: service.category,
                     platform: service.platform,

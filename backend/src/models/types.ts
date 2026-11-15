@@ -44,9 +44,21 @@ export type PlatformType =
   | 'Threads'
   | 'Other';
 
+export interface Provider {
+  id: string; // e.g. 'smmpwr', 'smmfollows'
+  name: string; // 'SMMPWR', 'SMMFollows'
+  apiUrl: string; // 'https://smmpwr.com/api/v2'
+  apiKey: string;
+  status: 'active' | 'disabled';
+  isDefault?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ServiceItem {
   id: string;
-  externalId: number; // SMMFollows service ID
+  externalId: number; // Provider service ID
+  provider?: string; // 'smmpwr' | 'smmfollows' | string
   name: string;
   category: string;
   platform: PlatformType;
@@ -88,6 +100,7 @@ export interface Order {
   username?: string;
   serviceId: string;
   externalServiceId: number;
+  provider?: string; // which provider ('smmpwr' | 'smmfollows' | etc.)
   serviceName: string;
   category: string;
   platform: PlatformType;

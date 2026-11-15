@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { DatabaseService } from '../services/db.service';
 import { SMMFollowsService } from '../services/smmfollows.service';
+import { ProviderService } from '../services/provider.service';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { EncryptionService } from '../services/encryption.service';
 import { OrdersController } from './orders.controller';
@@ -28,20 +29,42 @@ export class AdminController {
 
     const estimatedProfit = totalRevenue - totalCost;
 
-    // Check live SMMFollows balance
-    let providerBalance = '0.00';
-    let providerCurrency = 'USD';
-    let providerStatus = 'CONNECTED';
-    let providerError = null;
+    // Check live balances for all configured providers
+    const providersList = db.getProviders();
+    const providerService = ProviderService.getInstance();
+    const providersWithBalance = await Promise.all(
+      providersList.map(async (p) => {
+        try {
+          const bal = await providerService.getBalance(p.id);
+          return {
+            id: p.id,
+            name: p.name,
+            status: 'CONNECTED',
+            balance: bal.balance,
+            currency: bal.currency,
+          };
+        } catch (err: any) {
+          return {
+            id: p.id,
+            name: p.name,
+            status: 'ERROR',
+            balance: '0.00',
+            currency: 'USD',
+            error: err.message,
+          };
+        }
+      })
+    );
 
-    try {
-      const balanceData = await smm.getBalance();
-      providerBalance = balanceData.balance;
-      providerCurrency = balanceData.currency;
-    } catch (err: any) {
-      providerStatus = 'ERROR';
-      providerError = err.message;
-    }
+    const primaryProvider = providersWithBalance.find((p) => p.id === 'smmpwr') ||
+      providersWithBalance.find((p) => p.id === 'smmfollows') ||
+      providersWithBalance[0] || {
+        id: 'smmfollows',
+        name: 'SMMFollows',
+        status: 'DISCONNECTED',
+        balance: '0.00',
+        currency: 'USD',
+      };
 
     const orderCounts = {
       total: orders.length,
@@ -62,13 +85,8 @@ export class AdminController {
         totalCost: Number(totalCost.toFixed(3)),
         estimatedProfit: Number(estimatedProfit.toFixed(3)),
         orderCounts,
-        provider: {
-          name: 'SMMFollows',
-          status: providerStatus,
-          balance: providerBalance,
-          currency: providerCurrency,
-          error: providerError,
-        },
+        provider: primaryProvider,
+        providers: providersWithBalance,
       },
     });
   }
@@ -182,20 +200,30 @@ export class AdminController {
 
     if (activeOrders.length > 0) {
       try {
-        const extIds = activeOrders.map((o) => o.externalOrderId as string | number);
-        for (let i = 0; i < extIds.length; i += 50) {
-          const chunk = extIds.slice(i, i + 50);
-          const multiStatus = await smm.getMultipleOrdersStatus(chunk);
-          if (multiStatus && typeof multiStatus === 'object') {
-            for (const order of activeOrders) {
-              const extId = order.externalOrderId!.toString();
-              const statusRes = multiStatus[extId];
-              if (statusRes && !statusRes.error && statusRes.status) {
-                const updated = await OrdersController.processOrderStatusUpdate(order, statusRes);
-                if (updated) {
-                  const idx = orders.findIndex((o) => o.id === order.id);
-                  if (idx !== -1) {
-                    orders[idx] = updated;
+        const providerService = ProviderService.getInstance();
+        const byProvider = new Map<string, typeof activeOrders>();
+        for (const ord of activeOrders) {
+          const pid = ord.provider || 'smmfollows';
+          if (!byProvider.has(pid)) byProvider.set(pid, []);
+          byProvider.get(pid)!.push(ord);
+        }
+
+        for (const [pid, pOrders] of byProvider.entries()) {
+          const extIds = pOrders.map((o) => o.externalOrderId as string | number);
+          for (let i = 0; i < extIds.length; i += 50) {
+            const chunk = extIds.slice(i, i + 50);
+            const multiStatus = await providerService.getMultipleOrdersStatus(pid, chunk);
+            if (multiStatus && typeof multiStatus === 'object') {
+              for (const order of pOrders) {
+                const extId = order.externalOrderId!.toString();
+                const statusRes = multiStatus[extId];
+                if (statusRes && !statusRes.error && statusRes.status) {
+                  const updated = await OrdersController.processOrderStatusUpdate(order, statusRes);
+                  if (updated) {
+                    const idx = orders.findIndex((o) => o.id === order.id);
+                    if (idx !== -1) {
+                      orders[idx] = updated;
+                    }
                   }
                 }
               }
@@ -384,5 +412,252 @@ export class AdminController {
     const db = DatabaseService.getInstance();
     const logs = db.getAuditLogs();
     res.json({ success: true, total: logs.length, logs });
+  }
+
+  // ================= PROVIDERS MANAGEMENT =================
+  /**
+   * List all providers with balances and masked credentials
+   */
+  public static async getProviders(req: AuthenticatedRequest, res: Response): Promise<void> {
+    const db = DatabaseService.getInstance();
+    const providerService = ProviderService.getInstance();
+    const providers = db.getProviders();
+
+    const results = await Promise.all(
+      providers.map(async (p) => {
+        let balance = '0.00';
+        let currency = 'USD';
+        let liveStatus = p.status;
+        let liveError = null;
+
+        if (p.status === 'active') {
+          try {
+            const b = await providerService.getBalance(p.id);
+            balance = b.balance;
+            currency = b.currency;
+          } catch (err: any) {
+            liveStatus = 'error' as any;
+            liveError = err.message;
+          }
+        }
+
+        return {
+          id: p.id,
+          name: p.name,
+          apiUrl: p.apiUrl,
+          apiKeyMasked: EncryptionService.maskKey(p.apiKey),
+          status: p.status,
+          liveStatus,
+          liveError,
+          balance,
+          currency,
+          isDefault: Boolean(p.isDefault),
+          updatedAt: p.updatedAt,
+        };
+      })
+    );
+
+    res.json({ success: true, providers: results });
+  }
+
+  /**
+   * Add a new SMM provider
+   */
+  public static async addProvider(req: AuthenticatedRequest, res: Response): Promise<void> {
+    const db = DatabaseService.getInstance();
+    const { name, apiUrl, apiKey, status, isDefault } = req.body;
+
+    if (!name || !apiUrl || !apiKey) {
+      res.status(400).json({ success: false, error: 'Name, API URL, and API Key are required' });
+      return;
+    }
+
+    const provider = await db.saveProvider({
+      name,
+      apiUrl,
+      apiKey,
+      status: status || 'active',
+      isDefault: Boolean(isDefault),
+    });
+
+    await db.logAudit(
+      'PROVIDER_ADDED',
+      `Admin ${req.user?.username} added provider "${provider.name}" (${provider.apiUrl})`,
+      req.ip || '127.0.0.1',
+      req.user?.id,
+      req.user?.username
+    );
+
+    res.status(201).json({ success: true, message: `Provider "${provider.name}" added successfully`, provider });
+  }
+
+  /**
+   * Update an existing provider
+   */
+  public static async updateProvider(req: AuthenticatedRequest, res: Response): Promise<void> {
+    const db = DatabaseService.getInstance();
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const { name, apiUrl, apiKey, status, isDefault } = req.body;
+
+    const existing = db.getProviderById(id);
+    if (!existing) {
+      res.status(404).json({ success: false, error: 'Provider not found' });
+      return;
+    }
+
+    const updated = await db.saveProvider({
+      id: existing.id,
+      name: name || existing.name,
+      apiUrl: apiUrl || existing.apiUrl,
+      apiKey: apiKey || existing.apiKey,
+      status: status || existing.status,
+      isDefault: isDefault !== undefined ? Boolean(isDefault) : existing.isDefault,
+    });
+
+    await db.logAudit(
+      'PROVIDER_UPDATED',
+      `Admin ${req.user?.username} updated provider "${updated.name}"`,
+      req.ip || '127.0.0.1',
+      req.user?.id,
+      req.user?.username
+    );
+
+    res.json({ success: true, message: `Provider "${updated.name}" updated`, provider: updated });
+  }
+
+  /**
+   * Delete a provider
+   */
+  public static async deleteProvider(req: AuthenticatedRequest, res: Response): Promise<void> {
+    const db = DatabaseService.getInstance();
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+    try {
+      const ok = await db.deleteProvider(id);
+      if (!ok) {
+        res.status(404).json({ success: false, error: 'Provider not found' });
+        return;
+      }
+      await db.logAudit(
+        'PROVIDER_DELETED',
+        `Admin ${req.user?.username} deleted provider "${id}"`,
+        req.ip || '127.0.0.1',
+        req.user?.id,
+        req.user?.username
+      );
+      res.json({ success: true, message: `Provider deleted successfully` });
+    } catch (err: any) {
+      res.status(400).json({ success: false, error: err.message });
+    }
+  }
+
+  /**
+   * Fetch live raw services catalog from a provider for preview/selective import
+   */
+  public static async getProviderRawServices(req: AuthenticatedRequest, res: Response): Promise<void> {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const providerService = ProviderService.getInstance();
+    try {
+      const rawServices = await providerService.getServices(id);
+      const categories = Array.from(new Set(rawServices.map((r) => r.category || 'General'))).sort();
+      res.json({
+        success: true,
+        total: rawServices.length,
+        categories,
+        services: rawServices,
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message || 'Failed to fetch provider services' });
+    }
+  }
+
+  /**
+   * Import services from a provider (by category, selected IDs, single ID, or all)
+   */
+  public static async importServices(req: AuthenticatedRequest, res: Response): Promise<void> {
+    const db = DatabaseService.getInstance();
+    const { providerId, mode, category, serviceIds, markupPercent, fixedIncrease, isActive } = req.body;
+
+    if (!providerId) {
+      res.status(400).json({ success: false, error: 'Provider ID is required' });
+      return;
+    }
+
+    try {
+      const result = await db.importServicesFromProvider({
+        providerId,
+        mode: mode || 'all',
+        category,
+        serviceIds,
+        markupPercent: markupPercent !== undefined ? parseFloat(markupPercent) : undefined,
+        fixedIncrease: fixedIncrease !== undefined ? parseFloat(fixedIncrease) : undefined,
+        isActive: isActive !== undefined ? Boolean(isActive) : true,
+      });
+
+      await db.logAudit(
+        'SERVICES_IMPORTED',
+        `Admin ${req.user?.username} imported ${result.importedCount} new (${result.updatedCount} updated) services from provider "${providerId}" (mode: ${mode || 'all'})`,
+        req.ip || '127.0.0.1',
+        req.user?.id,
+        req.user?.username
+      );
+
+      res.json({
+        success: true,
+        message: `Successfully processed ${result.importedCount + result.updatedCount} services (${result.importedCount} added, ${result.updatedCount} refreshed)`,
+        ...result,
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message || 'Failed to import services' });
+    }
+  }
+
+  /**
+   * Delete an individual service from catalog
+   */
+  public static async deleteService(req: AuthenticatedRequest, res: Response): Promise<void> {
+    const db = DatabaseService.getInstance();
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+    const ok = await db.deleteService(id);
+    if (!ok) {
+      res.status(404).json({ success: false, error: 'Service not found' });
+      return;
+    }
+
+    await db.logAudit(
+      'SERVICE_DELETED',
+      `Admin ${req.user?.username} deleted service #${id}`,
+      req.ip || '127.0.0.1',
+      req.user?.id,
+      req.user?.username
+    );
+
+    res.json({ success: true, message: `Service #${id} deleted from catalog` });
+  }
+
+  /**
+   * Bulk delete services from catalog
+   */
+  public static async bulkDeleteServices(req: AuthenticatedRequest, res: Response): Promise<void> {
+    const db = DatabaseService.getInstance();
+    const { serviceIds } = req.body;
+
+    if (!Array.isArray(serviceIds) || serviceIds.length === 0) {
+      res.status(400).json({ success: false, error: 'Array of serviceIds is required' });
+      return;
+    }
+
+    const count = await db.bulkDeleteServices(serviceIds);
+
+    await db.logAudit(
+      'SERVICES_BULK_DELETED',
+      `Admin ${req.user?.username} deleted ${count} services from catalog`,
+      req.ip || '127.0.0.1',
+      req.user?.id,
+      req.user?.username
+    );
+
+    res.json({ success: true, message: `Deleted ${count} services from catalog`, count });
   }
 }
