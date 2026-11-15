@@ -5,6 +5,8 @@ import { useTheme } from '../context/ThemeContext';
 import {
   ShieldCheck,
   TrendingUp,
+  TrendingDown,
+  AlertTriangle,
   DollarSign,
   Users,
   ShoppingBag,
@@ -442,6 +444,30 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  // Currency Formatter
+  const formatCurrency = (val: number | undefined, decimals = 3) => {
+    if (val === undefined || isNaN(val)) return '$0.000';
+    const isNeg = val < 0;
+    const absVal = Math.abs(val).toFixed(decimals);
+    return isNeg ? `-$${absVal}` : `$${absVal}`;
+  };
+
+  // Auto-Fix Selling Rates with Safety Profit Floor
+  const [isFixingMargins, setIsFixingMargins] = useState(false);
+  const handleAutoFixMargins = async () => {
+    if (!window.confirm('Apply automatic +25% profit safety margin across all catalog services to eliminate negative margins?')) return;
+    setIsFixingMargins(true);
+    try {
+      const res = await api.admin.autoFixMargins(25);
+      showToast(res.message || 'Profit safety floor applied to all services!', 'success');
+      await Promise.all([fetchServices(), fetchStatsAndMeta()]);
+    } catch (err: any) {
+      showToast(err.message || 'Auto-fix margins failed', 'error');
+    } finally {
+      setIsFixingMargins(false);
+    }
+  };
+
   // Delete single service
   const handleDeleteService = async (serviceId: string) => {
     if (!window.confirm(`Are you sure you want to delete service #${serviceId} from your active catalog?`)) {
@@ -641,78 +667,172 @@ export const AdminDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* KPI Cards Grid */}
+      {/* Wholesale Loss Alert Ribbon */}
+      {((stats?.lossMakingServices || 0) > 0 || (stats?.estimatedProfit || 0) < 0) && (
+        <div className="admin-wholesale-alert">
+          <div className="admin-wholesale-alert-left">
+            <AlertTriangle className="admin-wholesale-alert-icon" size={24} />
+            <div>
+              <div className="admin-wholesale-alert-title">Wholesale Price Adjustment Needed</div>
+              <div className="admin-wholesale-alert-desc">
+                Upstream wholesale prices from provider increased. {stats?.lossMakingServices || 'Several'} services currently have selling rates lower than provider wholesale costs, resulting in negative margins.
+              </div>
+            </div>
+          </div>
+          <button
+            className="admin-wholesale-btn"
+            onClick={handleAutoFixMargins}
+            disabled={isFixingMargins}
+          >
+            <ShieldCheck size={16} />
+            <span>{isFixingMargins ? 'Securing Margins...' : 'Auto-Fix All Rates (+25% Margin Safety Floor)'}</span>
+          </button>
+        </div>
+      )}
+
+      {/* KPI Cards Grid - Executive Fintech Design */}
       <div className="admin-kpi-grid">
-        {/* Total Sold Volume */}
-        <div className="admin-kpi-card">
+        {/* Card 1: Total Sold Volume */}
+        <div className="admin-kpi-card blue">
           <div className="admin-kpi-top">
-            <span className="admin-kpi-label">Total Volume Sold</span>
-            <div className="admin-kpi-icon blue"><DollarSign size={20} /></div>
+            <div className="admin-kpi-header-left">
+              <div className="admin-kpi-icon blue"><DollarSign size={20} /></div>
+              <span className="admin-kpi-label">Volume Sold</span>
+            </div>
+            <span className="admin-kpi-badge blue">Gross Sales</span>
           </div>
-          <div className="admin-kpi-value">${stats?.totalRevenue?.toFixed(3) || '0.000'}</div>
-          <div className="admin-kpi-sub">Lifetime customer orders</div>
-        </div>
-
-        {/* Estimated Gross Profit */}
-        <div className="admin-kpi-card highlight">
-          <div className="admin-kpi-top">
-            <span className="admin-kpi-label">Gross Resale Profit</span>
-            <div className="admin-kpi-icon emerald"><TrendingUp size={20} /></div>
+          <div className="admin-kpi-value neutral">
+            {formatCurrency(stats?.totalRevenue, 3)}
           </div>
-          <div className="admin-kpi-value" style={{ color: '#16a34a' }}>
-            ${stats?.estimatedProfit?.toFixed(3) || '0.000'}
-          </div>
-          <div className="admin-kpi-sub">Total profit earned from margins</div>
-        </div>
-
-        {/* Total Platform Orders */}
-        <div className="admin-kpi-card">
-          <div className="admin-kpi-top">
-            <span className="admin-kpi-label">Platform Orders</span>
-            <div className="admin-kpi-icon purple"><ShoppingBag size={20} /></div>
-          </div>
-          <div className="admin-kpi-value">{stats?.totalOrders || 0}</div>
           <div className="admin-kpi-sub">
-            {stats?.orderCounts?.completed || 0} completed · {stats?.orderCounts?.processing || 0} active
+            <span>Lifetime customer orders</span>
+            <span style={{ fontWeight: 700 }}>{stats?.totalOrders || 0} total</span>
           </div>
         </div>
 
-        {/* Providers Live Balance */}
-        <div className="admin-kpi-card">
+        {/* Card 2: Resale Net Profit */}
+        <div className={`admin-kpi-card ${(stats?.estimatedProfit || 0) >= 0 ? 'emerald' : 'rose'}`}>
           <div className="admin-kpi-top">
-            <span className="admin-kpi-label">Live Provider Balances</span>
-            <div className="admin-kpi-icon amber"><Server size={20} /></div>
+            <div className="admin-kpi-header-left">
+              <div className={`admin-kpi-icon ${(stats?.estimatedProfit || 0) >= 0 ? 'emerald' : 'rose'}`}>
+                {(stats?.estimatedProfit || 0) >= 0 ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
+              </div>
+              <span className="admin-kpi-label">Resale Net Profit</span>
+            </div>
+            <span className={`admin-kpi-badge ${(stats?.estimatedProfit || 0) >= 0 ? 'emerald' : 'rose'}`}>
+              {(stats?.estimatedProfit || 0) >= 0
+                ? `+${stats?.profitMargin ?? 0}% Margin`
+                : 'Deficit Alert'}
+            </span>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
-            {stats?.providers?.map((pr: any) => (
-              <div key={pr.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: pr.id === 'smmpwr' ? '#8b5cf6' : '#0284c7' }}>
-                  {pr.name}:
-                </span>
-                <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#d97706', fontSize: '0.95rem' }}>
-                  ${pr.balance} {pr.currency}
-                </span>
-              </div>
-            )) || (
-              <div className="admin-kpi-value" style={{ color: '#d97706' }}>
-                ${stats?.provider?.balance || '0.00'} USD
-              </div>
+          <div className={`admin-kpi-value ${(stats?.estimatedProfit || 0) >= 0 ? 'positive' : 'negative'}`}>
+            {(stats?.estimatedProfit || 0) >= 0
+              ? `+$${(stats?.estimatedProfit || 0).toFixed(3)}`
+              : `-$${Math.abs(stats?.estimatedProfit || 0).toFixed(3)}`}
+          </div>
+          <div className="admin-kpi-sub">
+            <span>
+              {(stats?.estimatedProfit || 0) >= 0
+                ? 'Profits above wholesale costs'
+                : 'Wholesale costs > sell prices'}
+            </span>
+            {(stats?.estimatedProfit || 0) < 0 && (
+              <button
+                onClick={handleAutoFixMargins}
+                disabled={isFixingMargins}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#e11d48',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  fontSize: '0.74rem',
+                  textDecoration: 'underline',
+                  padding: 0,
+                }}
+              >
+                Fix Rates
+              </button>
             )}
           </div>
-          <div className="admin-kpi-sub" style={{ marginTop: 6 }}>
-            {providersList.length} Connected Upstream Gateways
+        </div>
+
+        {/* Card 3: Platform Orders */}
+        <div className="admin-kpi-card purple">
+          <div className="admin-kpi-top">
+            <div className="admin-kpi-header-left">
+              <div className="admin-kpi-icon purple"><ShoppingBag size={20} /></div>
+              <span className="admin-kpi-label">Platform Orders</span>
+            </div>
+            <span className="admin-kpi-badge purple">
+              {stats?.orderCounts?.completed || 0} Delivered
+            </span>
+          </div>
+          <div className="admin-kpi-value neutral">{stats?.totalOrders || 0}</div>
+          <div className="admin-kpi-sub">
+            <span>{stats?.orderCounts?.processing || 0} processing</span>
+            <span>{stats?.orderCounts?.canceled || 0} canceled</span>
           </div>
         </div>
 
-        {/* Active Catalog Services */}
-        <div className="admin-kpi-card">
+        {/* Card 4: Providers Live Balance */}
+        <div className="admin-kpi-card amber">
           <div className="admin-kpi-top">
-            <span className="admin-kpi-label">Controlled Services</span>
-            <div className="admin-kpi-icon rose"><Database size={20} /></div>
+            <div className="admin-kpi-header-left">
+              <div className="admin-kpi-icon amber"><Server size={20} /></div>
+              <span className="admin-kpi-label">Provider Liquidity</span>
+            </div>
+            <span className="admin-kpi-badge amber">
+              ● Live API
+            </span>
           </div>
-          <div className="admin-kpi-value">{services.length || '7,568'}</div>
+          <div className="admin-kpi-value neutral">
+            $
+            {(
+              stats?.totalProviderBalance !== undefined
+                ? stats.totalProviderBalance
+                : stats?.providers?.reduce((acc: number, p: any) => acc + (parseFloat(p.balance) || 0), 0) ||
+                  parseFloat(stats?.provider?.balance || '0')
+            ).toFixed(2)}{' '}
+            <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 600 }}>USD</span>
+          </div>
+          <div className="admin-kpi-chips">
+            {stats?.providers?.map((pr: any) => (
+              <div key={pr.id} className="admin-kpi-chip">
+                <span
+                  className="admin-kpi-chip-dot"
+                  style={{ background: pr.id === 'smmpwr' ? '#8b5cf6' : '#0284c7' }}
+                />
+                <span>{pr.name}:</span>
+                <strong style={{ color: '#d97706' }}>${parseFloat(pr.balance).toFixed(2)}</strong>
+              </div>
+            )) || (
+              <span className="admin-kpi-chip">${stats?.provider?.balance || '0.00'} USD</span>
+            )}
+          </div>
+        </div>
+
+        {/* Card 5: Controlled Services */}
+        <div className="admin-kpi-card cyan">
+          <div className="admin-kpi-top">
+            <div className="admin-kpi-header-left">
+              <div className="admin-kpi-icon cyan"><Database size={20} /></div>
+              <span className="admin-kpi-label">Catalog Services</span>
+            </div>
+            <span className="admin-kpi-badge cyan">
+              {services.filter((s) => s.isActive).length} Active
+            </span>
+          </div>
+          <div className="admin-kpi-value neutral">{services.length ? services.length.toLocaleString() : '7,568'}</div>
           <div className="admin-kpi-sub">
-            {services.filter((s) => s.isActive).length} active · {services.filter((s) => !s.isActive).length} disabled
+            {(stats?.lossMakingServices || 0) > 0 ? (
+              <span style={{ color: '#e11d48', fontWeight: 700 }}>
+                ⚠️ {stats.lossMakingServices} services need price floor
+              </span>
+            ) : (
+              <span>{services.filter((s) => !s.isActive).length} disabled services</span>
+            )}
+            <span style={{ fontWeight: 700 }}>100% Synced</span>
           </div>
         </div>
       </div>

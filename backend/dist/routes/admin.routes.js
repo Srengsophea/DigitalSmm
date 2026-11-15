@@ -15,6 +15,7 @@ router.get('/orders', admin_controller_1.AdminController.getAllOrders);
 router.put('/services/:id', (0, validator_1.validateBody)(validator_1.updateIndividualServiceSchema), admin_controller_1.AdminController.updateService);
 router.delete('/services/:id', admin_controller_1.AdminController.deleteService);
 router.post('/services/markup', (0, validator_1.validateBody)(validator_1.updateServiceMarkupSchema), admin_controller_1.AdminController.batchUpdateMarkup);
+router.post('/services/auto-fix-margins', admin_controller_1.AdminController.autoFixMargins);
 router.post('/services/bulk-status', (0, validator_1.validateBody)(validator_1.bulkStatusSchema), admin_controller_1.AdminController.bulkUpdateServiceStatus);
 router.post('/services/bulk-delete', admin_controller_1.AdminController.bulkDeleteServices);
 router.post('/services/import', admin_controller_1.AdminController.importServices);

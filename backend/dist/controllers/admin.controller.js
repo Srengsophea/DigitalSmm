@@ -17,13 +17,13 @@ class AdminController {
         const users = db.getUsers();
         const orders = db.getOrders();
         const services = await db.getServicesAsync();
-        const totalRevenue = orders
-            .filter((o) => o.status !== 'CANCELED')
-            .reduce((sum, o) => sum + o.charge, 0);
-        const totalCost = orders
-            .filter((o) => o.status !== 'CANCELED')
-            .reduce((sum, o) => sum + o.originalCost, 0);
+        // Only compute revenue & costs on billable orders (exclude canceled and refunded)
+        const billableOrders = orders.filter((o) => o.status !== 'CANCELED' && !o.isRefunded);
+        const totalRevenue = billableOrders.reduce((sum, o) => sum + (o.charge || 0), 0);
+        const totalCost = billableOrders.reduce((sum, o) => sum + (o.originalCost || 0), 0);
         const estimatedProfit = totalRevenue - totalCost;
+        const profitMargin = totalRevenue > 0 ? Number(((estimatedProfit / totalRevenue) * 100).toFixed(1)) : 0;
+        const lossMakingServices = services.filter((s) => s.customRate < s.originalRate).length;
         // Check live balances for all configured providers
         const providersList = db.getProviders();
         const providerService = provider_service_1.ProviderService.getInstance();
@@ -49,6 +49,9 @@ class AdminController {
                 };
             }
         }));
+        const totalProviderBalance = Number(providersWithBalance
+            .reduce((sum, p) => sum + (parseFloat(p.balance) || 0), 0)
+            .toFixed(3));
         const primaryProvider = providersWithBalance.find((p) => p.id === 'smmpwr') ||
             providersWithBalance.find((p) => p.id === 'smmfollows') ||
             providersWithBalance[0] || {
@@ -64,6 +67,7 @@ class AdminController {
             processing: orders.filter((o) => o.status === 'PROCESSING' || o.status === 'IN_PROGRESS').length,
             pending: orders.filter((o) => o.status === 'PENDING').length,
             canceled: orders.filter((o) => o.status === 'CANCELED').length,
+            refunded: orders.filter((o) => o.isRefunded).length,
         };
         res.json({
             success: true,
@@ -75,6 +79,9 @@ class AdminController {
                 totalRevenue: Number(totalRevenue.toFixed(3)),
                 totalCost: Number(totalCost.toFixed(3)),
                 estimatedProfit: Number(estimatedProfit.toFixed(3)),
+                profitMargin,
+                lossMakingServices,
+                totalProviderBalance,
                 orderCounts,
                 provider: primaryProvider,
                 providers: providersWithBalance,
@@ -240,6 +247,21 @@ class AdminController {
             success: true,
             message: `Profit margin updated (${ruleDesc}) across ${result.updatedCount} services`,
             updatedCount: result.updatedCount,
+        });
+    }
+    /**
+     * Auto-fix services selling at loss by enforcing a safety profit floor (default +25%)
+     */
+    static async autoFixMargins(req, res) {
+        const db = db_service_1.DatabaseService.getInstance();
+        const minMargin = req.body?.minMargin !== undefined ? parseFloat(req.body.minMargin) : 25;
+        const result = await db.autoFixLossMakingServices(minMargin);
+        await db.logAudit('MARKUP_AUTO_FIX', `Admin ${req.user?.username} auto-fixed ${result.updatedCount} services with minimum +${minMargin}% safety margin floor`, req.ip || '127.0.0.1', req.user?.id, req.user?.username);
+        res.json({
+            success: true,
+            message: `Successfully enforced +${minMargin}% profit margin across ${result.updatedCount} services`,
+            updatedCount: result.updatedCount,
+            fixedServices: result.fixedServices,
         });
     }
     /**

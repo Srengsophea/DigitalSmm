@@ -631,11 +631,18 @@ class DatabaseService {
                 }
                 if (override.customRate !== undefined) {
                     customRate = Number(override.customRate);
-                    markupPercent =
-                        override.markupPercent ??
-                            (originalRate > 0
-                                ? Number((((customRate - originalRate) / originalRate) * 100).toFixed(2))
-                                : defaultMarkup);
+                    // Wholesale Price Floor Safety: Never allow customRate to fall below provider cost
+                    if (customRate < originalRate) {
+                        customRate = Number((originalRate * (1 + defaultMarkup / 100)).toFixed(4));
+                        markupPercent = defaultMarkup;
+                    }
+                    else {
+                        markupPercent =
+                            override.markupPercent ??
+                                (originalRate > 0
+                                    ? Number((((customRate - originalRate) / originalRate) * 100).toFixed(2))
+                                    : defaultMarkup);
+                    }
                 }
                 else if (override.markupPercent !== undefined) {
                     markupPercent = Number(override.markupPercent);
@@ -643,10 +650,16 @@ class DatabaseService {
                 }
                 else if (override.fixedIncrease !== undefined) {
                     customRate = Number((originalRate + override.fixedIncrease).toFixed(4));
-                    markupPercent =
-                        originalRate > 0
-                            ? Number((((customRate - originalRate) / originalRate) * 100).toFixed(2))
-                            : 0;
+                    if (customRate < originalRate) {
+                        customRate = Number((originalRate * (1 + defaultMarkup / 100)).toFixed(4));
+                        markupPercent = defaultMarkup;
+                    }
+                    else {
+                        markupPercent =
+                            originalRate > 0
+                                ? Number((((customRate - originalRate) / originalRate) * 100).toFixed(2))
+                                : 0;
+                    }
                 }
                 else {
                     markupPercent = defaultMarkup;
@@ -925,6 +938,44 @@ class DatabaseService {
         }
         await this.persist();
         return count;
+    }
+    /**
+     * Automatically detect and fix services where selling rate is below wholesale cost
+     * or below a guaranteed minimum profit safety margin (e.g. +25%)
+     */
+    async autoFixLossMakingServices(minMarginPercent = 25) {
+        await this.getServicesAsync();
+        let count = 0;
+        const fixedServices = [];
+        if (!this.data.serviceOverrides) {
+            this.data.serviceOverrides = {};
+        }
+        for (const service of this.inMemoryServices) {
+            const minRequiredRate = Number((service.originalRate * (1 + minMarginPercent / 100)).toFixed(4));
+            // Fix if selling below provider wholesale rate or below target minimum margin
+            if (service.customRate < service.originalRate || service.customRate < minRequiredRate) {
+                service.customRate = minRequiredRate;
+                service.markupPercent = minMarginPercent;
+                service.updatedAt = new Date().toISOString();
+                const extKey = service.id;
+                const legacyKey = String(service.externalId);
+                this.data.serviceOverrides[extKey] = {
+                    ...(this.data.serviceOverrides[extKey] || this.data.serviceOverrides[legacyKey] || {}),
+                    customRate: service.customRate,
+                    markupPercent: service.markupPercent,
+                    updatedAt: new Date().toISOString(),
+                };
+                count++;
+                if (fixedServices.length < 10) {
+                    fixedServices.push(service.name);
+                }
+            }
+        }
+        if (this.data.services && this.data.services.length > 0) {
+            this.data.services = [...this.inMemoryServices];
+        }
+        await this.persist();
+        return { updatedCount: count, fixedServices };
     }
     detectPlatform(category = '', name = '') {
         const combined = `${category} ${name}`.toLowerCase();

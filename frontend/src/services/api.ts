@@ -382,6 +382,14 @@ export const api = {
       });
       return handleResponse<any>(res);
     },
+    async autoFixMargins(minMargin = 25) {
+      const res = await fetch(`${API_BASE}/admin/services/auto-fix-margins`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        body: JSON.stringify({ minMargin }),
+      });
+      return handleResponse<any>(res);
+    },
     async bulkUpdateStatus(serviceIds: string[], isActive: boolean) {
       const res = await fetch(`${API_BASE}/admin/services/bulk-status`, {
         method: 'POST',

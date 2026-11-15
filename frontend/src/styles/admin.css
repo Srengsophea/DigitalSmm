@@ -53,10 +53,10 @@
   gap: 10px;
 }
 
-/* KPI Cards Grid */
+/* KPI Cards Grid - Executive Fintech Design */
 .admin-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 16px;
   margin-bottom: 24px;
 }
@@ -64,20 +64,28 @@
 .admin-kpi-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 18px 20px;
-  box-shadow: 0 2px 8px rgba(0, 20, 80, 0.03);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
   display: flex;
   flex-direction: column;
   position: relative;
   overflow: hidden;
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .admin-kpi-card:hover {
-  box-shadow: 0 6px 16px rgba(0, 20, 80, 0.06);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px -4px rgba(15, 23, 42, 0.08), 0 4px 8px -2px rgba(15, 23, 42, 0.03);
   border-color: #cbd5e1;
 }
+
+.admin-kpi-card.blue { border-top: 3px solid #3b82f6; }
+.admin-kpi-card.emerald { border-top: 3px solid #10b981; }
+.admin-kpi-card.rose { border-top: 3px solid #f43f5e; }
+.admin-kpi-card.purple { border-top: 3px solid #8b5cf6; }
+.admin-kpi-card.amber { border-top: 3px solid #f59e0b; }
+.admin-kpi-card.cyan { border-top: 3px solid #06b6d4; }
 
 .admin-kpi-card.highlight {
   border-color: #38bdf8;
@@ -88,7 +96,13 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+}
+
+.admin-kpi-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .admin-kpi-icon {
@@ -98,33 +112,160 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
-.admin-kpi-icon.blue { background: #e0f2fe; color: #0284c7; }
-.admin-kpi-icon.emerald { background: #dcfce7; color: #16a34a; }
-.admin-kpi-icon.purple { background: #ede9fe; color: #7c3aed; }
-.admin-kpi-icon.amber { background: #fef3c7; color: #d97706; }
-.admin-kpi-icon.rose { background: #ffe4e6; color: #e11d48; }
+.admin-kpi-icon.blue { background: #eff6ff; color: #2563eb; }
+.admin-kpi-icon.emerald { background: #ecfdf5; color: #059669; }
+.admin-kpi-icon.rose { background: #fff1f2; color: #e11d48; }
+.admin-kpi-icon.purple { background: #f5f3ff; color: #7c3aed; }
+.admin-kpi-icon.amber { background: #fffbeb; color: #d97706; }
+.admin-kpi-icon.cyan { background: #ecfeff; color: #0891b2; }
+
+.admin-kpi-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.admin-kpi-badge.blue { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.admin-kpi-badge.emerald { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+.admin-kpi-badge.rose { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+.admin-kpi-badge.purple { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+.admin-kpi-badge.amber { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+.admin-kpi-badge.cyan { background: #ecfeff; color: #0e7490; border: 1px solid #a5f3fc; }
 
 .admin-kpi-value {
-  font-size: 1.7rem;
+  font-size: 1.85rem;
   font-weight: 800;
   color: #0f172a;
-  line-height: 1.1;
-  font-family: var(--font-mono, monospace, sans-serif);
+  line-height: 1.15;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
 }
 
+.admin-kpi-value.positive { color: #059669; }
+.admin-kpi-value.negative { color: #e11d48; }
+.admin-kpi-value.neutral { color: #0f172a; }
+
 .admin-kpi-label {
-  font-size: 0.82rem;
-  font-weight: 600;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: #64748b;
-  margin-top: 6px;
 }
 
 .admin-kpi-sub {
-  font-size: 0.74rem;
-  color: #94a3b8;
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-kpi-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.admin-kpi-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.admin-kpi-chip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+/* Wholesale Loss Alert Ribbon */
+.admin-wholesale-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(90deg, #fff1f2 0%, #fffbeb 100%);
+  border: 1px solid #fecdd3;
+  border-left: 4px solid #f43f5e;
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 22px;
+  box-shadow: 0 2px 10px rgba(244, 63, 94, 0.06);
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.admin-wholesale-alert-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-wholesale-alert-icon {
+  color: #e11d48;
+  flex-shrink: 0;
+}
+
+.admin-wholesale-alert-title {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #9f1239;
+}
+
+.admin-wholesale-alert-desc {
+  font-size: 0.78rem;
+  color: #713f12;
   margin-top: 2px;
+}
+
+.admin-wholesale-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: #e11d48;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.82rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(225, 29, 72, 0.25);
+  white-space: nowrap;
+}
+
+.admin-wholesale-btn:hover:not(:disabled) {
+  background: #be123c;
+  transform: translateY(-1px);
+}
+
+.admin-wholesale-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Tabs Navigation */
@@ -700,19 +841,44 @@
   color: #f8fafc;
 }
 
+[data-theme="dark"] .admin-kpi-value.positive { color: #34d399; }
+[data-theme="dark"] .admin-kpi-value.negative { color: #fb7185; }
+
 [data-theme="dark"] .admin-kpi-label {
   color: #94a3b8;
 }
 
 [data-theme="dark"] .admin-kpi-sub {
-  color: #64748b;
+  color: #94a3b8;
+  border-top-color: #334155;
 }
+
+[data-theme="dark"] .admin-kpi-chip {
+  background: #0f172a;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .admin-kpi-badge.blue { background: rgba(37, 99, 235, 0.2); color: #60a5fa; border-color: rgba(96, 165, 250, 0.3); }
+[data-theme="dark"] .admin-kpi-badge.emerald { background: rgba(5, 150, 105, 0.2); color: #34d399; border-color: rgba(52, 211, 153, 0.3); }
+[data-theme="dark"] .admin-kpi-badge.rose { background: rgba(225, 29, 72, 0.2); color: #fb7185; border-color: rgba(251, 113, 133, 0.3); }
+[data-theme="dark"] .admin-kpi-badge.purple { background: rgba(124, 58, 237, 0.2); color: #a78bfa; border-color: rgba(167, 139, 250, 0.3); }
+[data-theme="dark"] .admin-kpi-badge.amber { background: rgba(217, 119, 6, 0.2); color: #fbbf24; border-color: rgba(251, 191, 36, 0.3); }
+[data-theme="dark"] .admin-kpi-badge.cyan { background: rgba(8, 145, 178, 0.2); color: #22d3ee; border-color: rgba(34, 211, 238, 0.3); }
 
 [data-theme="dark"] .admin-kpi-icon.blue { background: rgba(2, 132, 199, 0.2); color: #38bdf8; }
 [data-theme="dark"] .admin-kpi-icon.emerald { background: rgba(22, 163, 74, 0.2); color: #4ade80; }
+[data-theme="dark"] .admin-kpi-icon.rose { background: rgba(225, 29, 72, 0.2); color: #fb7185; }
 [data-theme="dark"] .admin-kpi-icon.purple { background: rgba(124, 58, 237, 0.2); color: #a78bfa; }
 [data-theme="dark"] .admin-kpi-icon.amber { background: rgba(217, 119, 6, 0.2); color: #fbbf24; }
-[data-theme="dark"] .admin-kpi-icon.rose { background: rgba(225, 29, 72, 0.2); color: #fb7185; }
+[data-theme="dark"] .admin-kpi-icon.cyan { background: rgba(8, 145, 178, 0.2); color: #22d3ee; }
+
+[data-theme="dark"] .admin-wholesale-alert {
+  background: linear-gradient(90deg, rgba(136, 19, 55, 0.35) 0%, rgba(124, 45, 18, 0.25) 100%);
+  border-color: #9f1239;
+}
+[data-theme="dark"] .admin-wholesale-alert-title { color: #fecdd3; }
+[data-theme="dark"] .admin-wholesale-alert-desc { color: #fed7aa; }
 
 /* Tabs Bar */
 [data-theme="dark"] .admin-tabs-bar {

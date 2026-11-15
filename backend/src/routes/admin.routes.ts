@@ -16,6 +16,7 @@ router.get('/orders', AdminController.getAllOrders);
 router.put('/services/:id', validateBody(updateIndividualServiceSchema), AdminController.updateService);
 router.delete('/services/:id', AdminController.deleteService);
 router.post('/services/markup', validateBody(updateServiceMarkupSchema), AdminController.batchUpdateMarkup);
+router.post('/services/auto-fix-margins', AdminController.autoFixMargins);
 router.post('/services/bulk-status', validateBody(bulkStatusSchema), AdminController.bulkUpdateServiceStatus);
 router.post('/services/bulk-delete', AdminController.bulkDeleteServices);
 router.post('/services/import', AdminController.importServices);
